@@ -17,91 +17,251 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [formSchema, setFormSchema] = useState(initialForm?.formSchema || { components: [] });
   const formBuilderRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [formioBuilder, setFormioBuilder] = useState<any>(null);
+  const [isFormioLoaded, setIsFormioLoaded] = useState(false);
 
   // Initialize Form.io builder
   useEffect(() => {
+    let mounted = true;
+
     const loadFormioBuilder = async () => {
       try {
-        // Import Form.io correctly
-        const Formio = (await import('formiojs')).default;
-        
-        if (formBuilderRef.current && !formioBuilder) {
-          formBuilderRef.current.innerHTML = '';
+        // Load Form.io dynamically
+        const formioModule = await import('formiojs');
+        const Formio = formioModule.default || formioModule;
+
+        if (!mounted || !formBuilderRef.current) return;
+
+        // Clear any existing content
+        formBuilderRef.current.innerHTML = '';
+
+        // Create Form.io builder instance
+        const builderOptions = {
+          builder: {
+            basic: true,
+            advanced: false,
+            data: false,
+            layout: false,
+            premium: false
+          }
+        };
+
+        // Try to create the builder
+        if (Formio && Formio.FormBuilder) {
+          const builder = new Formio.FormBuilder(formBuilderRef.current, formSchema, builderOptions);
           
-          const builderOptions = {
-            builder: {
-              basic: {
-                title: 'Basic',
-                default: true,
-                weight: 0,
-                components: {
-                  textfield: true,
-                  email: true,
-                  textarea: true,
-                  number: true,
-                  checkbox: true,
-                  selectboxes: true,
-                  select: true,
-                  radio: true,
-                  datetime: true,
-                  button: true
-                }
-              },
-              advanced: false,
-              data: false,
-              layout: false
-            }
-          };
-
-          // Create the builder instance using the correct API
-          const builder = await Formio.builder(formBuilderRef.current, formSchema, builderOptions);
-
           // Listen for form changes
-          builder.on('change', (schema: any) => {
-            if (schema && schema.components) {
-              setFormSchema(schema);
+          builder.on('change', (updatedForm: any) => {
+            if (mounted && updatedForm) {
+              setFormSchema(updatedForm);
             }
           });
 
-          setFormioBuilder(builder);
+          if (mounted) {
+            setIsFormioLoaded(true);
+          }
+        } else {
+          throw new Error('FormBuilder not available');
         }
+
       } catch (error) {
-        console.error('Failed to load Form.io builder:', error);
+        console.error('Form.io initialization failed:', error);
         
-        // Display a placeholder interface
-        if (formBuilderRef.current) {
-          formBuilderRef.current.innerHTML = `
-            <div class="flex items-center justify-center h-full bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div class="text-center p-8">
-                <div class="text-4xl mb-4">📝</div>
-                <h3 class="text-lg font-medium text-gray-900 mb-2">Form Builder</h3>
-                <p class="text-gray-500 mb-4">Professional drag-and-drop form creator</p>
-                <p class="text-sm text-gray-400">Loading Form.io components...</p>
-              </div>
-            </div>
-          `;
-        }
+        if (!mounted || !formBuilderRef.current) return;
+
+        // Create fallback simple builder
+        setIsFormioLoaded(false);
+        createFallbackBuilder();
       }
     };
 
-    // Small delay to ensure DOM is ready
-    const timer = setTimeout(loadFormioBuilder, 100);
+    const createFallbackBuilder = () => {
+      if (!formBuilderRef.current) return;
+      
+      formBuilderRef.current.innerHTML = `
+        <div class="h-full bg-white border rounded-lg overflow-hidden">
+          <div class="bg-gray-50 border-b p-4">
+            <h3 class="font-medium text-gray-900">Form Components</h3>
+            <p class="text-sm text-gray-500 mt-1">Click to add components to your form</p>
+          </div>
+          
+          <div class="p-4 space-y-3">
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('textfield')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-blue-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">📝</span>
+                </div>
+                <div>
+                  <div class="font-medium">Text Input</div>
+                  <div class="text-sm text-gray-500">Single line text field</div>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('email')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-green-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">📧</span>
+                </div>
+                <div>
+                  <div class="font-medium">Email</div>
+                  <div class="text-sm text-gray-500">Email address field</div>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('textarea')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-yellow-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">📄</span>
+                </div>
+                <div>
+                  <div class="font-medium">Text Area</div>
+                  <div class="text-sm text-gray-500">Multi-line text field</div>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('number')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-purple-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">🔢</span>
+                </div>
+                <div>
+                  <div class="font-medium">Number</div>
+                  <div class="text-sm text-gray-500">Numeric input field</div>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('select')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-indigo-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">📋</span>
+                </div>
+                <div>
+                  <div class="font-medium">Select List</div>
+                  <div class="text-sm text-gray-500">Dropdown selection</div>
+                </div>
+              </div>
+            </button>
+            
+            <button 
+              type="button"
+              class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
+              onclick="window.addFormComponent && window.addFormComponent('checkbox')"
+            >
+              <div class="flex items-center">
+                <div class="w-8 h-8 bg-red-100 rounded flex items-center justify-center mr-3">
+                  <span class="text-sm">☑️</span>
+                </div>
+                <div>
+                  <div class="font-medium">Checkbox</div>
+                  <div class="text-sm text-gray-500">True/false option</div>
+                </div>
+              </div>
+            </button>
+          </div>
+          
+          <div class="border-t bg-gray-50 p-4">
+            <h4 class="font-medium text-gray-900 mb-3">Form Preview</h4>
+            <div id="form-preview" class="bg-white border rounded p-4 min-h-32">
+              ${formSchema.components && formSchema.components.length > 0 
+                ? formSchema.components.map((comp: any) => `
+                  <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
+                    <div class="text-sm text-gray-500">${comp.type} component</div>
+                  </div>
+                `).join('') 
+                : '<div class="text-gray-500 text-center py-8">Add components above to build your form</div>'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Add component addition functionality
+      (window as any).addFormComponent = (type: string) => {
+        const componentLabels: Record<string, string> = {
+          textfield: 'Text Input',
+          email: 'Email Address',
+          textarea: 'Text Area',
+          number: 'Number',
+          select: 'Select List',
+          checkbox: 'Checkbox'
+        };
+
+        const newComponent = {
+          type,
+          key: `${type}_${Date.now()}`,
+          label: componentLabels[type] || `New ${type}`,
+          input: true,
+          tableView: true,
+          properties: {
+            dataSource: 'freetext'
+          }
+        };
+
+        const updatedSchema = {
+          ...formSchema,
+          components: [...(formSchema.components || []), newComponent]
+        };
+        
+        setFormSchema(updatedSchema);
+
+        // Update preview immediately
+        const preview = document.getElementById('form-preview');
+        if (preview) {
+          const componentHtml = `
+            <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50">
+              <label class="block text-sm font-medium text-gray-700 mb-1">${newComponent.label}</label>
+              <div class="text-sm text-gray-500">${type} component</div>
+            </div>
+          `;
+          
+          if (preview.innerHTML.includes('Add components above')) {
+            preview.innerHTML = componentHtml;
+          } else {
+            preview.innerHTML += componentHtml;
+          }
+        }
+
+        toast({
+          title: "Component Added",
+          description: `${componentLabels[type]} has been added to your form`
+        });
+      };
+    };
+
+    loadFormioBuilder();
 
     return () => {
-      clearTimeout(timer);
-      if (formioBuilder && typeof formioBuilder.destroy === 'function') {
-        formioBuilder.destroy();
+      mounted = false;
+      // Clean up global function
+      if ((window as any).addFormComponent) {
+        delete (window as any).addFormComponent;
       }
     };
   }, []);
-
-  // Update builder when form schema changes externally
-  useEffect(() => {
-    if (formioBuilder && formSchema && typeof formioBuilder.setForm === 'function') {
-      formioBuilder.setForm(formSchema);
-    }
-  }, [formioBuilder]);
 
   const extractMetadata = () => {
     const metadata: any = {};
@@ -180,7 +340,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         </div>
       </div>
 
-      {/* Form.io Builder */}
+      {/* Form Builder */}
       <div className="flex-1 overflow-hidden">
         <div 
           ref={formBuilderRef} 
