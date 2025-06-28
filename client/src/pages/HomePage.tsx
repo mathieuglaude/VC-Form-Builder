@@ -18,8 +18,11 @@ export default function HomePage() {
   const forms = Array.isArray(formsData) ? formsData : [];
   const publicForms = Array.isArray(publicFormsData) ? publicFormsData : [];
   
-  // Filter to show only community forms (not user's own forms)
-  const communityForms = publicForms.filter((form: any) => form.authorId !== "demo");
+  // Get form IDs from user's personal forms to exclude from community
+  const userFormIds = new Set(forms.map((form: any) => form.id));
+  
+  // Filter to show only community forms (exclude user's own forms)
+  const communityForms = publicForms.filter((form: any) => !userFormIds.has(form.id));
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
