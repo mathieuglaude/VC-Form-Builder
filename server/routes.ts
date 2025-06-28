@@ -84,6 +84,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/forms/slug/:slug', async (req, res) => {
+    try {
+      const slug = req.params.slug;
+      const formConfig = await storage.getFormConfigBySlug(slug);
+      
+      if (!formConfig) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      
+      res.json(formConfig);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve form' });
+    }
+  });
+
   // Form submission routes
   app.post('/api/forms/:id/submit', async (req, res) => {
     try {

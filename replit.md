@@ -119,6 +119,12 @@ This is a full-stack TypeScript application that provides a professional form bu
 ```
 Changelog:
 - June 28, 2025. Initial setup
+- June 28, 2025. Enhanced form builder with home dashboard and public form preview
+  - Added form metadata (name, slug, purpose, logoUrl)
+  - Created HomePage dashboard with form management grid
+  - Added PreviewPage for public form access via /f/:slug
+  - Enhanced form builder with metadata collection
+  - Updated database schema and storage layer
 ```
 
 ## User Preferences

@@ -73,11 +73,36 @@ export default function BuilderPage() {
     }
   });
 
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+  };
+
   const handleSave = (formData: any) => {
+    // Generate slug from name if creating new form
+    if (!id && formData.name) {
+      formData.slug = generateSlug(formData.name);
+    }
+    
+    // Ensure required fields are present
+    const completeFormData = {
+      name: formData.name || formData.title || 'Untitled Form',
+      slug: formData.slug || generateSlug(formData.name || formData.title || 'untitled-form'),
+      purpose: formData.purpose || formData.description || 'Form purpose not specified',
+      logoUrl: formData.logoUrl || null,
+      title: formData.title || formData.name || 'Untitled Form',
+      description: formData.description || null,
+      formSchema: formData.formSchema,
+      metadata: formData.metadata,
+      proofRequests: formData.proofRequests || []
+    };
+
     if (id) {
-      updateFormMutation.mutate(formData);
+      updateFormMutation.mutate(completeFormData);
     } else {
-      createFormMutation.mutate(formData);
+      createFormMutation.mutate(completeFormData);
     }
   };
 

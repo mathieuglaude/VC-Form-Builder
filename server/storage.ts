@@ -22,6 +22,7 @@ export interface IStorage {
   // Form config methods
   createFormConfig(formConfig: InsertFormConfig): Promise<FormConfig>;
   getFormConfig(id: number): Promise<FormConfig | undefined>;
+  getFormConfigBySlug(slug: string): Promise<FormConfig | undefined>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
   listFormConfigs(): Promise<FormConfig[]>;
 
@@ -114,8 +115,16 @@ export class MemStorage implements IStorage {
     const id = this.currentFormConfigId++;
     const now = new Date();
     const config: FormConfig = {
-      ...formConfig,
       id,
+      name: formConfig.name,
+      slug: formConfig.slug,
+      purpose: formConfig.purpose,
+      logoUrl: formConfig.logoUrl || null,
+      title: formConfig.title,
+      description: formConfig.description || null,
+      formSchema: formConfig.formSchema,
+      metadata: formConfig.metadata,
+      proofRequests: formConfig.proofRequests || [],
       createdAt: now,
       updatedAt: now
     };
@@ -125,6 +134,12 @@ export class MemStorage implements IStorage {
 
   async getFormConfig(id: number): Promise<FormConfig | undefined> {
     return this.formConfigs.get(id);
+  }
+
+  async getFormConfigBySlug(slug: string): Promise<FormConfig | undefined> {
+    return Array.from(this.formConfigs.values()).find(
+      (form) => form.slug === slug,
+    );
   }
 
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
@@ -148,8 +163,10 @@ export class MemStorage implements IStorage {
   async createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission> {
     const id = this.currentSubmissionId++;
     const formSubmission: FormSubmission = {
-      ...submission,
       id,
+      formConfigId: submission.formConfigId,
+      submissionData: submission.submissionData,
+      verifiedFields: submission.verifiedFields || null,
       createdAt: new Date()
     };
     this.formSubmissions.set(id, formSubmission);
@@ -166,8 +183,10 @@ export class MemStorage implements IStorage {
   async createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition> {
     const id = this.currentCredDefId++;
     const definition: CredentialDefinition = {
-      ...credDef,
       id,
+      credentialType: credDef.credentialType,
+      issuerDid: credDef.issuerDid || null,
+      attributes: credDef.attributes,
       createdAt: new Date()
     };
     this.credentialDefinitions.set(id, definition);

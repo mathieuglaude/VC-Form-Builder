@@ -6,14 +6,17 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import BuilderPage from "@/pages/BuilderPage";
 import FillPage from "@/pages/FillPage";
+import HomePage from "@/pages/HomePage";
+import PreviewPage from "@/pages/PreviewPage";
 
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={BuilderPage} />
+      <Route path="/" component={HomePage} />
       <Route path="/builder" component={BuilderPage} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
+      <Route path="/f/:slug" component={PreviewPage} />
       <Route component={NotFound} />
     </Switch>
   );
