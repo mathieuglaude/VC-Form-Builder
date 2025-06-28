@@ -16,14 +16,17 @@ export default function BuilderPage() {
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
 
+  // Determine if we're editing an existing form or creating new
+  const isEditing = id && id !== 'new';
+
   // Fetch existing form if editing
   const { data: formConfig, isLoading } = useQuery({
     queryKey: [`/api/forms/${id}`],
-    enabled: !!id
+    enabled: Boolean(isEditing)
   });
 
   // Fetch all forms for listing
-  const { data: forms } = useQuery({
+  const { data: forms = [] } = useQuery({
     queryKey: ['/api/forms'],
     enabled: !id
   });
@@ -81,27 +84,28 @@ export default function BuilderPage() {
   };
 
   const handleSave = (formData: any) => {
-    // Generate slug from name if creating new form
-    if (!id && formData.name) {
-      formData.slug = generateSlug(formData.name);
-    }
+    console.log('Form save triggered:', { id, isEditing, formData });
     
     // Ensure required fields are present
     const completeFormData = {
-      name: formData.name || formData.title || 'Untitled Form',
-      slug: formData.slug || generateSlug(formData.name || formData.title || 'untitled-form'),
-      purpose: formData.purpose || formData.description || 'Form purpose not specified',
-      logoUrl: formData.logoUrl || null,
-      title: formData.title || formData.name || 'Untitled Form',
+      name: formData.title || 'Untitled Form',
+      slug: generateSlug(formData.title || 'untitled-form'),
+      purpose: formData.description || 'Form purpose not specified',
+      logoUrl: null,
+      title: formData.title || 'Untitled Form',
       description: formData.description || null,
       formSchema: formData.formSchema,
-      metadata: formData.metadata,
-      proofRequests: formData.proofRequests || []
+      metadata: formData.metadata || {},
+      proofRequests: []
     };
 
-    if (id) {
+    console.log('Complete form data:', completeFormData);
+
+    if (isEditing) {
+      console.log('Updating existing form');
       updateFormMutation.mutate(completeFormData);
     } else {
+      console.log('Creating new form');
       createFormMutation.mutate(completeFormData);
     }
   };
@@ -145,7 +149,7 @@ export default function BuilderPage() {
             </Card>
 
             {/* Existing Forms */}
-            {forms?.map((form: any) => (
+            {(forms as any[])?.map((form: any) => (
               <Card key={form.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation(`/builder/${form.id}`)}>
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">

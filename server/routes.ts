@@ -36,10 +36,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Form management routes
   app.post('/api/forms', async (req, res) => {
     try {
+      console.log('Creating form with data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormConfigSchema.parse(req.body);
+      console.log('Validated data:', JSON.stringify(validatedData, null, 2));
       const formConfig = await storage.createFormConfig(validatedData);
       res.json(formConfig);
     } catch (error) {
+      console.error('Form creation error:', error);
       res.status(400).json({ error: 'Invalid form data', details: error });
     }
   });
