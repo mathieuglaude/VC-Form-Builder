@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Edit, Eye, Shield, Users, Clock, TrendingUp } from 'lucide-react';
+import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
@@ -173,10 +173,10 @@ export default function HomePage() {
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setLocation(`/preview/${form.id}`);
+                          window.open(`/f/${form.slug}`, '_blank');
                         }}
                       >
-                        <Eye className="w-4 h-4" />
+                        <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
