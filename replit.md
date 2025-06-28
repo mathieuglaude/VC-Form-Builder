@@ -144,6 +144,12 @@ Changelog:
   - Restored clean, working form builder with basic components
   - Maintained VC integration and flexible verification modes
   - Kept simple drag-and-drop interface with 6 core component types
+- June 28, 2025. Added ecosystem and interop profile filtering to credential library
+  - Extended credential templates with ecosystem and interopProfile fields
+  - Added filtering interface with search, ecosystem, and interop profile filters
+  - BC Government credentials tagged with "BC Ecosystem" and "AIP 2.0"
+  - Users can filter credentials by technical requirements for different wallet providers
+  - Enhanced credential creation form with ecosystem and interop profile fields
 ```
 
 ## User Preferences

@@ -250,6 +250,8 @@ export class MemStorage implements IStorage {
         { name: 'identifier', description: 'Business identifier' }
       ],
       isPredefined: true,
+      ecosystem: 'BC Ecosystem',
+      interopProfile: 'AIP 2.0',
       createdAt: new Date('2023-11-10'),
       updatedAt: new Date('2023-11-10'),
     };
@@ -275,6 +277,8 @@ export class MemStorage implements IStorage {
         { name: 'expiry_date_dateint', description: 'Credential expiry date in dateint format' }
       ],
       isPredefined: true,
+      ecosystem: 'BC Ecosystem',
+      interopProfile: 'AIP 2.0',
       createdAt: new Date('2023-10-25'),
       updatedAt: new Date('2023-10-25'),
     };
@@ -289,6 +293,9 @@ export class MemStorage implements IStorage {
     const credentialTemplate: CredentialTemplate = {
       id,
       ...template,
+      ecosystem: template.ecosystem || null,
+      interopProfile: template.interopProfile || null,
+      schemaUrl: template.schemaUrl || null,
       isPredefined: template.isPredefined || false,
       createdAt: now,
       updatedAt: now,

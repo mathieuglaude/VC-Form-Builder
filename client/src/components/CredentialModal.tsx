@@ -31,6 +31,8 @@ const credentialTemplateSchema = z.object({
   credDefId: z.string().min(1, "Credential Definition ID is required"),
   issuerDid: z.string().min(1, "Issuer DID is required"),
   schemaUrl: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  ecosystem: z.string().optional(),
+  interopProfile: z.string().optional(),
   attributes: z.array(attributeSchema).min(1, "At least one attribute is required"),
 });
 
@@ -56,6 +58,8 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
       credDefId: "",
       issuerDid: "",
       schemaUrl: "",
+      ecosystem: "",
+      interopProfile: "",
       attributes: [{ name: "", description: "" }],
     },
   });
@@ -74,6 +78,8 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
         credDefId: template.credDefId,
         issuerDid: template.issuerDid,
         schemaUrl: template.schemaUrl || "",
+        ecosystem: template.ecosystem || "",
+        interopProfile: template.interopProfile || "",
         attributes: template.attributes.length > 0 ? template.attributes : [{ name: "", description: "" }],
       });
     } else if (!template && isOpen) {
@@ -84,6 +90,8 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
         credDefId: "",
         issuerDid: "",
         schemaUrl: "",
+        ecosystem: "",
+        interopProfile: "",
         attributes: [{ name: "", description: "" }],
       });
     }
@@ -96,6 +104,8 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
       body: JSON.stringify({
         ...data,
         schemaUrl: data.schemaUrl || null,
+        ecosystem: data.ecosystem || null,
+        interopProfile: data.interopProfile || null,
       }),
     }).then(res => res.json()),
     onSuccess: () => {
@@ -122,6 +132,8 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
       body: JSON.stringify({
         ...data,
         schemaUrl: data.schemaUrl || null,
+        ecosystem: data.ecosystem || null,
+        interopProfile: data.interopProfile || null,
       }),
     }).then(res => res.json()),
     onSuccess: () => {
@@ -263,6 +275,32 @@ export default function CredentialModal({ isOpen, onClose, template }: Credentia
                 {form.formState.errors.schemaUrl.message}
               </p>
             )}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="ecosystem">Ecosystem</Label>
+              <Input
+                id="ecosystem"
+                {...form.register("ecosystem")}
+                placeholder="BC Ecosystem"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Group of related credentials (e.g., BC Ecosystem, EU Digital Identity)
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="interopProfile">Interop Profile</Label>
+              <Input
+                id="interopProfile"
+                {...form.register("interopProfile")}
+                placeholder="AIP 2.0"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Technical interoperability profile (e.g., AIP 2.0, OID4VC)
+              </p>
+            </div>
           </div>
 
           <div>
