@@ -29,8 +29,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     attributeName: ''
   });
 
-  const { data: credentialDefs } = useQuery({
-    queryKey: ['/api/credentials/defs'],
+  const { data: credentialTemplates } = useQuery({
+    queryKey: ['/api/cred-lib'],
     enabled: isOpen
   });
 
@@ -91,20 +91,14 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   };
 
   const getCredentialAttributes = () => {
-    if (!credentialDefs || !config.credentialType) return [];
+    if (!credentialTemplates || !config.credentialType) return [];
     
     try {
-      const data = credentialDefs as any;
-      const allDefs = [
-        ...(data?.local || []),
-        ...(data?.api?.credentialTypes || [])
-      ];
-      
-      const selectedDef = allDefs.find((def: any) => 
-        def.credentialType === config.credentialType || def.type === config.credentialType
+      const selectedTemplate = (credentialTemplates as any[]).find((template: any) => 
+        template.label === config.credentialType
       );
       
-      return selectedDef?.attributes || [];
+      return selectedTemplate?.attributes || [];
     } catch (error) {
       console.error('Error getting credential attributes:', error);
       return [];
@@ -112,29 +106,13 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   };
 
   const getCredentialTypes = () => {
-    if (!credentialDefs) return [];
+    if (!credentialTemplates || !Array.isArray(credentialTemplates)) return [];
     
     try {
-      const data = credentialDefs as any;
-      const types = [];
-      
-      // Add local credential types
-      if (data?.local) {
-        types.push(...data.local.map((def: any) => ({
-          value: def.credentialType,
-          label: def.credentialType
-        })));
-      }
-      
-      // Add API credential types  
-      if (data?.api?.credentialTypes) {
-        types.push(...data.api.credentialTypes.map((def: any) => ({
-          value: def.type,
-          label: def.type
-        })));
-      }
-      
-      return types;
+      return credentialTemplates.map((template: any) => ({
+        value: template.label,
+        label: template.label
+      }));
     } catch (error) {
       console.error('Error getting credential types:', error);
       return [];
