@@ -155,6 +155,7 @@ export class MemStorage implements IStorage {
       formSchema: formConfig.formSchema,
       metadata: formConfig.metadata,
       proofRequests: formConfig.proofRequests || [],
+      revocationPolicies: formConfig.revocationPolicies || {},
       createdAt: now,
       updatedAt: now
     };

@@ -20,6 +20,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
+  const [revocationPolicies, setRevocationPolicies] = useState<Record<string, boolean>>(initialForm?.revocationPolicies || {});
   const { toast } = useToast();
 
   // Fetch credential templates for wallet compatibility
@@ -42,6 +43,13 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       } : null;
     })
     .filter((req): req is NonNullable<typeof req> => req !== null);
+
+  // Get unique credential types used in the form
+  const credentialTypesSet = new Set<string>();
+  components
+    .filter(comp => comp.properties?.dataSource === 'verified' && comp.properties?.vcMapping?.credentialType)
+    .forEach(comp => credentialTypesSet.add(comp.properties.vcMapping.credentialType));
+  const usedCredentialTypes = Array.from(credentialTypesSet);
 
   // Add component function
   const addComponent = useCallback((type: string) => {
@@ -168,7 +176,8 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       title: formTitle,
       description: formDescription,
       formSchema: { components },
-      metadata: extractMetadata()
+      metadata: extractMetadata(),
+      revocationPolicies
     };
     onSave(formData);
   };
@@ -287,16 +296,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                                 ⚠️ Required
                               </span>
                             )}
-                            {component.properties?.acceptRevoked && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                ⚠️ Accepts Revoked
-                              </span>
-                            )}
-                            {component.properties?.acceptRevoked === false && component.properties?.dataSource === 'verified' && (
-                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                🚫 Rejects Revoked
-                              </span>
-                            )}
+
                           </div>
                         )}
                         
@@ -377,11 +377,56 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       </div>
 
       {/* Wallet Selector */}
-      <WalletSelector
-        credentialRequirements={credentialRequirements as any}
-        selectedWallets={selectedWallets}
-        onWalletChange={setSelectedWallets}
-      />
+      {credentialRequirements.length > 0 && (
+        <div className="mt-6 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">Wallet Selection</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Select which wallets to recommend to users filling out this form:
+          </p>
+          <WalletSelector
+            credentialRequirements={credentialRequirements as any}
+            selectedWallets={selectedWallets}
+            onWalletChange={setSelectedWallets}
+          />
+        </div>
+      )}
+
+      {/* Revocation Policies */}
+      {usedCredentialTypes.length > 0 && (
+        <div className="mt-6 p-4 border border-gray-200 rounded-lg">
+          <h3 className="text-lg font-medium text-gray-900 mb-3">Revocation Policies</h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Configure whether to accept revoked credentials for each credential type used in this form:
+          </p>
+          <div className="space-y-3">
+            {usedCredentialTypes.map((credentialType) => (
+              <div key={credentialType} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">{credentialType}</h4>
+                  <p className="text-xs text-gray-500">
+                    {revocationPolicies[credentialType] 
+                      ? "Will accept credentials even if they have been revoked" 
+                      : "Will reject any revoked credentials"
+                    }
+                  </p>
+                </div>
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={revocationPolicies[credentialType] || false}
+                    onChange={(e) => setRevocationPolicies(prev => ({
+                      ...prev,
+                      [credentialType]: e.target.checked
+                    }))}
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  />
+                  <span className="ml-2 text-sm text-gray-700">Accept revoked</span>
+                </label>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Field Configuration Modal */}
       <FieldConfigModal

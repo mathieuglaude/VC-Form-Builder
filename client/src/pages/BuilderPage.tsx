@@ -97,7 +97,8 @@ export default function BuilderPage() {
       description: formData.description || null,
       formSchema: formData.formSchema,
       metadata: formData.metadata || {},
-      proofRequests: []
+      proofRequests: [],
+      revocationPolicies: formData.revocationPolicies || {}
     };
 
     console.log('Complete form data:', completeFormData);

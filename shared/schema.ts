@@ -24,6 +24,7 @@ export const formConfigs = pgTable("form_configs", {
   formSchema: jsonb("form_schema").notNull(), // Form.io JSON schema
   metadata: jsonb("metadata").notNull(), // Extended metadata for VC integration
   proofRequests: jsonb("proof_requests").default([]), // VC proof requirements
+  revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}), // Revocation acceptance policies per credential type
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -78,6 +79,7 @@ export const insertFormConfigSchema = createInsertSchema(formConfigs).pick({
   formSchema: true,
   metadata: true,
   proofRequests: true,
+  revocationPolicies: true,
 });
 
 export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).pick({
