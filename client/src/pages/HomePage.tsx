@@ -17,6 +17,9 @@ export default function HomePage() {
 
   const forms = Array.isArray(formsData) ? formsData : [];
   const publicForms = Array.isArray(publicFormsData) ? publicFormsData : [];
+  
+  // Filter to show only community forms (not user's own forms)
+  const communityForms = publicForms.filter((form: any) => form.authorId !== "demo");
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
@@ -111,10 +114,13 @@ export default function HomePage() {
         </Card>
       </div>
 
-      {/* Forms Grid */}
+      {/* My Forms Section */}
       <div>
         <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-medium text-gray-900">Your Forms</h3>
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">My Forms</h3>
+            <p className="text-gray-600 mt-1">Forms you've created and can edit</p>
+          </div>
           <div className="flex space-x-2">
             <Button variant="outline" size="sm">
               Filter
@@ -259,7 +265,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {publicForms.slice(0, 6).map((form: any) => (
+            {communityForms.slice(0, 6).map((form: any) => (
               <Card key={form.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="p-0">
                   {/* Form Header */}
@@ -317,7 +323,7 @@ export default function HomePage() {
         )}
 
         {/* Empty State for Community Forms */}
-        {!isLoadingPublic && publicForms.length === 0 && (
+        {!isLoadingPublic && communityForms.length === 0 && (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <h4 className="text-base font-medium text-gray-900 mb-1">No public forms yet</h4>

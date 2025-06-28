@@ -181,6 +181,13 @@ Changelog:
   - Different business cases can have different policies (e.g., accept revoked person credentials but not business cards)
   - Visual indicators in form builder show revocation policy (Accepts Revoked vs Rejects Revoked badges)
   - Revocation settings are saved with form metadata and persist through database storage
+- June 28, 2025. Completed Community Forms feature with homepage integration
+  - Added "Publish to Community" toggle in form builder for sharing forms publicly
+  - Created dedicated Community Forms section on homepage below user's personal forms
+  - Built comprehensive community browsing page with filtering by purpose and search functionality
+  - Implemented form cloning system allowing users to copy and customize public forms
+  - Added sample community forms showcasing different credential verification scenarios
+  - Community forms display author information and are clearly separated from user's own forms
 ```
 
 ## User Preferences
