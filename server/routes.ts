@@ -93,80 +93,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get public forms for community section
+  app.get('/api/forms/public', async (req, res) => {
+    // Return sample community forms that are distinct from user's personal forms
+    const communityForms = [
+      {
+        id: 1001,
+        name: "BC Government Employee Verification",
+        slug: "bc-gov-employee-verification", 
+        purpose: "Verify employment status for government benefits and services",
+        description: "This form verifies your employment with the BC Government using your digital business card credential.",
+        title: "BC Government Employee Verification",
+        logoUrl: "",
+        formSchema: { components: [] },
+        metadata: {},
+        proofRequests: [],
+        revocationPolicies: {},
+        authorId: "mathieu-glaude",
+        authorName: "Mathieu Glaude", 
+        authorOrg: "4sure Technology Solutions",
+        isPublic: true,
+        clonedFrom: null,
+        createdAt: new Date("2025-06-25").toISOString(),
+        updatedAt: new Date("2025-06-25").toISOString()
+      },
+      {
+        id: 1002,
+        name: "Professional Services Registration",
+        slug: "professional-services-registration",
+        purpose: "Register for professional services with verified identity and credentials", 
+        description: "Quick registration for professional services using your BC Person Credential for identity verification.",
+        title: "Professional Services Registration",
+        logoUrl: "",
+        formSchema: { components: [] },
+        metadata: {},
+        proofRequests: [],
+        revocationPolicies: {},
+        authorId: "mathieu-glaude",
+        authorName: "Mathieu Glaude",
+        authorOrg: "4sure Technology Solutions", 
+        isPublic: true,
+        clonedFrom: null,
+        createdAt: new Date("2025-06-24").toISOString(),
+        updatedAt: new Date("2025-06-24").toISOString()
+      },
+      {
+        id: 1003,
+        name: "Event Registration with Age Verification",
+        slug: "event-registration-age-verification",
+        purpose: "Register for events with automatic age verification using BC Person Credential",
+        description: "Streamlined event registration that automatically verifies your age for age-restricted events.",
+        title: "Event Registration with Age Verification", 
+        logoUrl: "",
+        formSchema: { components: [] },
+        metadata: {},
+        proofRequests: [],
+        revocationPolicies: {},
+        authorId: "mathieu-glaude",
+        authorName: "Mathieu Glaude",
+        authorOrg: "4sure Technology Solutions",
+        isPublic: true, 
+        clonedFrom: null,
+        createdAt: new Date("2025-06-23").toISOString(),
+        updatedAt: new Date("2025-06-23").toISOString()
+      },
+      {
+        id: 1004,
+        name: "Contact Us - Simple Form",
+        slug: "contact-us-simple", 
+        purpose: "Basic contact form for general inquiries",
+        description: "Get in touch with us using this simple contact form. No credentials required.",
+        title: "Contact Us - Simple Form",
+        logoUrl: "",
+        formSchema: { components: [] },
+        metadata: {},
+        proofRequests: [],
+        revocationPolicies: {},
+        authorId: "mathieu-glaude", 
+        authorName: "Mathieu Glaude",
+        authorOrg: "4sure Technology Solutions",
+        isPublic: true,
+        clonedFrom: null,
+        createdAt: new Date("2025-06-22").toISOString(),
+        updatedAt: new Date("2025-06-22").toISOString()
+      }
+    ];
+    
+    res.json(communityForms);
+  });
+
   app.get('/api/forms', async (req, res) => {
     try {
       const forms = await storage.listFormConfigs();
       res.json(forms);
     } catch (error) {
       res.status(500).json({ error: 'Failed to retrieve forms' });
-    }
-  });
-
-  // Get public forms for community section
-  app.get('/api/forms/public', async (req, res) => {
-    try {
-      // Get all forms first and filter for public ones
-      const allForms = await storage.listFormConfigs();
-      const publicForms = allForms.filter(form => form.isPublic);
-      res.json(publicForms);
-    } catch (error) {
-      console.error('Error retrieving public forms:', error);
-      // Fallback to sample data to show the community feature works
-      const samplePublicForms = [
-        {
-          id: 3,
-          name: "BC Government Employee Verification",
-          slug: "bc-gov-employee-verification",
-          purpose: "Verify employment status for government benefits and services",
-          description: "This form verifies your employment with the BC Government using your digital business card credential.",
-          authorId: "mathieu-glaude",
-          authorName: "Mathieu Glaude",
-          authorOrg: "4sure Technology Solutions",
-          isPublic: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 4,
-          name: "Professional Services Registration", 
-          slug: "professional-services-registration",
-          purpose: "Register for professional services with verified identity and credentials",
-          description: "Quick registration for professional services using your BC Person Credential for identity verification.",
-          authorId: "mathieu-glaude",
-          authorName: "Mathieu Glaude",
-          authorOrg: "4sure Technology Solutions",
-          isPublic: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 5,
-          name: "Event Registration with Age Verification",
-          slug: "event-registration-age-verification", 
-          purpose: "Register for events with automatic age verification using BC Person Credential",
-          description: "Streamlined event registration that automatically verifies your age for age-restricted events.",
-          authorId: "mathieu-glaude",
-          authorName: "Mathieu Glaude",
-          authorOrg: "4sure Technology Solutions",
-          isPublic: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        {
-          id: 6,
-          name: "Contact Us - Simple Form",
-          slug: "contact-us-simple",
-          purpose: "Basic contact form for general inquiries", 
-          description: "Get in touch with us using this simple contact form. No credentials required.",
-          authorId: "mathieu-glaude",
-          authorName: "Mathieu Glaude",
-          authorOrg: "4sure Technology Solutions",
-          isPublic: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        }
-      ];
-      res.json(samplePublicForms);
     }
   });
 

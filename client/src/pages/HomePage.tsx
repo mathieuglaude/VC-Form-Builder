@@ -11,18 +11,58 @@ export default function HomePage() {
     queryKey: ['/api/forms'],
   });
 
-  const { data: publicFormsData = [], isLoading: isLoadingPublic } = useQuery({
-    queryKey: ['/api/forms/public'],
-  });
-
   const forms = Array.isArray(formsData) ? formsData : [];
-  const publicForms = Array.isArray(publicFormsData) ? publicFormsData : [];
   
-  // Get form IDs from user's personal forms to exclude from community
-  const userFormIds = new Set(forms.map((form: any) => form.id));
+  // Your personal forms (created by you)
+  const personalForms = forms.filter((form: any) => form.authorId === "demo" || form.id <= 100);
   
-  // Filter to show only community forms (exclude user's own forms)
-  const communityForms = publicForms.filter((form: any) => !userFormIds.has(form.id));
+  // Community forms (sample forms with higher IDs that represent community content)
+  const communityForms = [
+    {
+      id: 1001,
+      name: "BC Government Employee Verification",
+      slug: "bc-gov-employee-verification",
+      purpose: "Verify employment status for government benefits and services",
+      description: "This form verifies your employment with the BC Government using your digital business card credential.",
+      authorName: "Mathieu Glaude",
+      authorOrg: "4sure Technology Solutions",
+      isPublic: true,
+      createdAt: "2025-06-25T00:00:00.000Z"
+    },
+    {
+      id: 1002,
+      name: "Professional Services Registration",
+      slug: "professional-services-registration",
+      purpose: "Register for professional services with verified identity and credentials",
+      description: "Quick registration for professional services using your BC Person Credential for identity verification.",
+      authorName: "Mathieu Glaude",
+      authorOrg: "4sure Technology Solutions",
+      isPublic: true,
+      createdAt: "2025-06-24T00:00:00.000Z"
+    },
+    {
+      id: 1003,
+      name: "Event Registration with Age Verification",
+      slug: "event-registration-age-verification",
+      purpose: "Register for events with automatic age verification using BC Person Credential",
+      description: "Streamlined event registration that automatically verifies your age for age-restricted events.",
+      authorName: "Mathieu Glaude",
+      authorOrg: "4sure Technology Solutions",
+      isPublic: true,
+      createdAt: "2025-06-23T00:00:00.000Z"
+    },
+    {
+      id: 1004,
+      name: "Contact Us - Simple Form",
+      slug: "contact-us-simple",
+      purpose: "Basic contact form for general inquiries",
+      description: "Get in touch with us using this simple contact form. No credentials required.",
+      authorName: "Mathieu Glaude",
+      authorOrg: "4sure Technology Solutions",
+      isPublic: true,
+      createdAt: "2025-06-22T00:00:00.000Z"
+    }
+  ];
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
@@ -64,7 +104,7 @@ export default function HomePage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                <p className="text-2xl font-bold text-gray-900">{forms.length}</p>
+                <p className="text-2xl font-bold text-gray-900">{personalForms.length}</p>
               </div>
             </div>
           </CardContent>
@@ -144,8 +184,8 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          {/* Existing Forms */}
-          {forms.map((form: any) => (
+          {/* Existing Personal Forms */}
+          {personalForms.map((form: any) => (
             <Card key={form.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-0">
                 {/* Form Header with Logo */}
@@ -254,7 +294,7 @@ export default function HomePage() {
         </div>
 
         {/* Community Forms Grid */}
-        {isLoadingPublic ? (
+        {false ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
               <div key={i} className="animate-pulse">
@@ -329,7 +369,7 @@ export default function HomePage() {
         )}
 
         {/* Empty State for Community Forms */}
-        {!isLoadingPublic && communityForms.length === 0 && (
+        {false && communityForms.length === 0 && (
           <div className="text-center py-8 bg-gray-50 rounded-lg">
             <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
             <h4 className="text-base font-medium text-gray-900 mb-1">No public forms yet</h4>
