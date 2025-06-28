@@ -148,11 +148,28 @@ export default function AccountPage() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // TODO: Implement image upload to server
+      // Convert image to base64 and update profile
       const reader = new FileReader();
       reader.onload = (e) => {
-        setUserProfile(prev => ({ ...prev, profileImage: e.target?.result as string }));
+        const imageData = e.target?.result as string;
+        setUserProfile(prev => ({ ...prev, profileImage: imageData }));
         setHasChanges(true);
+        
+        // Immediately save the profile picture
+        updateProfileMutation.mutate({
+          firstName: userProfile.firstName,
+          lastName: userProfile.lastName,
+          email: userProfile.email,
+          phone: userProfile.phone,
+          organization: userProfile.organization,
+          jobTitle: userProfile.title,
+          linkedinProfile: userProfile.linkedinUrl,
+          website: userProfile.website,
+          bio: userProfile.bio,
+          profileImage: imageData,
+          location: userProfile.location,
+          timezone: userProfile.timezone
+        });
       };
       reader.readAsDataURL(file);
     }

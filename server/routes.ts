@@ -33,32 +33,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
+  // Simple in-memory storage for demo - in production this would be in database
+  let currentUserProfile = {
+    id: 1,
+    firstName: "John",
+    lastName: "Doe",
+    email: "john.doe@example.com",
+    phone: "+1 (555) 123-4567",
+    organization: "Demo Organization",
+    jobTitle: "Product Manager",
+    linkedinProfile: "https://linkedin.com/in/johndoe",
+    website: "https://johndoe.com",
+    bio: "Passionate about building digital identity solutions and streamlining verification processes.",
+    profileImage: null,
+    location: "Vancouver, BC",
+    timezone: "America/Vancouver"
+  };
+
   // User profile routes
   app.get('/api/auth/user', async (req, res) => {
-    // Return mock user data for now - in production this would be authenticated
-    const user = {
-      id: 1,
-      firstName: "John",
-      lastName: "Doe",
-      email: "john.doe@example.com",
-      phone: "+1 (555) 123-4567",
-      organization: "Demo Organization",
-      jobTitle: "Product Manager",
-      linkedinProfile: "https://linkedin.com/in/johndoe",
-      website: "https://johndoe.com",
-      bio: "Passionate about building digital identity solutions and streamlining verification processes.",
-      profileImage: null,
-      location: "Vancouver, BC",
-      timezone: "America/Vancouver"
-    };
-    res.json(user);
+    res.json(currentUserProfile);
   });
 
   app.put('/api/auth/user', async (req, res) => {
     try {
-      // In production, this would update the authenticated user's profile
-      const updatedUser = { ...req.body, id: 1 };
-      res.json(updatedUser);
+      // Update the stored profile with new data
+      currentUserProfile = { ...currentUserProfile, ...req.body };
+      res.json(currentUserProfile);
     } catch (error) {
       res.status(400).json({ error: 'Failed to update profile' });
     }
