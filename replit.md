@@ -160,7 +160,8 @@ Changelog:
   - Renamed "Credentials" menu item to "Credential Library" for clarity
   - Added new "Wallet Library" menu item with comprehensive wallet directory
   - Created wallet comparison page with filtering by platform and protocol support
-  - Included major wallets: BC Wallet, Trinsic, Lissi, and Hyperledger Aries Mobile Agent
+  - Focused on Canadian government wallets: BC Wallet and NB Orbit Edge Wallet
+  - Both wallets support AIP 2.0 protocol compatibility with government credentials
   - Added download links and feature comparisons for each wallet
 ```
 

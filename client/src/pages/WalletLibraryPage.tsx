@@ -37,43 +37,16 @@ const wallets: Wallet[] = [
   },
   {
     id: 2,
-    name: "Trinsic Wallet",
-    provider: "Trinsic",
-    platforms: ["iOS", "Android", "Web"],
-    supportedProtocols: ["AIP 2.0", "Aries", "W3C VC", "DIDComm"],
-    features: ["Multi-Protocol Support", "Enterprise Ready", "Developer APIs", "Cross-Platform"],
-    downloadLinks: {
-      ios: "https://apps.apple.com/app/trinsic-wallet/id1234567891",
-      android: "https://play.google.com/store/apps/details?id=id.trinsic.wallet",
-      web: "https://wallet.trinsic.id"
-    },
-    description: "Enterprise-grade digital wallet with support for multiple credential protocols and standards."
-  },
-  {
-    id: 3,
-    name: "Lissi Wallet",
-    provider: "Lissi GmbH",
+    name: "NB Orbit Edge Wallet",
+    provider: "Government of New Brunswick",
     platforms: ["iOS", "Android"],
-    supportedProtocols: ["AIP 2.0", "Aries", "EUDI Wallet"],
-    features: ["European Standards", "Privacy Focused", "Multi-Language", "GDPR Compliant"],
+    supportedProtocols: ["AIP 2.0", "Aries", "DIDComm"],
+    features: ["Government Credentials", "Provincial Services", "Secure Storage", "Mobile First"],
     downloadLinks: {
-      ios: "https://apps.apple.com/app/lissi-wallet/id1234567892",
-      android: "https://play.google.com/store/apps/details?id=io.lissi.mobile.android"
+      ios: "https://apps.apple.com/ca/app/nb-orbit-edge/id1234567894",
+      android: "https://play.google.com/store/apps/details?id=ca.nb.gov.orbit"
     },
-    description: "Privacy-focused digital wallet supporting European identity standards and GDPR compliance."
-  },
-  {
-    id: 4,
-    name: "Hyperledger Aries Mobile Agent",
-    provider: "Hyperledger Foundation",
-    platforms: ["iOS", "Android"],
-    supportedProtocols: ["AIP 1.0", "AIP 2.0", "Aries", "DIDComm"],
-    features: ["Open Source", "Reference Implementation", "Developer Tools", "Community Driven"],
-    downloadLinks: {
-      ios: "https://apps.apple.com/app/aries-mobile-agent/id1234567893",
-      android: "https://play.google.com/store/apps/details?id=org.hyperledger.aries"
-    },
-    description: "Open-source reference implementation of Hyperledger Aries protocols for developers and testing."
+    description: "Official digital wallet from the Government of New Brunswick supporting AIP 2.0 for provincial credential services."
   }
 ];
 
