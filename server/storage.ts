@@ -3,6 +3,7 @@ import {
   formConfigs, 
   formSubmissions, 
   credentialDefinitions,
+  credentialTemplates,
   type User, 
   type InsertUser,
   type FormConfig,
@@ -12,8 +13,11 @@ import {
   type CredentialDefinition,
   type InsertCredentialDefinition,
   type CredentialTemplate,
-  type InsertCredentialTemplate
+  type InsertCredentialTemplate,
+  type AttributeDef
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -343,4 +347,181 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  async createFormConfig(formConfig: InsertFormConfig): Promise<FormConfig> {
+    const [config] = await db
+      .insert(formConfigs)
+      .values(formConfig)
+      .returning();
+    return config;
+  }
+
+  async getFormConfig(id: number): Promise<FormConfig | undefined> {
+    const [config] = await db.select().from(formConfigs).where(eq(formConfigs.id, id));
+    return config || undefined;
+  }
+
+  async getFormConfigBySlug(slug: string): Promise<FormConfig | undefined> {
+    const [config] = await db.select().from(formConfigs).where(eq(formConfigs.slug, slug));
+    return config || undefined;
+  }
+
+  async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
+    const [updated] = await db
+      .update(formConfigs)
+      .set(formConfig)
+      .where(eq(formConfigs.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async listFormConfigs(): Promise<FormConfig[]> {
+    return await db.select().from(formConfigs);
+  }
+
+  async createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission> {
+    const [formSubmission] = await db
+      .insert(formSubmissions)
+      .values(submission)
+      .returning();
+    return formSubmission;
+  }
+
+  async getFormSubmissions(formConfigId: number): Promise<FormSubmission[]> {
+    return await db.select().from(formSubmissions).where(eq(formSubmissions.formConfigId, formConfigId));
+  }
+
+  async createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition> {
+    const [definition] = await db
+      .insert(credentialDefinitions)
+      .values(credDef)
+      .returning();
+    return definition;
+  }
+
+  async listCredentialDefinitions(): Promise<CredentialDefinition[]> {
+    return await db.select().from(credentialDefinitions);
+  }
+
+  async getCredentialDefinition(id: number): Promise<CredentialDefinition | undefined> {
+    const [definition] = await db.select().from(credentialDefinitions).where(eq(credentialDefinitions.id, id));
+    return definition || undefined;
+  }
+
+  async createCredentialTemplate(template: InsertCredentialTemplate): Promise<CredentialTemplate> {
+    const [credentialTemplate] = await db
+      .insert(credentialTemplates)
+      .values(template)
+      .returning();
+    return credentialTemplate;
+  }
+
+  async listCredentialTemplates(): Promise<CredentialTemplate[]> {
+    return await db.select().from(credentialTemplates);
+  }
+
+  async getCredentialTemplate(id: number): Promise<CredentialTemplate | undefined> {
+    const [template] = await db.select().from(credentialTemplates).where(eq(credentialTemplates.id, id));
+    return template || undefined;
+  }
+
+  async updateCredentialTemplate(id: number, template: Partial<InsertCredentialTemplate>): Promise<CredentialTemplate | undefined> {
+    const [updated] = await db
+      .update(credentialTemplates)
+      .set(template)
+      .where(eq(credentialTemplates.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteCredentialTemplate(id: number): Promise<boolean> {
+    const result = await db.delete(credentialTemplates).where(eq(credentialTemplates.id, id));
+    return result.rowCount ? result.rowCount > 0 : false;
+  }
+}
+
+export const storage = new DatabaseStorage();
+
+// Initialize and seed credentials on first run
+(async () => {
+  try {
+    const existingTemplates = await storage.listCredentialTemplates();
+    if (existingTemplates.length === 0) {
+      // Seed BC Government credentials
+      await storage.createCredentialTemplate({
+        label: "BC Digital Business Card v1",
+        version: "1.0",
+        schemaId: "L6ASjmDDbDH7yPL1t2yFj9:2:business_card:1.0",
+        credDefId: "L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card",
+        issuerDid: "did:indy:candy:L6ASjmDDbDH7yPL1t2yFj9",
+        schemaUrl: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-digital-business-card/1.0/governance.md",
+        attributes: [
+          { name: "business_name", description: "Legal business name" },
+          { name: "business_number", description: "CRA business number" },
+          { name: "business_type", description: "Type of business entity" },
+          { name: "registration_date", description: "Business registration date" },
+          { name: "business_address", description: "Registered business address" },
+          { name: "business_email", description: "Primary business email" },
+          { name: "business_phone", description: "Primary business phone" },
+          { name: "business_website", description: "Official business website" },
+          { name: "registration_jurisdiction", description: "Registration jurisdiction" },
+          { name: "permit_number", description: "Business permit number" },
+          { name: "permit_type", description: "Type of business permit" },
+          { name: "permit_issued_date", description: "Permit issue date" },
+          { name: "permit_expiry_date", description: "Permit expiry date" }
+        ] as AttributeDef[],
+        isPredefined: true,
+        ecosystem: "BC Ecosystem",
+        interopProfile: "AIP 2.0",
+        compatibleWallets: ["BC Wallet"],
+        walletRestricted: true
+      });
+
+      await storage.createCredentialTemplate({
+        label: "BC Person Credential",
+        version: "1.0", 
+        schemaId: "RGjWbW1eycP7FrMf4QJvX8:2:Person:1.0",
+        credDefId: "RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person",
+        issuerDid: "did:indy:candy:RGjWbW1eycP7FrMf4QJvX8",
+        schemaUrl: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-person-credential/1.0/governance.md",
+        attributes: [
+          { name: "given_names", description: "Person's given name(s)" },
+          { name: "family_name", description: "Person's family name" },
+          { name: "birthdate", description: "Date of birth (YYYY-MM-DD)" },
+          { name: "street_address", description: "Street address" },
+          { name: "locality", description: "City or locality" },
+          { name: "region", description: "Province or region" },
+          { name: "postal_code", description: "Postal or ZIP code" },
+          { name: "country", description: "Country" },
+          { name: "issued_date", description: "Credential issue date" },
+          { name: "expiry_date", description: "Credential expiry date" }
+        ] as AttributeDef[],
+        isPredefined: true,
+        ecosystem: "BC Ecosystem", 
+        interopProfile: "AIP 2.0",
+        compatibleWallets: ["BC Wallet"],
+        walletRestricted: true
+      });
+    }
+  } catch (error) {
+    console.error('Error seeding credential templates:', error);
+  }
+})();

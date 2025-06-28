@@ -170,6 +170,11 @@ Changelog:
   - Form builders can now specify which wallets to recommend to end users
   - Credential library displays wallet compatibility information and restrictions
   - Form creation process now includes wallet selection for credential-based forms
+- June 28, 2025. Migrated to persistent database storage
+  - Replaced in-memory storage with PostgreSQL database storage using Drizzle ORM
+  - Forms and credentials now persist through application restarts and updates
+  - Added automatic seeding of BC Government credentials on first run
+  - Updated launch button to open forms in new browser tabs for testing
 ```
 
 ## User Preferences
