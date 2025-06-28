@@ -23,6 +23,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     description: '',
     required: false,
     dataSource: 'freetext',
+    credentialMode: 'optional', // 'optional' | 'required'
     options: '',
     credentialType: '',
     attributeName: '',
@@ -42,6 +43,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         description: initialConfig.description || '',
         required: initialConfig.validate?.required || false,
         dataSource: initialConfig.properties?.dataSource || 'freetext',
+        credentialMode: initialConfig.properties?.credentialMode || 'optional',
         options: initialConfig.properties?.options?.join('\n') || '',
         credentialType: initialConfig.properties?.vcMapping?.credentialType || '',
         attributeName: initialConfig.properties?.vcMapping?.attributeName || '',
@@ -54,6 +56,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         description: '',
         required: false,
         dataSource: 'freetext',
+        credentialMode: 'optional',
         options: '',
         credentialType: '',
         attributeName: '',
@@ -72,6 +75,9 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
       },
       properties: {
         dataSource: config.dataSource,
+        ...(config.dataSource === 'verified' && {
+          credentialMode: config.credentialMode
+        }),
         ...(config.dataSource === 'picklist' && {
           options: config.options.split('\n').filter(opt => opt.trim())
         }),
@@ -197,12 +203,34 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="freetext">Free Text - User enters value manually</SelectItem>
+                <SelectItem value="freetext">Free Text Only - User enters value manually</SelectItem>
                 <SelectItem value="picklist">Pick List - User selects from predefined options</SelectItem>
-                <SelectItem value="verified">Verified Attribute - Auto-filled from verifiable credential</SelectItem>
+                <SelectItem value="verified">Verifiable Credential - Auto-filled or manual entry</SelectItem>
               </SelectContent>
             </Select>
           </div>
+
+          {/* Credential Mode Configuration */}
+          {config.dataSource === 'verified' && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Credential Verification Mode</h4>
+              <Select value={config.credentialMode} onValueChange={(value) => setConfig({ ...config, credentialMode: value })}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="optional">Optional - User can present credential OR type manually</SelectItem>
+                  <SelectItem value="required">Required - User must present valid credential</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-2">
+                {config.credentialMode === 'optional' 
+                  ? "Users can choose to verify with a credential or fill manually. Field will auto-populate if credential is presented."
+                  : "Users must present a valid credential to proceed. Manual entry is not allowed for this field."
+                }
+              </p>
+            </div>
+          )}
 
           {/* Pick List Configuration */}
           {config.dataSource === 'picklist' && (

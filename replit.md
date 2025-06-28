@@ -131,6 +131,14 @@ Changelog:
   - Updated BC Person Credential v1 with official attributes from BC documentation
   - Added isPredefined flag to prevent editing of government credentials
   - Enhanced credential library UI with BC Government badges and disabled editing
+- June 28, 2025. Fixed form builder crashes and added flexible credential verification
+  - Completely rewrote FormBuilder component with clean React state management
+  - Fixed drag-and-drop crashes and edit functionality issues
+  - Added flexible credential verification modes:
+    * Optional: Users can present credential OR fill manually (auto-populates if credential presented)
+    * Required: Users must present valid credential to proceed (no manual entry allowed)
+  - Enhanced field configuration modal with credential mode selection
+  - Updated component preview to display credential verification requirements
 ```
 
 ## User Preferences

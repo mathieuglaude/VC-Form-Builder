@@ -345,7 +345,21 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                             <div className="text-xs text-gray-400 mb-1">Help: {comp.description}</div>
                           )}
                           {comp.properties?.dataSource === 'verified' && (
-                            <span className="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>
+                            <div className="space-y-1">
+                              <span className="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">
+                                🔒 Verifiable Credential
+                              </span>
+                              {comp.properties?.credentialMode === 'required' && (
+                                <span className="inline-block text-xs text-orange-600 font-medium bg-orange-50 px-2 py-1 rounded ml-1">
+                                  ⚠️ Required
+                                </span>
+                              )}
+                              {comp.properties?.credentialMode === 'optional' && (
+                                <span className="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded ml-1">
+                                  ℹ️ Optional
+                                </span>
+                              )}
+                            </div>
                           )}
                           {comp.properties?.dataSource === 'picklist' && (
                             <span className="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>
