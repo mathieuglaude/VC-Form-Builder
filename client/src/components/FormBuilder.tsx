@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +18,11 @@ interface FormBuilderProps {
 export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps) {
   const [formTitle, setFormTitle] = useState(initialForm?.title || "");
   const [formDescription, setFormDescription] = useState(initialForm?.description || "");
-  const [formSchema, setFormSchema] = useState(initialForm?.formSchema || { components: [] });
+  const [formSchema, setFormSchema] = useState(() => {
+    const initial = initialForm?.formSchema || { components: [] };
+    console.log('Initializing form schema with:', initial);
+    return initial;
+  });
   const formBuilderRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isFormioLoaded, setIsFormioLoaded] = useState(false);
@@ -204,7 +208,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         </div>
       `;
 
-      // Add component addition functionality
+      // Add component addition functionality with current state reference
       (window as any).addFormComponent = (type: string) => {
         const componentLabels: Record<string, string> = {
           textfield: 'Text Input',
@@ -215,36 +219,39 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
           checkbox: 'Checkbox'
         };
 
-        const newComponent = {
-          type,
-          key: `${type}_${Date.now()}`,
-          label: componentLabels[type] || `New ${type}`,
-          input: true,
-          tableView: true,
-          properties: {
-            dataSource: 'freetext'
-          }
-        };
+        // Use functional state update to ensure we get the latest state
+        setFormSchema((prevSchema) => {
+          const newComponent = {
+            type,
+            key: `${type}_${Date.now()}`,
+            label: componentLabels[type] || `New ${type}`,
+            input: true,
+            tableView: true,
+            properties: {
+              dataSource: 'freetext'
+            }
+          };
 
-        const updatedSchema = {
-          ...formSchema,
-          components: [...(formSchema.components || []), newComponent]
-        };
-        
-        console.log('Adding component. Current components:', formSchema.components?.length || 0, 'New total:', updatedSchema.components.length);
-        console.log('Updated schema components:', updatedSchema.components);
-        
-        setFormSchema(updatedSchema);
-        
-        // Update global schema reference
-        (window as any).currentFormSchema = updatedSchema;
+          const updatedSchema = {
+            ...prevSchema,
+            components: [...(prevSchema.components || []), newComponent]
+          };
+          
+          console.log('Adding component. Current components:', prevSchema.components?.length || 0, 'New total:', updatedSchema.components.length);
+          console.log('Updated schema components:', updatedSchema.components);
+          
+          // Update global schema reference
+          (window as any).currentFormSchema = updatedSchema;
 
-        // Update preview with new component - pass the updated schema
-        updateFormPreviewWithSchema(updatedSchema);
+          // Update preview with new component - use setTimeout to ensure DOM is ready
+          setTimeout(() => updateFormPreviewWithSchema(updatedSchema), 0);
 
-        toast({
-          title: "Component Added",
-          description: `${componentLabels[type]} has been added to your form`
+          toast({
+            title: "Component Added",
+            description: `${componentLabels[type]} has been added to your form`
+          });
+
+          return updatedSchema;
         });
       };
 
@@ -287,18 +294,30 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         const preview = document.getElementById('form-preview');
         if (preview) {
           if (schema.components && schema.components.length > 0) {
-            console.log('Rendering components:', schema.components.map(c => c.label));
-            preview.innerHTML = schema.components.map((comp: any) => `
-              <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm">
+            console.log('Rendering components:', schema.components.map((c: any) => c.label));
+            preview.innerHTML = schema.components.map((comp: any, index: number) => `
+              <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm" 
+                   draggable="true" 
+                   data-component-key="${comp.key}"
+                   ondragstart="window.handleDragStart && window.handleDragStart(event, ${index})"
+                   ondragover="window.handleDragOver && window.handleDragOver(event)"
+                   ondrop="window.handleDrop && window.handleDrop(event, ${index})">
                 <div class="flex justify-between items-start">
-                  <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
-                    <div class="text-sm text-gray-500 mb-2">${comp.type} component</div>
-                    ${comp.required ? '<span class="inline-block text-xs text-red-500 bg-red-50 px-2 py-1 rounded mb-2">* Required</span>' : ''}
-                    ${comp.placeholder ? `<div class="text-xs text-gray-400 mb-1">Placeholder: ${comp.placeholder}</div>` : ''}
-                    ${comp.description ? `<div class="text-xs text-gray-400 mb-1">Help: ${comp.description}</div>` : ''}
-                    ${comp.properties?.dataSource === 'verified' ? '<span class="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>' : ''}
-                    ${comp.properties?.dataSource === 'picklist' ? '<span class="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>' : ''}
+                  <div class="flex items-center flex-1">
+                    <div class="cursor-move mr-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                      </svg>
+                    </div>
+                    <div class="flex-1">
+                      <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
+                      <div class="text-sm text-gray-500 mb-2">${comp.type} component</div>
+                      ${comp.required ? '<span class="inline-block text-xs text-red-500 bg-red-50 px-2 py-1 rounded mb-2">* Required</span>' : ''}
+                      ${comp.placeholder ? `<div class="text-xs text-gray-400 mb-1">Placeholder: ${comp.placeholder}</div>` : ''}
+                      ${comp.description ? `<div class="text-xs text-gray-400 mb-1">Help: ${comp.description}</div>` : ''}
+                      ${comp.properties?.dataSource === 'verified' ? '<span class="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>' : ''}
+                      ${comp.properties?.dataSource === 'picklist' ? '<span class="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>' : ''}
+                    </div>
                   </div>
                   <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
@@ -334,6 +353,50 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       // Function to update form preview with current state
       const updateFormPreview = () => {
         updateFormPreviewWithSchema(formSchema);
+      };
+
+      // Drag and drop functionality for reordering components
+      let draggedIndex = -1;
+
+      (window as any).handleDragStart = (event: DragEvent, index: number) => {
+        draggedIndex = index;
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+        }
+      };
+
+      (window as any).handleDragOver = (event: DragEvent) => {
+        event.preventDefault();
+        if (event.dataTransfer) {
+          event.dataTransfer.dropEffect = 'move';
+        }
+      };
+
+      (window as any).handleDrop = (event: DragEvent, dropIndex: number) => {
+        event.preventDefault();
+        
+        if (draggedIndex !== -1 && draggedIndex !== dropIndex) {
+          setFormSchema((prevSchema: any) => {
+            const components = [...prevSchema.components];
+            const draggedComponent = components[draggedIndex];
+            
+            // Remove the dragged component
+            components.splice(draggedIndex, 1);
+            
+            // Insert at new position
+            components.splice(dropIndex, 0, draggedComponent);
+            
+            const updatedSchema = { ...prevSchema, components };
+            
+            // Update global reference and preview
+            (window as any).currentFormSchema = updatedSchema;
+            setTimeout(() => updateFormPreviewWithSchema(updatedSchema), 0);
+            
+            return updatedSchema;
+          });
+        }
+        
+        draggedIndex = -1;
       };
 
       // Make updateFormPreview globally available
