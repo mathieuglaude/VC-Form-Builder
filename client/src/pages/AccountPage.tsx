@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import ImageCropper from "@/components/ImageCropper";
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
@@ -20,6 +21,9 @@ export default function AccountPage() {
   const { user, isLoading, refetch } = useAuth();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
+  const [isCropperOpen, setIsCropperOpen] = useState(false);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Initialize form data with user data from API
   const [userProfile, setUserProfile] = useState({
@@ -148,31 +152,37 @@ export default function AccountPage() {
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Convert image to base64 and update profile
       const reader = new FileReader();
       reader.onload = (e) => {
         const imageData = e.target?.result as string;
-        setUserProfile(prev => ({ ...prev, profileImage: imageData }));
-        setHasChanges(true);
-        
-        // Immediately save the profile picture
-        updateProfileMutation.mutate({
-          firstName: userProfile.firstName,
-          lastName: userProfile.lastName,
-          email: userProfile.email,
-          phone: userProfile.phone,
-          organization: userProfile.organization,
-          jobTitle: userProfile.title,
-          linkedinProfile: userProfile.linkedinUrl,
-          website: userProfile.website,
-          bio: userProfile.bio,
-          profileImage: imageData,
-          location: userProfile.location,
-          timezone: userProfile.timezone
-        });
+        setPendingImage(imageData);
+        setIsCropperOpen(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleImageCrop = (croppedImage: string) => {
+    setUserProfile(prev => ({ ...prev, profileImage: croppedImage }));
+    
+    // Immediately save the profile picture
+    updateProfileMutation.mutate({
+      firstName: userProfile.firstName,
+      lastName: userProfile.lastName,
+      email: userProfile.email,
+      phone: userProfile.phone,
+      organization: userProfile.organization,
+      jobTitle: userProfile.title,
+      linkedinProfile: userProfile.linkedinUrl,
+      website: userProfile.website,
+      bio: userProfile.bio,
+      profileImage: croppedImage,
+      location: userProfile.location,
+      timezone: userProfile.timezone
+    });
+    
+    setIsCropperOpen(false);
+    setPendingImage(null);
   };
 
   return (
@@ -233,17 +243,11 @@ export default function AccountPage() {
                   </AvatarFallback>
                 </Avatar>
                 {isEditing && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer">
-                    <label htmlFor="profile-image" className="cursor-pointer">
-                      <Camera className="w-6 h-6 text-white" />
-                      <input
-                        id="profile-image"
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label>
+                  <div 
+                    className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Camera className="w-6 h-6 text-white" />
                   </div>
                 )}
               </div>
@@ -440,6 +444,28 @@ export default function AccountPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Hidden file input for image upload */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageUpload}
+        accept="image/*"
+        className="hidden"
+      />
+
+      {/* Image Cropper Modal */}
+      {pendingImage && (
+        <ImageCropper
+          isOpen={isCropperOpen}
+          onClose={() => {
+            setIsCropperOpen(false);
+            setPendingImage(null);
+          }}
+          imageSrc={pendingImage}
+          onCrop={handleImageCrop}
+        />
+      )}
     </div>
   );
 }
