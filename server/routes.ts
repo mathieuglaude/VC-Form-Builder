@@ -172,6 +172,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get('/api/cred-lib/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid credential template ID' });
+      }
+      
+      const template = await storage.getCredentialTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: 'Credential template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching credential template:', error);
+      res.status(500).json({ error: 'Failed to fetch credential template' });
+    }
+  });
+
   app.post('/api/cred-lib', async (req, res) => {
     try {
       const validatedData = insertCredentialTemplateSchema.parse(req.body);

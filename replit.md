@@ -150,6 +150,12 @@ Changelog:
   - BC Government credentials tagged with "BC Ecosystem" and "AIP 2.0"
   - Users can filter credentials by technical requirements for different wallet providers
   - Enhanced credential creation form with ecosystem and interop profile fields
+- June 28, 2025. Implemented detailed credential pages with navigation
+  - Created comprehensive credential detail pages with full attribute lists and technical specs
+  - Made credential cards clickable to navigate to /credentials/:id detail pages
+  - Removed all edit/delete functionality from credential library as requested
+  - Added governance information, copy-to-clipboard functionality, and quick actions
+  - All credentials are now read-only to provide stable foundation for users
 ```
 
 ## User Preferences

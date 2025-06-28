@@ -1,26 +1,20 @@
 import { useState, useMemo } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Edit, Trash2, ExternalLink, Filter, X } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import CredentialModal from "@/components/CredentialModal";
+import { ExternalLink, Filter, X, ChevronRight } from "lucide-react";
 import type { CredentialTemplate } from "@shared/schema";
 
 export default function CredentialsPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<CredentialTemplate | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [ecosystemFilter, setEcosystemFilter] = useState<string>("all");
   const [interopFilter, setInteropFilter] = useState<string>("all");
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['/api/cred-lib'],
@@ -65,49 +59,7 @@ export default function CredentialsPage() {
     setInteropFilter("all");
   };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => fetch(`/api/cred-lib/${id}`, {
-      method: 'DELETE'
-    }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cred-lib'] });
-      toast({
-        title: "Template deleted",
-        description: "Credential template has been removed successfully."
-      });
-    },
-    onError: () => {
-      toast({
-        title: "Error",
-        description: "Failed to delete credential template.",
-        variant: "destructive"
-      });
-    }
-  });
 
-  const handleEdit = (template: CredentialTemplate) => {
-    if (template.isPredefined) {
-      toast({
-        title: "Cannot Edit",
-        description: "Predefined BC Government credentials cannot be edited.",
-        variant: "destructive"
-      });
-      return;
-    }
-    setEditingTemplate(template);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (confirm('Are you sure you want to delete this credential template?')) {
-      deleteMutation.mutate(id);
-    }
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setEditingTemplate(null);
-  };
 
   if (isLoading) {
     return (
@@ -141,10 +93,6 @@ export default function CredentialsPage() {
           >
             <Filter className="h-4 w-4" />
             Filters
-          </Button>
-          <Button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Add Credential
           </Button>
         </div>
       </div>
@@ -233,23 +181,27 @@ export default function CredentialsPage() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredTemplates.map((template: CredentialTemplate) => (
-          <Card key={template.id} className="relative group">
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">{template.label}</CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
-                    <CardDescription>Version {template.version}</CardDescription>
-                    {template.isPredefined && (
-                      <Badge variant="default" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                        BC Government
-                      </Badge>
-                    )}
+          <Link key={template.id} href={`/credentials/${template.id}`}>
+            <Card className="relative group hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-lg">{template.label}</CardTitle>
+                    <div className="flex items-center gap-2 mt-1">
+                      <CardDescription>Version {template.version}</CardDescription>
+                      {template.isPredefined && (
+                        <Badge variant="default" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                          BC Government
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary">Active</Badge>
+                    <ChevronRight className="h-4 w-4 text-gray-400" />
                   </div>
                 </div>
-                <Badge variant="secondary">Active</Badge>
-              </div>
-            </CardHeader>
+              </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div>
@@ -314,50 +266,24 @@ export default function CredentialsPage() {
               </div>
             </CardContent>
 
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEdit(template)}
-                  disabled={template.isPredefined}
-                  className="h-8 w-8 p-0"
-                  title={template.isPredefined ? "BC Government credentials cannot be edited" : "Edit credential"}
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDelete(template.id)}
-                  disabled={template.isPredefined}
-                  className="h-8 w-8 p-0 text-red-600 hover:text-red-800 disabled:text-gray-400"
-                  title={template.isPredefined ? "BC Government credentials cannot be deleted" : "Delete credential"}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </Card>
+            </Card>
+          </Link>
         ))}
 
-        {templates.length === 0 && (
+        {filteredTemplates.length === 0 && (
           <div className="col-span-full text-center py-12">
             <div className="text-gray-500">
-              <p className="text-lg mb-2">No credential templates yet</p>
+              <p className="text-lg mb-2">No credential templates found</p>
               <p className="text-sm">
-                Create your first template to start using verified credentials in forms
+                {templates.length === 0 ? 
+                  "The credential library is currently empty" : 
+                  "Try adjusting your filters to see more results"
+                }
               </p>
             </div>
           </div>
         )}
       </div>
-
-      <CredentialModal
-        isOpen={isModalOpen}
-        onClose={handleModalClose}
-        template={editingTemplate}
-      />
     </div>
   );
 }

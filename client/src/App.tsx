@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import BuilderPage from "@/pages/BuilderPage";
 import FillPage from "@/pages/FillPage";
 import CredentialsPage from "@/pages/CredentialsPage";
+import CredentialDetailPage from "@/pages/CredentialDetailPage";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
       <Route path="/credentials" component={CredentialsPage} />
+      <Route path="/credentials/:id" component={CredentialDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );
