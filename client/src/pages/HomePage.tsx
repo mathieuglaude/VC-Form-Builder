@@ -7,9 +7,11 @@ import { Plus, FileText, Edit, Eye, Shield, Users, Clock, TrendingUp } from 'luc
 export default function HomePage() {
   const [, setLocation] = useLocation();
 
-  const { data: forms, isLoading } = useQuery({
+  const { data: formsData = [], isLoading } = useQuery({
     queryKey: ['/api/forms'],
   });
+
+  const forms = Array.isArray(formsData) ? formsData : [];
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
@@ -51,7 +53,7 @@ export default function HomePage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                <p className="text-2xl font-bold text-gray-900">{forms?.length || 0}</p>
+                <p className="text-2xl font-bold text-gray-900">{forms.length}</p>
               </div>
             </div>
           </CardContent>
@@ -66,7 +68,7 @@ export default function HomePage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Submissions</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {forms?.reduce((acc: number, form: any) => acc + (form.submissions || 0), 0) || 0}
+                  {forms.reduce((acc: number, form: any) => acc + (form.submissions || 0), 0)}
                 </p>
               </div>
             </div>
@@ -82,7 +84,7 @@ export default function HomePage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">VC-Enabled Forms</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {forms?.filter((form: any) => form.metadata?.vcRequirements).length || 0}
+                  {forms.filter((form: any) => form.metadata && Object.keys(form.metadata).length > 0).length}
                 </p>
               </div>
             </div>
@@ -120,7 +122,7 @@ export default function HomePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Create New Form Card */}
-          <Card className="border-2 border-dashed border-gray-300 hover:border-blue-300 cursor-pointer transition-colors" onClick={() => setLocation('/builder')}>
+          <Card className="border-2 border-dashed border-gray-300 hover:border-blue-300 cursor-pointer transition-colors" onClick={() => setLocation('/builder/new')}>
             <CardContent className="flex flex-col items-center justify-center h-64 text-center">
               <Plus className="w-12 h-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">Create New Form</h3>
@@ -129,7 +131,7 @@ export default function HomePage() {
           </Card>
 
           {/* Existing Forms */}
-          {forms && forms.map((form: any) => (
+          {forms.map((form: any) => (
             <Card key={form.id} className="hover:shadow-lg transition-shadow">
               <CardContent className="p-0">
                 {/* Form Header with Logo */}
@@ -207,12 +209,12 @@ export default function HomePage() {
         </div>
 
         {/* Empty State */}
-        {forms && forms.length === 0 && (
+        {forms.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
             <p className="text-gray-500 mb-6">Create your first form to get started with VC integration</p>
-            <Button onClick={() => setLocation('/builder')}>
+            <Button onClick={() => setLocation('/builder/new')}>
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Form
             </Button>

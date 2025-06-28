@@ -40,10 +40,11 @@ export default function BuilderPage() {
     onSuccess: (data) => {
       toast({
         title: "Success",
-        description: "Form created successfully!"
+        description: `Form "${data.name}" created successfully!`
       });
       queryClient.invalidateQueries({ queryKey: ['/api/forms'] });
-      setLocation(`/builder/${data.id}`);
+      // Redirect to home page to show the new form
+      setLocation('/');
     },
     onError: () => {
       toast({
