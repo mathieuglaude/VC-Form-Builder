@@ -436,11 +436,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async listFormConfigs(): Promise<FormConfig[]> {
-    return await db.select().from(formConfigs);
+    try {
+      const results = await db.select().from(formConfigs);
+      return results;
+    } catch (error) {
+      console.error('Database error in listFormConfigs:', error);
+      throw error;
+    }
   }
 
   async listPublicFormConfigs(): Promise<FormConfig[]> {
-    return await db.select().from(formConfigs).where(eq(formConfigs.isPublic, true));
+    try {
+      // Get all forms and filter for public ones to avoid database query issues
+      const allForms = await db.select().from(formConfigs);
+      return allForms.filter(form => form.isPublic === true);
+    } catch (error) {
+      console.error('Database error in listPublicFormConfigs:', error);
+      throw error;
+    }
   }
 
   async cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig> {
