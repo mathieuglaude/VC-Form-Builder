@@ -1,0 +1,138 @@
+**Prompt – Unify & Clean Up Top Navigation**
+
+We currently see two stacked nav bars (screenshot reference).  
+Goal: **one single top menu bar** that appears across all pages.
+
+---
+
+## 1 · Create/Update `Navbar.tsx`
+
+```tsx
+// frontend/src/components/Navbar.tsx
+import { Link, NavLink } from 'react-router-dom';
+
+const navItems = [
+  { to: '/',          label: 'Dashboard', icon: '🏠' },
+  { to: '/builder',   label: 'Builder',   icon: '🛠️' },
+  { to: '/analytics', label: 'Analytics', icon: '📊' },
+  { to: '/credentials', label: 'Credentials', icon: '📚' }
+];
+
+export default function Navbar() {
+  return (
+    <header className="sticky top-0 z-30 bg-white shadow-sm">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-2">
+        {/* Brand */}
+        <Link to="/" className="flex items-center gap-2 text-xl font-semibold">
+          <span className="text-primary-600">📄</span>
+          <span>Form Builder Pro</span>
+        </Link>
+
+        {/* Nav */}
+        <nav className="hidden md:flex gap-6">
+          {navItems.map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                `text-sm font-medium ${isActive ? 'text-primary-600' : 'text-gray-600 hover:text-primary-500'}`
+              }
+            >
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* CTA */}
+        <Link
+          to="/builder/new"
+          className="btn-primary">
+          + Create Form
+        </Link>
+      </div>
+    </header>
+  );
+}
+Uses existing Tailwind btn-primary style.
+
+2 · Wrap All Routes in a Single Layout
+tsx
+Copy
+Edit
+// frontend/src/layouts/AppLayout.tsx
+import Navbar from '@/components/Navbar';
+import { Outlet } from 'react-router-dom';
+
+export default function AppLayout() {
+  return (
+    <>
+      <Navbar />
+      <main className="pt-20"> {/* space for sticky navbar */}
+        <Outlet />
+      </main>
+    </>
+  );
+}
+Router change
+tsx
+Copy
+Edit
+// frontend/src/main.tsx or router config
+createBrowserRouter([
+  {
+    element: <AppLayout />,
+    children: [
+      { path: '/',           element: <HomePage /> },
+      { path: '/builder',    element: <BuilderPage /> },
+      { path: '/builder/new',element: <BuilderPage /> },
+      { path: '/analytics',  element: <AnalyticsPage /> },
+      { path: '/credentials',element: <CredentialsPage /> },
+      { path: '/f/:slug',    element: <PreviewPage />, loader: previewLoader }
+    ]
+  }
+]);
+3 · REMOVE Previous Inline Navs
+Delete or comment out any <header> / <nav> markup inside HomePage, BuilderPage, etc.
+
+Search project for Form Builder Pro string—ensure it only appears in Navbar.tsx.
+
+4 · Visual Polishing
+Ensure .btn-primary already exists (bg-primary-600 text-white ...).
+
+Navbar height ~56 px; main top padding (pt-20) keeps content from hiding under sticky bar.
+
+Mobile: nav links hidden at md: breakpoint (simple for now).
+
+5 · Test
+bash
+Copy
+Edit
+npm --prefix frontend run dev
+All pages show exactly one top bar.
+
+Navigation links highlight on active route.
+
+“+ Create Form” always visible at top-right.
+
+Ghostwriter, implement exactly as above, refactor previous nav remnants out, run prettier, and update any failing tests.
+
+pgsql
+Copy
+Edit
+
+---
+
+**How to use**
+
+1. Save the text above into `cleanup_nav_prompt.txt`.  
+2. Upload / paste it into Replit Ghostwriter.  
+3. Ghostwriter will generate the new `Navbar.tsx`, layout wrapper, update routing, and strip the duplicates.
+
+Give it a spin—once it’s merged you should see a single, clean header everywhere. Let me know if you need extra tweaks (e.g., mobile drawer, role-based links, etc.)!
+
+
+
+
+
+
+Ask ChatGPT
