@@ -55,7 +55,11 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
     }));
 
     // Expand the newly added field
-    setExpandedFields(prev => new Set([...prev, newComponent.key]));
+    setExpandedFields(prev => {
+      const newSet = new Set(prev);
+      newSet.add(newComponent.key);
+      return newSet;
+    });
   };
 
   const editComponent = (component: any) => {
@@ -252,7 +256,11 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                   ...prev,
                   components: [...prev.components, verifiedComponent]
                 }));
-                setExpandedFields(prev => new Set([...Array.from(prev), verifiedComponent.key]));
+                setExpandedFields(prev => {
+                  const newSet = new Set(prev);
+                  newSet.add(verifiedComponent.key);
+                  return newSet;
+                });
               }}
               onDragStart={(e) => handleComponentDragStart(e, 'verified')}
             >
