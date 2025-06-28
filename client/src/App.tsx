@@ -10,6 +10,7 @@ import CredentialsPage from "@/pages/CredentialsPage";
 import CredentialDetailPage from "@/pages/CredentialDetailPage";
 import WalletLibraryPage from "@/pages/WalletLibraryPage";
 import CommunityPage from "@/pages/CommunityPage";
+import AccountPage from "@/pages/AccountPage";
 
 function Router() {
   return (
@@ -22,6 +23,7 @@ function Router() {
       <Route path="/credentials" component={CredentialsPage} />
       <Route path="/credentials/:id" component={CredentialDetailPage} />
       <Route path="/wallets" component={WalletLibraryPage} />
+      <Route path="/account" component={AccountPage} />
       <Route component={NotFound} />
     </Switch>
   );
