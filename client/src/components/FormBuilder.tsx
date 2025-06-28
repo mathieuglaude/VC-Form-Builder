@@ -272,24 +272,6 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
             </div>
           </div>
         </div>
-        
-        <div className="border-t border-gray-200 p-4">
-          <h3 className="text-sm font-medium text-gray-900 mb-3">Form Settings</h3>
-          <div className="space-y-3">
-            <Button variant="ghost" size="sm" className="w-full justify-start">
-              <Settings className="w-4 h-4 mr-2" />
-              Form Properties
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full justify-start">
-              <Shield className="w-4 h-4 mr-2" />
-              VC Configuration
-            </Button>
-            <Button variant="ghost" size="sm" className="w-full justify-start" onClick={() => onPreview({ title: formTitle, description: formDescription, formSchema, metadata: extractMetadata() })}>
-              <Eye className="w-4 h-4 mr-2" />
-              Preview Form
-            </Button>
-          </div>
-        </div>
       </aside>
 
       {/* Main Content */}
