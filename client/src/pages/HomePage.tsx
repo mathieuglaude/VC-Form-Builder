@@ -39,29 +39,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-xl font-medium text-gray-900">Form Builder Pro</h1>
-              <nav className="hidden md:flex space-x-8">
-                <span className="text-blue-600 font-medium border-b-2 border-blue-600 pb-4">Dashboard</span>
-                <span className="text-gray-500 hover:text-gray-700 cursor-pointer">Analytics</span>
-                <span className="text-gray-500 hover:text-gray-700 cursor-pointer">Settings</span>
-              </nav>
-            </div>
-            <Button onClick={() => setLocation('/builder/new')} className="flex items-center space-x-2">
-              <Plus className="w-4 h-4" />
-              <span>New Form</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="container mx-auto px-4 py-8">
         {/* Dashboard Header */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Form Dashboard</h2>
