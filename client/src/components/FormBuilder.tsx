@@ -29,6 +29,130 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
+  // Component addition function using useCallback to maintain stable reference
+  const addComponent = useCallback((type: string) => {
+    const componentLabels: Record<string, string> = {
+      textfield: 'Text Input',
+      email: 'Email Address',
+      textarea: 'Text Area',
+      number: 'Number',
+      select: 'Select List',
+      checkbox: 'Checkbox'
+    };
+
+    const newComponent = {
+      type,
+      key: `${type}_${Date.now()}`,
+      label: componentLabels[type] || `New ${type}`,
+      input: true,
+      tableView: true,
+      properties: {
+        dataSource: 'freetext'
+      }
+    };
+
+    setFormSchema((prevSchema: any) => {
+      const updatedSchema = {
+        ...prevSchema,
+        components: [...(prevSchema.components || []), newComponent]
+      };
+      
+      console.log('Adding component. Current components:', prevSchema.components?.length || 0, 'New total:', updatedSchema.components.length);
+      console.log('Updated schema components:', updatedSchema.components);
+      
+      return updatedSchema;
+    });
+
+    toast({
+      title: "Component Added",
+      description: `${componentLabels[type]} has been added to your form`
+    });
+  }, [toast]);
+
+  // Edit component function
+  const editComponent = useCallback((componentKey: string) => {
+    const component = formSchema.components?.find((comp: any) => comp.key === componentKey);
+    if (component) {
+      setSelectedComponent(component);
+      setIsConfigModalOpen(true);
+    }
+  }, [formSchema.components]);
+
+  // Remove component function  
+  const removeComponent = useCallback((componentKey: string) => {
+    setFormSchema((prevSchema: any) => {
+      const updatedSchema = {
+        ...prevSchema,
+        components: prevSchema.components.filter((comp: any) => comp.key !== componentKey)
+      };
+      return updatedSchema;
+    });
+    
+    toast({
+      title: "Component Removed",
+      description: "Component has been removed from your form"
+    });
+  }, [toast]);
+
+  // Update preview when schema changes
+  useEffect(() => {
+    if (formSchema.components && formSchema.components.length > 0) {
+      const preview = document.getElementById('form-preview');
+      if (preview) {
+        console.log('Updating preview via useEffect with', formSchema.components.length, 'components');
+        preview.innerHTML = formSchema.components.map((comp: any, index: number) => `
+          <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm" 
+               draggable="true" 
+               data-component-key="${comp.key}"
+               ondragstart="window.handleDragStart && window.handleDragStart(event, ${index})"
+               ondragover="window.handleDragOver && window.handleDragOver(event)"
+               ondrop="window.handleDrop && window.handleDrop(event, ${index})">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center flex-1">
+                <div class="cursor-move mr-3 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"></path>
+                  </svg>
+                </div>
+                <div class="flex-1">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
+                  <div class="text-sm text-gray-500 mb-2">${comp.type} component</div>
+                  ${comp.required ? '<span class="inline-block text-xs text-red-500 bg-red-50 px-2 py-1 rounded mb-2">* Required</span>' : ''}
+                  ${comp.placeholder ? `<div class="text-xs text-gray-400 mb-1">Placeholder: ${comp.placeholder}</div>` : ''}
+                  ${comp.description ? `<div class="text-xs text-gray-400 mb-1">Help: ${comp.description}</div>` : ''}
+                  ${comp.properties?.dataSource === 'verified' ? '<span class="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>' : ''}
+                  ${comp.properties?.dataSource === 'picklist' ? '<span class="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>' : ''}
+                </div>
+              </div>
+              <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                  type="button"
+                  onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
+                  class="p-2 text-blue-600 hover:bg-blue-100 rounded"
+                  title="Edit component"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+                </button>
+                <button 
+                  type="button"
+                  onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
+                  class="p-2 text-red-600 hover:bg-red-100 rounded"
+                  title="Remove component"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+  }, [formSchema]);
+
   // Initialize Form.io builder
   useEffect(() => {
     let mounted = true;
@@ -208,85 +332,12 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         </div>
       `;
 
-      // Add component addition functionality with current state reference
-      (window as any).addFormComponent = (type: string) => {
-        const componentLabels: Record<string, string> = {
-          textfield: 'Text Input',
-          email: 'Email Address',
-          textarea: 'Text Area',
-          number: 'Number',
-          select: 'Select List',
-          checkbox: 'Checkbox'
-        };
+      // Set up global functions to use React callbacks
+      (window as any).addFormComponent = addComponent;
 
-        // Use functional state update to ensure we get the latest state
-        setFormSchema((prevSchema) => {
-          const newComponent = {
-            type,
-            key: `${type}_${Date.now()}`,
-            label: componentLabels[type] || `New ${type}`,
-            input: true,
-            tableView: true,
-            properties: {
-              dataSource: 'freetext'
-            }
-          };
-
-          const updatedSchema = {
-            ...prevSchema,
-            components: [...(prevSchema.components || []), newComponent]
-          };
-          
-          console.log('Adding component. Current components:', prevSchema.components?.length || 0, 'New total:', updatedSchema.components.length);
-          console.log('Updated schema components:', updatedSchema.components);
-          
-          // Update global schema reference
-          (window as any).currentFormSchema = updatedSchema;
-
-          // Update preview with new component - use setTimeout to ensure DOM is ready
-          setTimeout(() => updateFormPreviewWithSchema(updatedSchema), 0);
-
-          toast({
-            title: "Component Added",
-            description: `${componentLabels[type]} has been added to your form`
-          });
-
-          return updatedSchema;
-        });
-      };
-
-      // Store React setters globally so they can be accessed from HTML buttons
-      (window as any).setSelectedComponent = setSelectedComponent;
-      (window as any).setIsConfigModalOpen = setIsConfigModalOpen;
-      (window as any).currentFormSchema = formSchema;
-      
-      (window as any).editFormComponent = (componentKey: string) => {
-        const schema = (window as any).currentFormSchema;
-        const component = schema.components?.find((comp: any) => comp.key === componentKey);
-        if (component) {
-          (window as any).setSelectedComponent(component);
-          (window as any).setIsConfigModalOpen(true);
-        } else {
-          console.log('Component not found:', componentKey, 'Available components:', schema.components);
-        }
-      };
-
-      // Remove component function
-      (window as any).removeFormComponent = (componentKey: string) => {
-        const currentSchema = (window as any).currentFormSchema;
-        const updatedSchema = {
-          ...currentSchema,
-          components: currentSchema.components.filter((comp: any) => comp.key !== componentKey)
-        };
-        setFormSchema(updatedSchema);
-        (window as any).currentFormSchema = updatedSchema;
-        updateFormPreviewWithSchema(updatedSchema);
-        
-        toast({
-          title: "Component Removed",
-          description: "Component has been removed from your form"
-        });
-      };
+      // Set up global functions to use React callbacks
+      (window as any).editFormComponent = editComponent;
+      (window as any).removeFormComponent = removeComponent;
 
       // Function to update form preview with specific schema
       const updateFormPreviewWithSchema = (schema: any) => {
