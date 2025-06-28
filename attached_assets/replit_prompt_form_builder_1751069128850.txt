@@ -1,0 +1,133 @@
+
+**Prompt for Replit AI (Ghostwriter) to scaffold a Form Builder with VC Integration**
+
+---
+
+**Project Goal**
+Build a full‑stack TypeScript app that lets admins drag‑and‑drop forms using the open‑source Form.io builder.  Each field in the builder can be tagged as one of three **Data Source Types**:
+1. **Free Text** – respondent enters value manually
+2. **Pick List** – respondent must choose from a predefined list (set in the builder UI)
+3. **Verified Attribute** – value is autofilled from a Verifiable Credential (VC) proof and becomes read‑only + “Verified” once the proof is accepted
+
+Admins must also be able to attach a **Proof Request** to the form, mapping specific VC attributes to the corresponding fields.  At runtime the respondent is prompted to present a credential; after backend verification the mapped fields are auto‑populated and locked.
+
+---
+
+### Functional Requirements
+1. **Admin (Builder) UI**
+   * Embed Form.io builder in a React page (`@formio/react`)
+   * Extend component edit modal to include a *Data Source Type* select and, if type == Pick List, a text area for option values (CSV).
+   * For *Verified Attribute*, let admin choose `credentialType` and `attributeName` from a dropdown fed by a `/api/credentials/defs` endpoint.
+   * Persist the form JSON **plus** this extra metadata (`dataSource`, `options`, `vcMap`) to MongoDB.
+   * Allow admin to define one or more **Proof Requests** (issuerDID, credentialType, attribute filters) and save them with the form.
+
+2. **Respondent (Filler) UI**
+   * Render the saved form (`<Form />` from Form.io).
+   * On load, call `/api/proofs/request` to obtain the proof request JSON.
+   * Show a modal with QR / deep‑link to wallet; wait for websocket event `proof_verified`.
+   * Upon verification, patch the Form.io data object with verified attribute values, mark those components as read‑only, and display a green “✔ Verified” badge.
+
+3. **Backend (Express + TypeScript)**
+   * REST routes:
+     * `POST /api/forms` – save form + metadata
+     * `GET  /api/forms/:id` – retrieve form config
+     * `GET  /api/credentials/defs` – proxy our Digital Credential API to list credential schemas & attributes
+     * `POST /api/proofs/send` – trigger proof request via Digital Credential API
+     * `POST /api/proofs/verify-callback` – webhook hit when proof is verified; emit websocket event
+   * Use `socket.io` for real‑time notifications.
+   * Load sensitive config (API keys, Webhook secrets) from `.env`.
+
+4. **Tech Stack**
+   * **Frontend**: React 18 + Vite + Tailwind CSS
+   * **Builder/Forms**: `@formio/react`@^6 and `formiojs`@^6
+   * **Backend**: Node 20, Express, TypeScript, `formio` SDK, `socket.io`, `dotenv`, MongoDB via Mongoose
+   * **Testing**: Vitest + SuperTest on API, React Testing Library on components
+   * **Dev Scripts**: Concurrently run `vite` and `ts-node-dev`.
+
+---
+
+### File / Folder Structure
+```
+/
+├─ backend/
+│  ├─ src/
+│  │  ├─ index.ts           → Express entry
+│  │  ├─ routes/
+│  │  │   ├─ forms.ts
+│  │  │   ├─ credentials.ts
+│  │  │   └─ proofs.ts
+│  │  ├─ models/
+│  │  │   └─ FormConfig.ts
+│  │  └─ services/
+│  │       └─ vcApi.ts      → wrapper around Digital Credential API
+│  └─ tsconfig.json
+├─ frontend/
+│  ├─ src/
+│  │  ├─ main.tsx           → Vite entry
+│  │  ├─ pages/
+│  │  │   ├─ BuilderPage.tsx
+│  │  │   └─ FillPage.tsx
+│  │  ├─ components/
+│  │  │   ├─ VerifiedBadge.tsx
+│  │  │   └─ VCModal.tsx
+│  │  └─ hooks/
+│  │       └─ useSocket.ts
+│  └─ vite.config.ts
+├─ package.json            → Root script proxies (`dev`, `build`)
+├─ .replit                 → Run `npm run dev`
+└─ README.md               → setup & usage docs
+```
+
+---
+
+### Step‑by‑Step Tasks for Replit
+1. **Init Repo & Workspaces**
+   ```bash
+   npm init -y
+   npm i -D concurrently
+   # Frontend
+   npm create vite@latest frontend -- --template react-ts
+   cd frontend && npm i @formio/react formiojs socket.io-client tailwindcss postcss autoprefixer && npx tailwindcss init -p && cd ..
+   # Backend
+   mkdir backend && cd backend && npm init -y && npm i express socket.io dotenv mongoose cors && npm i -D ts-node-dev typescript @types/node @types/express && npx tsc --init && cd ..
+   ```
+2. **Configure `.replit`**
+   ```replit
+   run = "npm run dev"
+   ```
+3. **Add `npm run dev` in root `package.json`**
+   ```json
+   "scripts": {
+     "dev": "concurrently \"npm --prefix frontend run dev\" \"npm --prefix backend run dev\""
+   }
+   ```
+4. **Stub VC API service**
+   ```ts
+   // backend/src/services/vcApi.ts
+   export async function listCredentialDefs() { /* fetch(...) */ }
+   export async function sendProofRequest(req) { /* ... */ }
+   export async function verifyWebhook(payload) { /* ... */ }
+   ```
+5. **Augment Form.io component edit**
+   *In `BuilderPage.tsx`, use the `formio.builder` event hooks to inject a custom sidebar tab or custom property (`dataSource`).*
+6. **Implement socket flow**
+   *Backend emits `proof_verified` with attributes; frontend listens and patches form data.*
+
+---
+
+### Nice‑to‑Haves (if time)
+* JWT auth for admin vs respondent
+* Multi‑tenant namespaces via Form.io project tokens
+* Support for Presentation Exchange v2 or OID4VP requests
+* CI via GitHub Actions
+
+---
+
+**Deliverables**
+* Fully running Replit project: `npm run dev` spins up builder at `/builder` and form filler at `/form/:id`.
+* Demo VC flow: Use mock credential issuer to test autofill.
+* README with setup, env vars, and curl examples.
+
+---
+
+> **Ghostwriter**, please generate the complete codebase per the above specs.  Where API integration details are unknown, stub them with TODO comments reading `/* TODO: integrate digital credential API */`.  Use clear TypeScript types and keep components small and testable.
