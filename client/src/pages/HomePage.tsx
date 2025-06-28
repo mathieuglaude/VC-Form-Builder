@@ -11,7 +11,12 @@ export default function HomePage() {
     queryKey: ['/api/forms'],
   });
 
+  const { data: publicFormsData = [], isLoading: isLoadingPublic } = useQuery({
+    queryKey: ['/api/forms/public'],
+  });
+
   const forms = Array.isArray(formsData) ? formsData : [];
+  const publicForms = Array.isArray(publicFormsData) ? publicFormsData : [];
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
@@ -218,6 +223,105 @@ export default function HomePage() {
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Form
             </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Community Forms Section */}
+      <div className="mt-12">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h3 className="text-xl font-semibold text-gray-900">Community Forms</h3>
+            <p className="text-gray-600 mt-1">Discover and clone forms shared by the community</p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={() => setLocation('/community')}
+            className="flex items-center space-x-2"
+          >
+            <Users className="w-4 h-4" />
+            <span>Browse All</span>
+          </Button>
+        </div>
+
+        {/* Community Forms Grid */}
+        {isLoadingPublic ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-32 bg-gray-200 rounded-t-lg"></div>
+                <div className="p-6 bg-white rounded-b-lg border">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {publicForms.slice(0, 6).map((form: any) => (
+              <Card key={form.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  {/* Form Header */}
+                  <div className="h-24 bg-gradient-to-br from-green-50 to-emerald-100 rounded-t-lg p-4 flex items-center justify-center">
+                    {form.logoUrl ? (
+                      <img 
+                        src={form.logoUrl} 
+                        alt={form.name} 
+                        className="h-12 w-12 object-contain rounded-lg shadow-sm"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                        <FileText className="w-6 h-6 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Form Content */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-base font-medium text-gray-900 truncate">{form.name}</h4>
+                        <p className="text-xs text-gray-500 mt-1">by {form.authorName}</p>
+                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{form.purpose || 'No description provided'}</p>
+                      </div>
+                    </div>
+
+                    {/* Quick Actions */}
+                    <div className="flex space-x-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => window.open(`/f/${form.slug}`, '_blank')}
+                        className="flex-1"
+                      >
+                        <ExternalLink className="w-3 h-3 mr-1" />
+                        View
+                      </Button>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          // Clone functionality will be handled by CommunityPage
+                          setLocation('/community');
+                        }}
+                        className="flex-1"
+                      >
+                        Clone
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Empty State for Community Forms */}
+        {!isLoadingPublic && publicForms.length === 0 && (
+          <div className="text-center py-8 bg-gray-50 rounded-lg">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <h4 className="text-base font-medium text-gray-900 mb-1">No public forms yet</h4>
+            <p className="text-gray-500 text-sm">Be the first to share a form with the community!</p>
           </div>
         )}
       </div>
