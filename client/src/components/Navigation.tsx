@@ -1,20 +1,39 @@
 import { Link, useLocation } from "wouter";
 import { FileText, Database, Wallet, Users, Settings, LogOut, User } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Navigation() {
   const [location, setLocation] = useLocation();
   const [showDropdown, setShowDropdown] = useState(false);
+  const { user, isLoading } = useAuth();
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Mock user data - in production this would come from auth context
-  const currentUser = {
+  // Default user data while loading or if no user
+  const currentUser = user || {
     firstName: "John",
     lastName: "Doe", 
     email: "john.doe@example.com",
     organization: "Demo Organization",
     profileImage: null
   };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showDropdown]);
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -62,14 +81,24 @@ export default function Navigation() {
           </nav>
 
           {/* User Profile Dropdown */}
-          <div className="relative">
+          <div className="relative" ref={dropdownRef}>
             <Button 
               variant="ghost" 
-              className="relative h-10 w-10 rounded-full"
+              className="relative h-10 w-10 rounded-full p-0 border-0"
               onClick={() => setShowDropdown(!showDropdown)}
             >
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold">
-                {getInitials(currentUser.firstName, currentUser.lastName)}
+              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold overflow-hidden aspect-square">
+                {currentUser.profileImage ? (
+                  <img 
+                    src={currentUser.profileImage} 
+                    alt={`${currentUser.firstName} ${currentUser.lastName}`}
+                    className="h-full w-full object-cover rounded-full"
+                  />
+                ) : (
+                  <span className="text-sm leading-none">
+                    {getInitials(currentUser.firstName, currentUser.lastName)}
+                  </span>
+                )}
               </div>
             </Button>
             

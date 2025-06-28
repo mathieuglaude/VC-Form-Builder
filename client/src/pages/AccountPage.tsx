@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,32 +10,88 @@ import { Separator } from "@/components/ui/separator";
 import { User, Mail, Building, Globe, Camera, Save, ArrowLeft } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, isLoading, refetch } = useAuth();
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
 
-  // Mock user data - in production this would come from API
+  // Initialize form data with user data from API
   const [userProfile, setUserProfile] = useState({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    organization: "Demo Organization",
-    title: "Product Manager",
-    phone: "+1 (555) 123-4567",
-    linkedinUrl: "https://linkedin.com/in/johndoe",
-    website: "https://johndoe.com",
-    bio: "Experienced product manager passionate about digital identity and verifiable credentials. Leading innovation in form automation and user experience.",
-    profileImage: null as string | null,
-    location: "Vancouver, BC, Canada",
-    timezone: "Pacific Standard Time (PST)",
+    firstName: user?.firstName || "John",
+    lastName: user?.lastName || "Doe",
+    email: user?.email || "john.doe@example.com",
+    organization: user?.organization || "Demo Organization",
+    title: user?.jobTitle || "Product Manager",
+    phone: user?.phone || "+1 (555) 123-4567",
+    linkedinUrl: user?.linkedinProfile || "https://linkedin.com/in/johndoe",
+    website: user?.website || "https://johndoe.com",
+    bio: user?.bio || "Experienced product manager passionate about digital identity and verifiable credentials. Leading innovation in form automation and user experience.",
+    profileImage: user?.profileImage || null,
+    location: user?.location || "Vancouver, BC, Canada",
+    timezone: user?.timezone || "Pacific Standard Time (PST)",
     language: "English",
     emailNotifications: true,
     marketingEmails: false
   });
 
-  const [isEditing, setIsEditing] = useState(false);
+  // Update mutation for profile changes
+  const updateProfileMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const response = await fetch('/api/auth/user', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' }
+      });
+      if (!response.ok) throw new Error('Failed to update profile');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+      toast({
+        title: "Profile Updated",
+        description: "Your profile has been updated successfully.",
+        variant: "default",
+      });
+      setIsEditing(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update profile. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Sync form data when user data loads from API
+  useEffect(() => {
+    if (user && !isLoading) {
+      setUserProfile({
+        firstName: user.firstName || "John",
+        lastName: user.lastName || "Doe",
+        email: user.email || "john.doe@example.com",
+        organization: user.organization || "Demo Organization",
+        title: user.jobTitle || "Product Manager",
+        phone: user.phone || "+1 (555) 123-4567",
+        linkedinUrl: user.linkedinProfile || "https://linkedin.com/in/johndoe",
+        website: user.website || "https://johndoe.com",
+        bio: user.bio || "Experienced product manager passionate about digital identity and verifiable credentials.",
+        profileImage: user.profileImage || null,
+        location: user.location || "Vancouver, BC, Canada",
+        timezone: user.timezone || "Pacific Standard Time (PST)",
+        language: "English",
+        emailNotifications: true,
+        marketingEmails: false
+      });
+    }
+  }, [user, isLoading]);
 
   const getInitials = (firstName: string, lastName: string) => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
@@ -47,17 +103,44 @@ export default function AccountPage() {
   };
 
   const handleSave = () => {
-    // TODO: Implement API call to save user profile
-    toast({
-      title: "Profile Updated",
-      description: "Your account settings have been saved successfully.",
+    updateProfileMutation.mutate({
+      firstName: userProfile.firstName,
+      lastName: userProfile.lastName,
+      email: userProfile.email,
+      phone: userProfile.phone,
+      organization: userProfile.organization,
+      jobTitle: userProfile.title,
+      linkedinProfile: userProfile.linkedinUrl,
+      website: userProfile.website,
+      bio: userProfile.bio,
+      profileImage: userProfile.profileImage,
+      location: userProfile.location,
+      timezone: userProfile.timezone
     });
-    setIsEditing(false);
     setHasChanges(false);
   };
 
   const handleCancel = () => {
-    // TODO: Reset to original values from API
+    // Reset to original values from API
+    if (user) {
+      setUserProfile({
+        firstName: user.firstName || "John",
+        lastName: user.lastName || "Doe",
+        email: user.email || "john.doe@example.com",
+        organization: user.organization || "Demo Organization",
+        title: user.jobTitle || "Product Manager",
+        phone: user.phone || "+1 (555) 123-4567",
+        linkedinUrl: user.linkedinProfile || "https://linkedin.com/in/johndoe",
+        website: user.website || "https://johndoe.com",
+        bio: user.bio || "Experienced product manager passionate about digital identity and verifiable credentials.",
+        profileImage: user.profileImage || null,
+        location: user.location || "Vancouver, BC, Canada",
+        timezone: user.timezone || "Pacific Standard Time (PST)",
+        language: "English",
+        emailNotifications: true,
+        marketingEmails: false
+      });
+    }
     setIsEditing(false);
     setHasChanges(false);
   };
