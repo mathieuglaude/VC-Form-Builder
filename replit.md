@@ -175,6 +175,12 @@ Changelog:
   - Forms and credentials now persist through application restarts and updates
   - Added automatic seeding of BC Government credentials on first run
   - Updated launch button to open forms in new browser tabs for testing
+- June 28, 2025. Added revocation status control for credential verification
+  - Form builders can now specify whether to accept revoked credentials on a per-credential basis
+  - Added "Accept revoked credentials" checkbox in field configuration modal
+  - Different business cases can have different policies (e.g., accept revoked person credentials but not business cards)
+  - Visual indicators in form builder show revocation policy (Accepts Revoked vs Rejects Revoked badges)
+  - Revocation settings are saved with form metadata and persist through database storage
 ```
 
 ## User Preferences

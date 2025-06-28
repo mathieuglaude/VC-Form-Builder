@@ -24,6 +24,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     required: false,
     dataSource: 'freetext',
     credentialMode: 'optional', // 'optional' | 'required'
+    acceptRevoked: false, // whether to accept revoked credentials
     options: '',
     credentialType: '',
     attributeName: ''
@@ -43,6 +44,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         required: initialConfig.validate?.required || false,
         dataSource: initialConfig.properties?.dataSource || 'freetext',
         credentialMode: initialConfig.properties?.credentialMode || 'optional',
+        acceptRevoked: initialConfig.properties?.acceptRevoked || false,
         options: initialConfig.properties?.options?.join('\n') || '',
         credentialType: initialConfig.properties?.vcMapping?.credentialType || '',
         attributeName: initialConfig.properties?.vcMapping?.attributeName || ''
@@ -55,6 +57,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         required: false,
         dataSource: 'freetext',
         credentialMode: 'optional',
+        acceptRevoked: false,
         options: '',
         credentialType: '',
         attributeName: ''
@@ -73,7 +76,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
       properties: {
         dataSource: config.dataSource,
         ...(config.dataSource === 'verified' && {
-          credentialMode: config.credentialMode
+          credentialMode: config.credentialMode,
+          acceptRevoked: config.acceptRevoked
         }),
         ...(config.dataSource === 'picklist' && {
           options: config.options.split('\n').filter(opt => opt.trim())
@@ -286,6 +290,28 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                         This form field will be auto-populated with the "{config.attributeName}" attribute from the credential
                       </p>
                     )}
+                  </div>
+                )}
+
+                {/* Revocation Status Configuration */}
+                {config.credentialType && (
+                  <div className="p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="acceptRevoked"
+                        checked={config.acceptRevoked}
+                        onCheckedChange={(checked) => setConfig({ ...config, acceptRevoked: checked as boolean })}
+                      />
+                      <Label htmlFor="acceptRevoked" className="text-sm font-medium">
+                        Accept revoked credentials
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-600 mt-2">
+                      {config.acceptRevoked 
+                        ? `Your form will accept "${config.credentialType}" credentials even if they have been revoked by the issuer.`
+                        : `Your form will reject "${config.credentialType}" credentials that have been revoked by the issuer.`
+                      }
+                    </p>
                   </div>
                 )}
               </div>

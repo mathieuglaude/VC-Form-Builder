@@ -153,7 +153,9 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         metadata[comp.key] = {
           type: comp.properties.dataSource,
           ...(comp.properties.vcMapping && { vcMapping: comp.properties.vcMapping }),
-          ...(comp.properties.options && { options: comp.properties.options })
+          ...(comp.properties.options && { options: comp.properties.options }),
+          ...(comp.properties.credentialMode && { credentialMode: comp.properties.credentialMode }),
+          ...(comp.properties.acceptRevoked !== undefined && { acceptRevoked: comp.properties.acceptRevoked })
         };
       }
     });
@@ -283,6 +285,16 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                             {component.properties?.credentialMode === 'required' && (
                               <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
                                 ⚠️ Required
+                              </span>
+                            )}
+                            {component.properties?.acceptRevoked && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                ⚠️ Accepts Revoked
+                              </span>
+                            )}
+                            {component.properties?.acceptRevoked === false && component.properties?.dataSource === 'verified' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                🚫 Rejects Revoked
                               </span>
                             )}
                           </div>
