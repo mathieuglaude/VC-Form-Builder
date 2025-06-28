@@ -1,0 +1,128 @@
+# Form Builder Pro - VC Integration
+
+## Overview
+
+This is a full-stack TypeScript application that provides a professional form builder with Verifiable Credentials (VC) integration. The system allows administrators to create dynamic forms using a drag-and-drop interface, where form fields can be auto-populated with verified data from digital credentials. The application follows a modern web architecture with React frontend, Express backend, and PostgreSQL database using Drizzle ORM.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite for fast development and optimized builds
+- **Styling**: Tailwind CSS with shadcn/ui component library
+- **State Management**: TanStack React Query for server state management
+- **Routing**: Wouter for lightweight client-side routing
+- **Form Building**: Form.io React components (@formio/react) for drag-and-drop form creation
+
+### Backend Architecture
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **Database**: PostgreSQL with Drizzle ORM for type-safe database operations
+- **Real-time Communication**: WebSocket server for VC verification notifications
+- **API Design**: RESTful API with JSON responses
+
+### Database Layer
+- **ORM**: Drizzle ORM for PostgreSQL with type-safe schema definitions
+- **Database Provider**: Neon serverless PostgreSQL
+- **Schema Management**: Drizzle Kit for migrations and schema management
+
+## Key Components
+
+### Form Builder System
+- **Interactive Builder**: Drag-and-drop interface using Form.io components
+- **Component Library**: Standard form elements (text, email, select, checkbox, textarea, number, datetime)
+- **Enhanced Metadata**: Extended form components with VC integration properties
+- **Real-time Preview**: Instant form preview during building
+
+### Verifiable Credentials Integration
+- **Data Source Types**: 
+  - Free Text (manual entry)
+  - Pick List (predefined options)
+  - Verified Attribute (auto-filled from VC)
+- **Proof Requests**: Configurable credential verification requirements
+- **Real-time Verification**: WebSocket-based notification system for instant credential verification
+- **Auto-population**: Automatic form field population upon successful VC verification
+
+### User Interface Components
+- **Form Builder Page**: Administrative interface for creating and editing forms
+- **Form Fill Page**: Public interface for form completion with VC integration
+- **VC Modal**: Interactive credential verification interface with QR codes and deep links
+- **Verified Badge**: Visual indicator for fields verified through VCs
+
+## Data Flow
+
+### Form Creation Flow
+1. Admin accesses builder interface
+2. Drags components from library to form canvas
+3. Configures component properties including VC mappings
+4. Saves form configuration to database with metadata
+5. Form becomes available for public access
+
+### Form Completion Flow
+1. User accesses public form via unique URL
+2. System checks for VC requirements and initiates proof request
+3. User scans QR code or follows deep link to wallet
+4. Wallet presents credentials to verification service
+5. WebSocket notifies frontend of successful verification
+6. Form fields auto-populate with verified data
+7. User completes remaining fields and submits form
+
+### Real-time Verification Flow
+1. Frontend establishes WebSocket connection with unique client ID
+2. Proof request sent to VC API service
+3. User completes verification in wallet app
+4. VC API webhook notifies backend of verification
+5. Backend broadcasts verification result via WebSocket
+6. Frontend receives notification and updates form state
+
+## External Dependencies
+
+### Core Dependencies
+- **@formio/react**: Form building and rendering components
+- **@tanstack/react-query**: Server state management and caching
+- **@neondatabase/serverless**: PostgreSQL database connection
+- **drizzle-orm**: Type-safe database ORM
+- **ws**: WebSocket server implementation
+
+### UI Dependencies
+- **@radix-ui/**: Comprehensive set of unstyled UI primitives
+- **tailwindcss**: Utility-first CSS framework
+- **class-variance-authority**: Type-safe CSS-in-JS variants
+- **lucide-react**: Icon library
+
+### Development Dependencies
+- **vite**: Build tool and development server
+- **typescript**: Type checking and compilation
+- **tsx**: TypeScript execution for development
+
+## Deployment Strategy
+
+### Development Environment
+- **Concurrent Development**: Vite dev server for frontend, tsx for backend hot reload
+- **Database**: Development database with Drizzle migrations
+- **Environment Variables**: Local .env file for configuration
+
+### Production Build
+- **Frontend Build**: Vite builds optimized static assets
+- **Backend Build**: esbuild bundles Node.js application
+- **Database Migration**: Drizzle Kit handles schema migrations
+- **Static Assets**: Frontend serves from dist/public directory
+
+### Infrastructure Requirements
+- **Database**: PostgreSQL instance (Neon serverless recommended)
+- **Environment Variables**: DATABASE_URL, VC_API_KEY, VC_API_BASE_URL
+- **WebSocket Support**: Server must support WebSocket connections
+- **File Storage**: Optional logo upload functionality
+
+## Changelog
+
+```
+Changelog:
+- June 28, 2025. Initial setup
+```
+
+## User Preferences
+
+```
+Preferred communication style: Simple, everyday language.
+```

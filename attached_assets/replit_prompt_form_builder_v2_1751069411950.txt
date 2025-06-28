@@ -1,0 +1,162 @@
+
+**Prompt for Replit AI (Ghostwriter) to scaffold a Form Builder with VC Integration — v2**
+
+This supersedes the earlier prompt.  It *adds* a **Home Dashboard**, per‑form URLs, and metadata (name, purpose, logo) that surface on the live form page.
+
+---
+
+## 0 · User Stories Added
+* **As an Admin** I land on `/` and can:
+  1. Create a **New Form** (opens Builder).
+  2. See a grid/list of existing forms (card with Name, Purpose, Logo).
+  3. Click **Edit** to reopen Builder.
+  4. Click **Preview** to open the form at `/f/{slug}` in a new tab.
+
+* **As a Respondent** I visit `/f/{slug}` and see:
+  * Hero section with Logo, Name, Purpose.
+  * Embedded Form.io form (with VC autofill etc.).
+
+---
+
+## 1 · Data Model Changes
+```ts
+// backend/src/models/FormConfig.ts
+interface FormMeta {
+  name: string;          // required, unique
+  slug: string;          // URL‑safe, generated from name
+  purpose: string;       // short description
+  logoUrl?: string;      // uploaded file path or external URL
+}
+interface FormConfigDoc extends Document {
+  meta: FormMeta;
+  formJson: any;         // raw Form.io JSON incl. extra metadata
+  proofRequests: ProofRequest[];
+  createdAt: Date;
+}
+```
+* Add a **unique index** on `meta.slug`.
+* Provide a `POST /api/uploads/logo` endpoint that accepts `multipart/form‑data` and stores images in `/uploads` (use `multer`).
+
+---
+
+## 2 · API Additions
+| Method | Path | Purpose |
+| ------ | ---- | ------- |
+| `GET` | `/api/forms` | List all forms (id, meta). |
+| `GET` | `/api/forms/slug/:slug` | Fetch form by slug for public preview. |
+| `POST` | `/api/uploads/logo` | Upload logo; returns `{ url }`. |
+
+---
+
+## 3 · Frontend Additions
+```
+frontend/src/pages/
+├─ HomePage.tsx
+├─ BuilderPage.tsx           (unchanged entry)
+└─ PreviewPage.tsx           // route /f/:slug
+```
+
+### 3.1 HomePage
+```tsx
+// uses React Router
+const HomePage = () => {
+  const { data: forms } = useSWR('/api/forms');
+  return (
+    <div className="p-6">
+      <button className="btn" onClick={() => navigate('/builder/new')}>
+        + New Form
+      </button>
+      <div className="grid md:grid-cols-3 gap-4 mt-6">
+        {forms?.map(f => (
+          <FormCard key={f._id} form={f} />
+        ))}
+      </div>
+    </div>
+  );
+};
+```
+* `FormCard` shows Logo, Name, Purpose, and two buttons: **Edit** (`/builder/{id}`) and **Preview** (`/f/{slug}`, `target="_blank"`).
+
+### 3.2 Builder Enhancements
+1. **Metadata Modal** – when creating a new form, show a dialog to capture *Name*, *Purpose*, *Logo* (file upload).  
+2. On **Save**, POST to `/api/forms` with `{ meta, formJson, proofRequests }`.  Backend generates the `slug` (`slugify(name, { lower:true })`).
+
+### 3.3 PreviewPage (`/f/:slug`)
+```tsx
+const PreviewPage = () => {
+  const { slug } = useParams();
+  const { data } = useSWR(`/api/forms/slug/${slug}`);
+  if (!data) return <Spinner/>;
+  const { meta, formJson } = data;
+  return (
+    <div className="max-w-3xl mx-auto p-6">
+      {meta.logoUrl && <img src={meta.logoUrl} alt={meta.name} className="h-24 mb-4"/>}
+      <h1 className="text-3xl font-semibold">{meta.name}</h1>
+      <p className="text-gray-600 mb-6">{meta.purpose}</p>
+      <Form src={formJson} />
+    </div>
+  );
+};
+```
+
+---
+
+## 4 · Routes & Navigation
+* Add React Router layout:
+  * `/` → HomePage
+  * `/builder/:id?` → BuilderPage
+  * `/f/:slug` → PreviewPage
+* Update `.replit` dev server proxy rules if necessary so that unknown routes fall back to `index.html`.
+
+---
+
+## 5 · Updated File/Folder Snapshot
+```
+frontend/src/
+│  ├─ pages/
+│  │   ├─ HomePage.tsx
+│  │   ├─ BuilderPage.tsx
+│  │   └─ PreviewPage.tsx
+│  ├─ components/
+│  │   ├─ FormCard.tsx
+│  │   └─ ...
+backend/src/
+│  ├─ routes/
+│  │   ├─ uploads.ts
+│  │   └─ ...
+│  └─ models/FormConfig.ts
+public/uploads/           (static file host for logos)
+```
+
+---
+
+## 6 · Step‑by‑Step Additions
+1. **Install deps**
+   ```bash
+   # frontend
+   cd frontend && npm i swr slugify react-router-dom
+   # backend
+   cd backend && npm i multer slugify && cd ..
+   ```
+2. **Implement `uploads.ts`**
+   ```ts
+   import multer from 'multer';
+   const upload = multer({ dest: 'public/uploads/' });
+   router.post('/logo', upload.single('file'), (req,res)=> {
+     res.json({ url: `/uploads/${req.file.filename}` });
+   });
+   ```
+3. **Serve static `/uploads`**
+   ```ts
+   app.use('/uploads', express.static(path.join(__dirname, '../../public/uploads')));
+   ```
+
+---
+
+## 7 · README patch
+* Explain new dashboard workflow, env var `BASE_URL` used to build form links (e.g. `https://my‑repl.app/f/{slug}`).
+
+---
+
+> **Ghostwriter**, update any previously generated files to include the above.  All new components/routes must be in TypeScript and follow the existing style.  Where integration details are unknown, leave `TODO` comments.
+
