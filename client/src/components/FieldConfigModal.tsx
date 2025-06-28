@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -20,7 +19,8 @@ interface FieldConfigModalProps {
 export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfig }: FieldConfigModalProps) {
   const [config, setConfig] = useState({
     label: '',
-    key: '',
+    placeholder: '',
+    description: '',
     required: false,
     dataSource: 'freetext',
     options: '',
@@ -35,10 +35,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   });
 
   useEffect(() => {
-    if (initialConfig) {
+    if (initialConfig && isOpen) {
       setConfig({
         label: initialConfig.label || '',
-        key: initialConfig.key || '',
+        placeholder: initialConfig.placeholder || '',
+        description: initialConfig.description || '',
         required: initialConfig.validate?.required || false,
         dataSource: initialConfig.properties?.dataSource || 'freetext',
         options: initialConfig.properties?.options?.join('\n') || '',
@@ -46,10 +47,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         attributeName: initialConfig.properties?.vcMapping?.attributeName || '',
         issuerDid: initialConfig.properties?.vcMapping?.issuerDid || ''
       });
-    } else {
+    } else if (isOpen) {
       setConfig({
         label: '',
-        key: '',
+        placeholder: '',
+        description: '',
         required: false,
         dataSource: 'freetext',
         options: '',
@@ -63,7 +65,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   const handleSave = () => {
     const fieldConfig = {
       label: config.label,
-      key: config.key,
+      placeholder: config.placeholder,
+      description: config.description,
       validate: {
         required: config.required
       },
@@ -83,23 +86,57 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     };
 
     onSave(fieldConfig);
-    onClose();
   };
 
   const getCredentialAttributes = () => {
     if (!credentialDefs || !config.credentialType) return [];
     
-    // Look for attributes in both local and API credential definitions
-    const allDefs = [
-      ...(credentialDefs.local || []),
-      ...(credentialDefs.api?.credentialTypes || [])
-    ];
+    try {
+      const data = credentialDefs as any;
+      const allDefs = [
+        ...(data?.local || []),
+        ...(data?.api?.credentialTypes || [])
+      ];
+      
+      const selectedDef = allDefs.find((def: any) => 
+        def.credentialType === config.credentialType || def.type === config.credentialType
+      );
+      
+      return selectedDef?.attributes || [];
+    } catch (error) {
+      console.error('Error getting credential attributes:', error);
+      return [];
+    }
+  };
+
+  const getCredentialTypes = () => {
+    if (!credentialDefs) return [];
     
-    const selectedDef = allDefs.find(def => 
-      def.credentialType === config.credentialType || def.type === config.credentialType
-    );
-    
-    return selectedDef?.attributes || [];
+    try {
+      const data = credentialDefs as any;
+      const types = [];
+      
+      // Add local credential types
+      if (data?.local) {
+        types.push(...data.local.map((def: any) => ({
+          value: def.credentialType,
+          label: def.credentialType
+        })));
+      }
+      
+      // Add API credential types  
+      if (data?.api?.credentialTypes) {
+        types.push(...data.api.credentialTypes.map((def: any) => ({
+          value: def.type,
+          label: def.type
+        })));
+      }
+      
+      return types;
+    } catch (error) {
+      console.error('Error getting credential types:', error);
+      return [];
+    }
   };
 
   return (
@@ -120,14 +157,25 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                   id="label"
                   value={config.label}
                   onChange={(e) => setConfig({ ...config, label: e.target.value })}
+                  placeholder="Enter field label"
                 />
               </div>
               <div>
-                <Label htmlFor="key">Field Key</Label>
+                <Label htmlFor="placeholder">Placeholder Text</Label>
                 <Input
-                  id="key"
-                  value={config.key}
-                  onChange={(e) => setConfig({ ...config, key: e.target.value })}
+                  id="placeholder"
+                  value={config.placeholder}
+                  onChange={(e) => setConfig({ ...config, placeholder: e.target.value })}
+                  placeholder="Enter placeholder text"
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Help Text</Label>
+                <Input
+                  id="description"
+                  value={config.description}
+                  onChange={(e) => setConfig({ ...config, description: e.target.value })}
+                  placeholder="Enter help text"
                 />
               </div>
               <div className="flex items-center space-x-2">
@@ -144,32 +192,16 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
           {/* Data Source Configuration */}
           <div>
             <h4 className="text-sm font-medium text-gray-900 mb-3">Data Source Type</h4>
-            <RadioGroup 
-              value={config.dataSource} 
-              onValueChange={(value) => setConfig({ ...config, dataSource: value })}
-            >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="freetext" id="freetext" />
-                <Label htmlFor="freetext" className="space-y-1">
-                  <div className="font-medium">Free Text</div>
-                  <div className="text-xs text-gray-500">User enters value manually</div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="picklist" id="picklist" />
-                <Label htmlFor="picklist" className="space-y-1">
-                  <div className="font-medium">Pick List</div>
-                  <div className="text-xs text-gray-500">User selects from predefined options</div>
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="verified" id="verified" />
-                <Label htmlFor="verified" className="space-y-1">
-                  <div className="font-medium">Verified Attribute</div>
-                  <div className="text-xs text-gray-500">Auto-filled from verifiable credential</div>
-                </Label>
-              </div>
-            </RadioGroup>
+            <Select value={config.dataSource} onValueChange={(value) => setConfig({ ...config, dataSource: value })}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="freetext">Free Text - User enters value manually</SelectItem>
+                <SelectItem value="picklist">Pick List - User selects from predefined options</SelectItem>
+                <SelectItem value="verified">Verified Attribute - Auto-filled from verifiable credential</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Pick List Configuration */}
@@ -204,11 +236,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                       <SelectValue placeholder="Select credential type..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {credentialDefs?.local?.map((def: any) => (
-                        <SelectItem key={def.id} value={def.credentialType}>{def.credentialType}</SelectItem>
-                      ))}
-                      {credentialDefs?.api?.credentialTypes?.map((def: any) => (
-                        <SelectItem key={def.type} value={def.type}>{def.type}</SelectItem>
+                      {getCredentialTypes().map((type) => (
+                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
