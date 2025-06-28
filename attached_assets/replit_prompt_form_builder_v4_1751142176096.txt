@@ -1,0 +1,180 @@
+**Prompt – Upgrade Form Builder Pro to Full Form.io Feature Parity**
+
+We already have an SDK-only scaffold.  
+Now add server-side power so we get the same out-of-the-box features Form.io advertises.
+
+🏗️  **High-level plan**
+
+1. Spin up the **open-source Form.io Server** as a third service (`formio-server/`).  
+2. Use the existing Mongo instance but enable field-level encryption.  
+3. Proxy `/formio/*` routes through our VC backend so the front-end only ever hits a single origin.  
+4. Wire the builder/renderer to that base URL.  
+5. Add JWT auth + role seeding (Admin, Designer, Reviewer, Anonymous).  
+6. Expose GraphQL, REST, and webhook plumbing.  
+7. Theme the builder via Tailwind + Bootstrap utility bridge.
+
+---
+
+## 1 · Add Form.io Server
+
+mkdir formio-server
+npx create-formio-app formio-server
+
+bash
+Copy
+Edit
+
+Edit `formio-server/.env`:
+
+PORT=3002
+MONGO=mongodb://localhost:27017/formbuilder
+JWT_SECRET=superSecret123
+ENCRYPTION_KEY=changeMe32charslong!!
+PROJECT_NAME=formbuilder
+
+yaml
+Copy
+Edit
+
+* `ENCRYPTION_KEY` enables AES-256 field encryption out of the box.  
+* Commit a helper script to regenerate it for prod.
+
+---
+
+## 2 · Update Root Dev Script
+
+```jsonc
+"scripts": {
+  "dev": "concurrently \"npm --prefix frontend run dev\" \"npm --prefix backend run dev\" \"npm --prefix formio-server start\""
+}
+3 · Proxy Form.io API via VC Backend
+ts
+Copy
+Edit
+// backend/src/index.ts
+import { createProxyMiddleware } from 'http-proxy-middleware';
+app.use(
+  '/formio',
+  createProxyMiddleware({ target: 'http://localhost:3002', changeOrigin: true })
+);
+4 · Point SDK at Server
+ts
+Copy
+Edit
+// frontend/src/utils/formioConfig.ts
+import { Formio } from 'formiojs';
+Formio.setBaseUrl('/formio');
+Formio.setProjectUrl('/formio');
+Formio.setToken(localStorage.getItem('jwt') || '');
+Any time we log in/out update localStorage.jwt and call Formio.setToken().
+
+5 · Authentication UI
+Add AuthContext (frontend/src/context/Auth.tsx) that wraps the app.
+
+Pages:
+
+/login – email + password → POST /formio/user/login.
+
+/register (optional).
+
+Navbar shows user avatar + Logout when authenticated.
+
+6 · Role & Access Seeding
+Create backend/src/seedRoles.ts:
+
+ts
+Copy
+Edit
+import axios from 'axios';
+
+const base = 'http://localhost:3002';
+
+await axios.post(`${base}/formio/role`, { title:'Designer', admin:false });
+await axios.post(`${base}/formio/role`, { title:'Reviewer', admin:false });
+
+console.log('Roles seeded');
+Call this once in npm run seed:roles.
+
+Configure default permissions in formio-server/src/config/default.json:
+
+json
+Copy
+Edit
+{
+  "roles": {
+    "Anonymous": ["read_all"],
+    "Authenticated": ["create_own", "read_own"],
+    "Designer": ["read_all", "create_all", "update_all"],
+    "Reviewer": ["read_all"]
+  }
+}
+7 · Builder Enhancements
+7.1 Conditional logic property
+The stock builder already exposes Condition tab.
+No code change—just ensure we do NOT overwrite the editForm injection we added earlier.
+
+7.2 Themes
+Install npm i bootstrap tailwindcss-forms
+
+In index.css import Bootstrap’s reboot and apply Tailwind layers so designers can use either class set.
+
+For component previews, set global CSS vars (--bs-primary) to match Tailwind primary color.
+
+8 · Rendering & UX Upgrades
+Enable wizard mode: when a user creates a new form they can toggle Display → Wizard.
+
+Save-draft: in PreviewPage, enable Form.io’s saveDraft option:
+
+tsx
+Copy
+Edit
+<Form
+  form={schema}
+  options={{ saveDraft: true, saveRetries: 3 }}
+/>
+9 · Data API Surfacing
+9.1 GraphQL
+Form.io server exposes /formio/graphql.
+Proxy that too (/formio/graphql) via backend.
+
+9.2 Search & Pagination
+Nothing to build—available immediately:
+GET /formio/form/{id}/submission?limit=10&skip=20&sort=-created
+
+Document these examples in the README.
+
+9.3 Webhooks
+On the server create an Action → Webhook for After Submission pointing at our VC backend /api/submission-hook.
+Parse events there as needed.
+
+10 · Field-Level Encryption
+Set component property “Protected” in builder UI for any PII field.
+Form.io automatically encrypts that data in Mongo using ENCRYPTION_KEY.
+Admins with proper role can decrypt via API; the UI masks the field.
+
+11 · Testing & CI
+Add cypress tests that log in, create wizard form, submit, verify pagination.
+
+Update GitHub Actions workflow to run npm run ci:test after building all three services with docker-compose.
+
+Ghostwriter, implement everything exactly as laid out:
+• new formio-server/ service, proxy, env vars, and dev script
+• AuthContext + login page + token handling
+• role seeding scripts & protected fields
+• builder tweaks (wizard toggle, save-draft)
+• README additions with GraphQL & REST sample calls
+• leave TODOs for production SSL and domain settings.
+
+pgsql
+Copy
+Edit
+
+---
+
+### What happens when you run `npm run dev` now?
+
+1. **formio-server** starts on port 3002 ➜ MongoDB (encrypted).  
+2. **backend** proxies `/formio/**`, serves VC routes, websockets, proof logic.  
+3. **frontend** hits the *single origin* for everything; logged-in users get RBAC-controlled builder, renderer, submission APIs, and GraphQL.
+
+Your Replit app now ticks every box in the “features you get out of the box” list. Let me know if you hit any snags or want deeper tweaks (SSO adapters, multi-tenant projects, etc.)!
