@@ -231,6 +231,9 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
           components: [...(formSchema.components || []), newComponent]
         };
         
+        console.log('Adding component. Current components:', formSchema.components?.length || 0, 'New total:', updatedSchema.components.length);
+        console.log('Updated schema components:', updatedSchema.components);
+        
         setFormSchema(updatedSchema);
         
         // Update global schema reference
@@ -280,9 +283,11 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
 
       // Function to update form preview with specific schema
       const updateFormPreviewWithSchema = (schema: any) => {
+        console.log('Updating preview with schema:', schema.components?.length || 0, 'components');
         const preview = document.getElementById('form-preview');
         if (preview) {
           if (schema.components && schema.components.length > 0) {
+            console.log('Rendering components:', schema.components.map(c => c.label));
             preview.innerHTML = schema.components.map((comp: any) => `
               <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm">
                 <div class="flex justify-between items-start">
