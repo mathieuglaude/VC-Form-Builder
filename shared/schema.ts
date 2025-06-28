@@ -2,6 +2,11 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export interface AttributeDef {
+  name: string;
+  description?: string;
+}
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -39,6 +44,19 @@ export const credentialDefinitions = pgTable("credential_definitions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const credentialTemplates = pgTable("credential_templates", {
+  id: serial("id").primaryKey(),
+  label: text("label").notNull().unique(),
+  version: text("version").notNull(),
+  schemaId: text("schema_id").notNull(),
+  credDefId: text("cred_def_id").notNull(),
+  issuerDid: text("issuer_did").notNull(),
+  schemaUrl: text("schema_url"),
+  attributes: jsonb("attributes").$type<AttributeDef[]>().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -69,6 +87,16 @@ export const insertCredentialDefinitionSchema = createInsertSchema(credentialDef
   attributes: true,
 });
 
+export const insertCredentialTemplateSchema = createInsertSchema(credentialTemplates).pick({
+  label: true,
+  version: true,
+  schemaId: true,
+  credDefId: true,
+  issuerDid: true,
+  schemaUrl: true,
+  attributes: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -81,6 +109,9 @@ export type InsertFormSubmission = z.infer<typeof insertFormSubmissionSchema>;
 
 export type CredentialDefinition = typeof credentialDefinitions.$inferSelect;
 export type InsertCredentialDefinition = z.infer<typeof insertCredentialDefinitionSchema>;
+
+export type CredentialTemplate = typeof credentialTemplates.$inferSelect;
+export type InsertCredentialTemplate = z.infer<typeof insertCredentialTemplateSchema>;
 
 // Extended types for VC integration
 export interface DataSourceMetadata {

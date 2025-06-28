@@ -10,7 +10,9 @@ import {
   type FormSubmission,
   type InsertFormSubmission,
   type CredentialDefinition,
-  type InsertCredentialDefinition
+  type InsertCredentialDefinition,
+  type CredentialTemplate,
+  type InsertCredentialTemplate
 } from "@shared/schema";
 
 export interface IStorage {
@@ -34,6 +36,13 @@ export interface IStorage {
   createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition>;
   listCredentialDefinitions(): Promise<CredentialDefinition[]>;
   getCredentialDefinition(id: number): Promise<CredentialDefinition | undefined>;
+
+  // Credential template methods
+  createCredentialTemplate(template: InsertCredentialTemplate): Promise<CredentialTemplate>;
+  listCredentialTemplates(): Promise<CredentialTemplate[]>;
+  getCredentialTemplate(id: number): Promise<CredentialTemplate | undefined>;
+  updateCredentialTemplate(id: number, template: Partial<InsertCredentialTemplate>): Promise<CredentialTemplate | undefined>;
+  deleteCredentialTemplate(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -41,23 +50,28 @@ export class MemStorage implements IStorage {
   private formConfigs: Map<number, FormConfig>;
   private formSubmissions: Map<number, FormSubmission>;
   private credentialDefinitions: Map<number, CredentialDefinition>;
+  private credentialTemplates: Map<number, CredentialTemplate>;
   private currentUserId: number;
   private currentFormConfigId: number;
   private currentSubmissionId: number;
   private currentCredDefId: number;
+  private currentTemplateId: number;
 
   constructor() {
     this.users = new Map();
     this.formConfigs = new Map();
     this.formSubmissions = new Map();
     this.credentialDefinitions = new Map();
+    this.credentialTemplates = new Map();
     this.currentUserId = 1;
     this.currentFormConfigId = 1;
     this.currentSubmissionId = 1;
     this.currentCredDefId = 1;
+    this.currentTemplateId = 1;
 
-    // Seed some credential definitions
+    // Seed credential definitions and templates
     this.seedCredentialDefinitions();
+    this.seedCredentialTemplates();
   }
 
   private seedCredentialDefinitions() {
@@ -199,6 +213,86 @@ export class MemStorage implements IStorage {
 
   async getCredentialDefinition(id: number): Promise<CredentialDefinition | undefined> {
     return this.credentialDefinitions.get(id);
+  }
+
+  // Credential template methods
+  private seedCredentialTemplates() {
+    const bcBusinessCard: CredentialTemplate = {
+      id: this.currentTemplateId++,
+      label: 'BC Digital Business Card v1',
+      version: '1.0',
+      schemaId: 'M6M4n:2:DigitalBusinessCard:1.0', // TODO: Replace with actual schema ID
+      credDefId: 'M6M4n:3:CL:12345:tag', // TODO: Replace with actual cred def ID
+      issuerDid: 'did:sov:M6M4n', // TODO: Replace with actual issuer DID
+      schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/business/digital-business-card-v1/',
+      attributes: [
+        { name: 'business_legal_name', description: 'Legal name of the business' },
+        { name: 'business_number', description: 'Business registration number' },
+        { name: 'incorporation_number', description: 'Incorporation number' },
+        { name: 'jurisdiction', description: 'Jurisdiction of incorporation' }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    const bcPersonCred: CredentialTemplate = {
+      id: this.currentTemplateId++,
+      label: 'BC Person Credential v1',
+      version: '1.0',
+      schemaId: 'M6M4n:2:PersonCredential:1.0', // TODO: Replace with actual schema ID
+      credDefId: 'M6M4n:3:CL:67890:tag', // TODO: Replace with actual cred def ID
+      issuerDid: 'did:sov:M6M4n', // TODO: Replace with actual issuer DID
+      schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/person/person-cred-doc/',
+      attributes: [
+        { name: 'given_names', description: 'Given names of the person' },
+        { name: 'family_name', description: 'Family name of the person' },
+        { name: 'birth_date', description: 'Date of birth' },
+        { name: 'person_identifier', description: 'Unique person identifier' }
+      ],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+
+    this.credentialTemplates.set(bcBusinessCard.id, bcBusinessCard);
+    this.credentialTemplates.set(bcPersonCred.id, bcPersonCred);
+  }
+
+  async createCredentialTemplate(template: InsertCredentialTemplate): Promise<CredentialTemplate> {
+    const id = this.currentTemplateId++;
+    const now = new Date();
+    const credentialTemplate: CredentialTemplate = {
+      id,
+      ...template,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.credentialTemplates.set(id, credentialTemplate);
+    return credentialTemplate;
+  }
+
+  async listCredentialTemplates(): Promise<CredentialTemplate[]> {
+    return Array.from(this.credentialTemplates.values());
+  }
+
+  async getCredentialTemplate(id: number): Promise<CredentialTemplate | undefined> {
+    return this.credentialTemplates.get(id);
+  }
+
+  async updateCredentialTemplate(id: number, template: Partial<InsertCredentialTemplate>): Promise<CredentialTemplate | undefined> {
+    const existing = this.credentialTemplates.get(id);
+    if (!existing) return undefined;
+
+    const updated: CredentialTemplate = {
+      ...existing,
+      ...template,
+      updatedAt: new Date(),
+    };
+    this.credentialTemplates.set(id, updated);
+    return updated;
+  }
+
+  async deleteCredentialTemplate(id: number): Promise<boolean> {
+    return this.credentialTemplates.delete(id);
   }
 }
 

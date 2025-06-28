@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
-import { insertFormConfigSchema, insertFormSubmissionSchema } from "@shared/schema";
+import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -42,6 +42,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       res.status(400).json({ error: 'Invalid form data', details: error });
     }
+  });
+
+  app.get('/api/forms/new', async (req, res) => {
+    // Return a template for new form creation
+    res.json({
+      name: '',
+      slug: '',
+      purpose: '',
+      description: '',
+      logoUrl: '',
+      formSchema: {
+        components: []
+      },
+      metadata: {}
+    });
   });
 
   app.get('/api/forms/:id', async (req, res) => {
@@ -141,6 +156,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(500).json({ error: 'Failed to retrieve credential definitions' });
+    }
+  });
+
+  // Credential library routes
+  app.get('/api/cred-lib', async (req, res) => {
+    try {
+      const templates = await storage.listCredentialTemplates();
+      res.json(templates);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve credential templates' });
+    }
+  });
+
+  app.post('/api/cred-lib', async (req, res) => {
+    try {
+      const validatedData = insertCredentialTemplateSchema.parse(req.body);
+      const template = await storage.createCredentialTemplate(validatedData);
+      res.json(template);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid template data', details: error });
+    }
+  });
+
+  app.put('/api/cred-lib/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const validatedData = insertCredentialTemplateSchema.partial().parse(req.body);
+      const template = await storage.updateCredentialTemplate(id, validatedData);
+      
+      if (!template) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      res.status(400).json({ error: 'Invalid template data', details: error });
+    }
+  });
+
+  app.delete('/api/cred-lib/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const deleted = await storage.deleteCredentialTemplate(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete template' });
     }
   });
 

@@ -1,0 +1,211 @@
+
+**Prompt for Replit AI (Ghostwriter) → Form Builder w/ VC Autofill & Credential Library (SDK‑only variant)**  
+*Drop this whole file into Replit Ghostwriter.*
+
+---
+
+## 0 · Context
+
+We’re building a **front‑end–only** Form.io SDK integration (no standalone Form.io server).  
+Back‑end = Express + Mongo for:
+
+* Form configs + per‑form metadata (name, slug, purpose, logo)
+* Credential library (re‑usable credential templates)
+* VC proof requests & websocket notifications
+
+The Home Dashboard, Builder, Preview pages, and VC autofill logic from **prompt v2** remain unchanged.  
+This prompt **adds** a **Credential Library** feature and seeds it with two BC Government credentials.
+
+---
+
+## 1 · Credential Library — User Stories
+
+| Role | Story |
+|------|-------|
+| **Admin** | I visit **/credentials** and see a list of credential templates (name, version, issuer, last updated). |
+|          | I can click **Add Credential** to create a new template by pasting: *Name*, *Schema ID / URL*, *Cred Def ID*, *Issuer DID*, and an attribute list. |
+|          | From the **Form Builder**, when editing a component that is tagged **Verified Attribute**, I can open a dropdown of library credentials, then a second dropdown of attributes from that credential. |
+| **System** | On first run, the library already contains:<br/>• **BC Digital Business Card v1**<br/>• **BC Person Credential v1** |
+
+---
+
+## 2 · Data Model Additions
+
+```ts
+// backend/src/models/CredentialTemplate.ts
+interface AttributeDef { name: string; description?: string }
+interface CredentialTemplateDoc extends Document {
+  label: string;               // e.g. "BC Digital Business Card v1"
+  version: string;             // "1.0"
+  schemaId: string;            // Indy / JSON Schema ID
+  credDefId: string;           // Indy credential definition ID
+  issuerDid: string;           // DID that issues the credential
+  schemaUrl?: string;          // link to CANDY / spec page
+  attributes: AttributeDef[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+> 🎯 **Index** on `label` (unique).
+
+---
+
+## 3 · API Routes
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET`  | `/api/cred-lib` | List credential templates |
+| `POST` | `/api/cred-lib` | Create template (Admin only) |
+| `PUT`  | `/api/cred-lib/:id` | Update template |
+| `DELETE`| `/api/cred-lib/:id` | Remove template |
+
+(Use simple token auth or leave unprotected for PoC.)
+
+---
+
+## 4 · Frontend Additions
+
+```
+frontend/src/pages/
+├─ CredentialsPage.tsx      // route /credentials
+frontend/src/components/
+├─ CredentialCard.tsx
+└─ CredentialModal.tsx      // add/edit dialog
+```
+
+### 4.1 CredentialsPage
+
+* Grid list of `<CredentialCard />`.
+* “Add Credential” button opens **CredentialModal** (Formik + zod validation).
+* Uses **SWR** to hit `/api/cred-lib`.
+
+### 4.2 Builder Integration
+
+Augment the **Verified Attribute** property panel:
+
+1. **Credential** `<select>` → options from `/api/cred-lib`.
+2. **Attribute** `<select>` → populated by chosen credential’s `attributes[]`.
+
+Persist selection as:
+
+```jsonc
+{
+  "dataSource": "vc",
+  "vc": {
+    "templateId": "<mongo_id>",
+    "attribute": "businessLegalName"
+  }
+}
+```
+
+---
+
+## 5 · Seed Script
+
+`backend/src/seedCredentials.ts`
+
+```ts
+import CredentialTemplate from './models/CredentialTemplate';
+
+await CredentialTemplate.deleteMany({}); // idempotent seed
+
+await CredentialTemplate.insertMany([
+  {
+    label: 'BC Digital Business Card v1',
+    version: '1.0',
+    schemaId: 'M6M4n…:2:DigitalBusinessCard:1.0',
+    credDefId: 'M6M4n…:3:CL:12345:tag',
+    issuerDid: 'did:sov:M6M4n…',
+    schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/business/digital-business-card-v1/',
+    attributes: [
+      { name: 'business_legal_name' },
+      { name: 'business_number' },
+      { name: 'incorporation_number' },
+      { name: 'jurisdiction' }
+    ]
+  },
+  {
+    label: 'BC Person Credential v1',
+    version: '1.0',
+    schemaId: 'M6M4n…:2:PersonCredential:1.0',
+    credDefId: 'M6M4n…:3:CL:67890:tag',
+    issuerDid: 'did:sov:M6M4n…',
+    schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/person/person-cred-doc/',
+    attributes: [
+      { name: 'given_names' },
+      { name: 'family_name' },
+      { name: 'birth_date' },
+      { name: 'person_identifier' }
+    ]
+  }
+]);
+console.log('✅ Seeded credential library');
+```
+
+> **NOTE:** Replace `schemaId` / `credDefId` with the exact values from the CANDY block explorer if known; otherwise leave TODOs — Ghostwriter should stub them.
+
+Add to `package.json`:
+
+```json
+"scripts": {
+  "seed:creds": "ts-node backend/src/seedCredentials.ts"
+}
+```
+
+Ghostwriter should call this script once during the initial `npm run dev` (use `postinstall` hook) or document manual run in the README.
+
+---
+
+## 6 · Dependency Bump
+
+```bash
+# frontend
+npm i react-hook-form zod @hookform/resolvers
+# backend
+npm i zod
+```
+
+---
+
+## 7 · VC Proof Flow Touch‑up
+
+When a component has `dataSource == 'vc'`, gather distinct `templateId`s for the form **on load** and build a combined proof request.  Use `schemaId` & `credDefId` from the library doc.
+
+Backend endpoint `/api/proofs/send` now accepts:
+
+```ts
+{
+  templates: Array<{ templateId: string, attributes: string[] }>
+}
+```
+
+and translates into the Digital Credential API’s proof‑request format.
+
+---
+
+## 8 · README Updates
+
+* How to access `/credentials`.
+* How to add new templates.
+* Mention pre‑seeded BC credentials.
+
+---
+
+## 9 · Dev Script Update (recap)
+
+```json
+"dev": "concurrently "npm --prefix frontend run dev" "npm --prefix backend run dev""
+```
+
+(no Form.io server process — SDK only)
+
+---
+
+> **Ghostwriter**, generate / modify all files accordingly, ensuring:  
+> * All new code is in TypeScript.<br/>
+> * Seed script exists.<br/>
+> * Builder’s edit form includes credential → attribute mapping powered by `/api/cred-lib`.<br/>
+> * UI uses Tailwind classes already present in the project.<br/>
+> * Leave `TODO` comments where exact schema / credDef IDs are missing.
+
