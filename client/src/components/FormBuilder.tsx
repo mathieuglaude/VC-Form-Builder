@@ -94,6 +94,54 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
     });
   }, [toast]);
 
+  // Drag and drop functionality using useCallback
+  const handleDragStart = useCallback((event: DragEvent, index: number) => {
+    (window as any).draggedIndex = index;
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+    }
+  }, []);
+
+  const handleDragOver = useCallback((event: DragEvent) => {
+    event.preventDefault();
+    if (event.dataTransfer) {
+      event.dataTransfer.dropEffect = 'move';
+    }
+  }, []);
+
+  const handleDrop = useCallback((event: DragEvent, dropIndex: number) => {
+    event.preventDefault();
+    
+    const draggedIndex = (window as any).draggedIndex;
+    if (draggedIndex !== -1 && draggedIndex !== dropIndex) {
+      setFormSchema((prevSchema: any) => {
+        const components = [...prevSchema.components];
+        const draggedComponent = components[draggedIndex];
+        
+        if (draggedComponent) {
+          // Remove the dragged component
+          components.splice(draggedIndex, 1);
+          
+          // Insert at new position
+          const adjustedDropIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+          components.splice(adjustedDropIndex, 0, draggedComponent);
+          
+          return { ...prevSchema, components };
+        }
+        return prevSchema;
+      });
+    }
+    
+    (window as any).draggedIndex = -1;
+  }, []);
+
+  // Set up global drag functions
+  useEffect(() => {
+    (window as any).handleDragStart = handleDragStart;
+    (window as any).handleDragOver = handleDragOver;
+    (window as any).handleDrop = handleDrop;
+  }, [handleDragStart, handleDragOver, handleDrop]);
+
   // Update preview when schema changes
   useEffect(() => {
     if (formSchema.components && formSchema.components.length > 0) {
@@ -509,69 +557,19 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
     onPreview(formData);
   };
 
-  const updateComponent = (updatedConfig: any) => {
-    const updatedSchema = {
-      ...formSchema,
-      components: formSchema.components.map((comp: any) => 
-        comp.key === selectedComponent.key 
-          ? { ...comp, ...updatedConfig }
-          : comp
-      )
-    };
-    setFormSchema(updatedSchema);
-    
-    // Update global schema reference
-    (window as any).currentFormSchema = updatedSchema;
-    
-    // Update the preview directly with the updated state
-    setTimeout(() => {
-      const preview = document.getElementById('form-preview');
-      if (preview) {
-        const currentSchema = updatedSchema;
-        if (currentSchema.components && currentSchema.components.length > 0) {
-          preview.innerHTML = currentSchema.components.map((comp: any) => `
-            <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm">
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
-                  <div class="text-sm text-gray-500 mb-2">${comp.type} component</div>
-                  ${comp.required ? '<span class="inline-block text-xs text-red-500 bg-red-50 px-2 py-1 rounded mb-2">* Required</span>' : ''}
-                  ${comp.placeholder ? `<div class="text-xs text-gray-400 mb-1">Placeholder: ${comp.placeholder}</div>` : ''}
-                  ${comp.description ? `<div class="text-xs text-gray-400 mb-1">Help: ${comp.description}</div>` : ''}
-                  ${comp.properties?.dataSource === 'verified' ? '<span class="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>' : ''}
-                  ${comp.properties?.dataSource === 'picklist' ? '<span class="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>' : ''}
-                </div>
-                <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    type="button"
-                    onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
-                    class="p-2 text-blue-600 hover:bg-blue-100 rounded"
-                    title="Edit component"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                  </button>
-                  <button 
-                    type="button"
-                    onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
-                    class="p-2 text-red-600 hover:bg-red-100 rounded"
-                    title="Remove component"
-                  >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          `).join('');
-        } else {
-          preview.innerHTML = '<div class="text-gray-500 text-center py-12">Add components from the left to build your form</div>';
-        }
-      }
-    }, 100);
-  };
+  const updateComponent = useCallback((updatedConfig: any) => {
+    setFormSchema((prevSchema: any) => {
+      const updatedSchema = {
+        ...prevSchema,
+        components: prevSchema.components.map((comp: any) => 
+          comp.key === selectedComponent?.key 
+            ? { ...comp, ...updatedConfig }
+            : comp
+        )
+      };
+      return updatedSchema;
+    });
+  }, [selectedComponent]);
 
   return (
     <div className="h-full flex flex-col">
