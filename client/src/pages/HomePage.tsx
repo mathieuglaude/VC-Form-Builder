@@ -288,8 +288,11 @@ export default function HomePage() {
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1 min-w-0">
                         <h4 className="text-base font-medium text-gray-900 truncate">{form.name}</h4>
-                        <p className="text-xs text-gray-500 mt-1">by {form.authorName}</p>
-                        <p className="text-sm text-gray-600 mt-1 line-clamp-2">{form.purpose || 'No description provided'}</p>
+                        <div className="mt-1">
+                          <p className="text-sm font-medium text-blue-600">{form.authorName}</p>
+                          <p className="text-xs text-gray-500">{form.authorOrg}</p>
+                        </div>
+                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">{form.purpose || 'No description provided'}</p>
                       </div>
                     </div>
 
