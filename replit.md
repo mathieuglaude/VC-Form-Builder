@@ -160,9 +160,16 @@ Changelog:
   - Renamed "Credentials" menu item to "Credential Library" for clarity
   - Added new "Wallet Library" menu item with comprehensive wallet directory
   - Created wallet comparison page with filtering by platform and protocol support
-  - Focused on Canadian government wallets: BC Wallet and NB Orbit Edge Wallet
+  - Focused on Canadian government wallets: BC Wallet and NB Orbit Edge Wallet (Northern Block)
   - Both wallets support AIP 2.0 protocol compatibility with government credentials
   - Added download links and feature comparisons for each wallet
+- June 28, 2025. Implemented wallet compatibility and form builder integration
+  - Added wallet restriction metadata to credential templates (compatibleWallets, walletRestricted fields)
+  - BC Government credentials are now marked as restricted to BC Wallet only
+  - Created WalletSelector component for form builders to choose compatible wallets
+  - Form builders can now specify which wallets to recommend to end users
+  - Credential library displays wallet compatibility information and restrictions
+  - Form creation process now includes wallet selection for credential-based forms
 ```
 
 ## User Preferences

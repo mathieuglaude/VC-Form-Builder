@@ -4,6 +4,8 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import FieldConfigModal from "./FieldConfigModal";
+import WalletSelector from "./WalletSelector";
+import { useQuery } from "@tanstack/react-query";
 
 interface FormBuilderProps {
   initialForm?: any;
@@ -17,7 +19,29 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [components, setComponents] = useState<any[]>(initialForm?.formSchema?.components || []);
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
+  const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
   const { toast } = useToast();
+
+  // Fetch credential templates for wallet compatibility
+  const { data: credentialTemplates = [] } = useQuery({
+    queryKey: ['/api/cred-lib'],
+  });
+
+  // Calculate credential requirements based on form components
+  const credentialRequirements = components
+    .filter(comp => comp.properties?.dataSource === 'verified')
+    .map(comp => {
+      const template = Array.isArray(credentialTemplates) ? 
+        credentialTemplates.find((t: any) => 
+          t.label === comp.properties?.vcMapping?.credentialType
+        ) : null;
+      return template ? {
+        credentialType: template.label,
+        compatibleWallets: template.compatibleWallets || [],
+        walletRestricted: template.walletRestricted || false
+      } : null;
+    })
+    .filter((req): req is NonNullable<typeof req> => req !== null);
 
   // Add component function
   const addComponent = useCallback((type: string) => {
@@ -339,6 +363,13 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
           </div>
         </div>
       </div>
+
+      {/* Wallet Selector */}
+      <WalletSelector
+        credentialRequirements={credentialRequirements as any}
+        selectedWallets={selectedWallets}
+        onWalletChange={setSelectedWallets}
+      />
 
       {/* Field Configuration Modal */}
       <FieldConfigModal

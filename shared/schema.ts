@@ -56,6 +56,8 @@ export const credentialTemplates = pgTable("credential_templates", {
   isPredefined: boolean("is_predefined").notNull().default(false),
   ecosystem: text("ecosystem"),
   interopProfile: text("interop_profile"),
+  compatibleWallets: jsonb("compatible_wallets").$type<string[]>().notNull(),
+  walletRestricted: boolean("wallet_restricted").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -101,6 +103,8 @@ export const insertCredentialTemplateSchema = createInsertSchema(credentialTempl
   isPredefined: true,
   ecosystem: true,
   interopProfile: true,
+  compatibleWallets: true,
+  walletRestricted: true,
 });
 
 // Types

@@ -246,6 +246,25 @@ export default function CredentialsPage() {
                   </div>
                 )}
 
+                {/* Wallet Compatibility */}
+                {(template.walletRestricted || (template.compatibleWallets && template.compatibleWallets.length > 0)) && (
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Wallet Compatibility</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {template.walletRestricted && (
+                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
+                          Restricted
+                        </Badge>
+                      )}
+                      {template.compatibleWallets && template.compatibleWallets.map((wallet: string) => (
+                        <Badge key={wallet} variant="secondary" className="text-xs bg-blue-50 text-blue-700">
+                          {wallet}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {template.schemaUrl && (
                   <div>
                     <a

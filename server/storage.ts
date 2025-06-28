@@ -252,6 +252,8 @@ export class MemStorage implements IStorage {
       isPredefined: true,
       ecosystem: 'BC Ecosystem',
       interopProfile: 'AIP 2.0',
+      compatibleWallets: ['BC Wallet'],
+      walletRestricted: true,
       createdAt: new Date('2023-11-10'),
       updatedAt: new Date('2023-11-10'),
     };
@@ -279,6 +281,8 @@ export class MemStorage implements IStorage {
       isPredefined: true,
       ecosystem: 'BC Ecosystem',
       interopProfile: 'AIP 2.0',
+      compatibleWallets: ['BC Wallet'],
+      walletRestricted: true,
       createdAt: new Date('2023-10-25'),
       updatedAt: new Date('2023-10-25'),
     };
@@ -297,6 +301,8 @@ export class MemStorage implements IStorage {
       interopProfile: template.interopProfile || null,
       schemaUrl: template.schemaUrl || null,
       isPredefined: template.isPredefined || false,
+      compatibleWallets: template.compatibleWallets ? [...template.compatibleWallets] : [],
+      walletRestricted: template.walletRestricted || false,
       createdAt: now,
       updatedAt: now,
     };
@@ -324,6 +330,8 @@ export class MemStorage implements IStorage {
     const updated: CredentialTemplate = {
       ...existing,
       ...template,
+      compatibleWallets: template.compatibleWallets || existing.compatibleWallets,
+      walletRestricted: template.walletRestricted !== undefined ? template.walletRestricted : existing.walletRestricted,
       updatedAt: new Date(),
     };
     this.credentialTemplates.set(id, updated);
