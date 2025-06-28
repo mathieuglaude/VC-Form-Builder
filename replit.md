@@ -156,6 +156,12 @@ Changelog:
   - Removed all edit/delete functionality from credential library as requested
   - Added governance information, copy-to-clipboard functionality, and quick actions
   - All credentials are now read-only to provide stable foundation for users
+- June 28, 2025. Enhanced navigation and added Wallet Library
+  - Renamed "Credentials" menu item to "Credential Library" for clarity
+  - Added new "Wallet Library" menu item with comprehensive wallet directory
+  - Created wallet comparison page with filtering by platform and protocol support
+  - Included major wallets: BC Wallet, Trinsic, Lissi, and Hyperledger Aries Mobile Agent
+  - Added download links and feature comparisons for each wallet
 ```
 
 ## User Preferences

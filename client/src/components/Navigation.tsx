@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
-import { FileText, Database } from "lucide-react";
+import { FileText, Database, Wallet } from "lucide-react";
 
 export default function Navigation() {
   const [location] = useLocation();
 
   const navItems = [
     { path: "/builder", label: "Form Builder", icon: FileText },
-    { path: "/credentials", label: "Credentials", icon: Database },
+    { path: "/credentials", label: "Credential Library", icon: Database },
+    { path: "/wallets", label: "Wallet Library", icon: Wallet },
   ];
 
   return (
