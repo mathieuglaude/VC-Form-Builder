@@ -232,6 +232,9 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         };
         
         setFormSchema(updatedSchema);
+        
+        // Update global schema reference
+        (window as any).currentFormSchema = updatedSchema;
 
         // Update preview with new component - pass the updated schema
         updateFormPreviewWithSchema(updatedSchema);
@@ -242,22 +245,31 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         });
       };
 
-      // Edit component function
+      // Store React setters globally so they can be accessed from HTML buttons
+      (window as any).setSelectedComponent = setSelectedComponent;
+      (window as any).setIsConfigModalOpen = setIsConfigModalOpen;
+      (window as any).currentFormSchema = formSchema;
+      
       (window as any).editFormComponent = (componentKey: string) => {
-        const component = formSchema.components.find((comp: any) => comp.key === componentKey);
+        const schema = (window as any).currentFormSchema;
+        const component = schema.components?.find((comp: any) => comp.key === componentKey);
         if (component) {
-          setSelectedComponent(component);
-          setIsConfigModalOpen(true);
+          (window as any).setSelectedComponent(component);
+          (window as any).setIsConfigModalOpen(true);
+        } else {
+          console.log('Component not found:', componentKey, 'Available components:', schema.components);
         }
       };
 
       // Remove component function
       (window as any).removeFormComponent = (componentKey: string) => {
+        const currentSchema = (window as any).currentFormSchema;
         const updatedSchema = {
-          ...formSchema,
-          components: formSchema.components.filter((comp: any) => comp.key !== componentKey)
+          ...currentSchema,
+          components: currentSchema.components.filter((comp: any) => comp.key !== componentKey)
         };
         setFormSchema(updatedSchema);
+        (window as any).currentFormSchema = updatedSchema;
         updateFormPreviewWithSchema(updatedSchema);
         
         toast({
@@ -388,6 +400,9 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       )
     };
     setFormSchema(updatedSchema);
+    
+    // Update global schema reference
+    (window as any).currentFormSchema = updatedSchema;
     
     // Update the preview directly with the updated state
     setTimeout(() => {
