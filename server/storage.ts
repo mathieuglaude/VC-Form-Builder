@@ -75,55 +75,47 @@ export class MemStorage implements IStorage {
   }
 
   private seedCredentialDefinitions() {
-    const employmentCred: CredentialDefinition = {
+    // Only include the two credentials you have in your catalogue
+    const bcDigitalBusinessCard: CredentialDefinition = {
       id: this.currentCredDefId++,
-      credentialType: "Employment Credential",
-      issuerDid: "did:example:company123",
+      credentialType: "BC Digital Business Card",
+      issuerDid: "MTYqmTBoLTzVqWaD7gVoeK",
       attributes: [
-        { name: "employeeId", type: "string", description: "Employee ID" },
-        { name: "companyEmail", type: "string", description: "Company Email" },
-        { name: "jobTitle", type: "string", description: "Job Title" },
-        { name: "department", type: "string", description: "Department" },
-        { name: "startDate", type: "date", description: "Start Date" }
+        { name: "business_type", type: "string", description: "Type of business" },
+        { name: "given_names", type: "string", description: "Given names" },
+        { name: "registered_on_dateint", type: "string", description: "Registration date" },
+        { name: "family_name", type: "string", description: "Family name" },
+        { name: "credential_id", type: "string", description: "Credential ID" },
+        { name: "company_status", type: "string", description: "Company status" },
+        { name: "business_name", type: "string", description: "Business name" },
+        { name: "role", type: "string", description: "Role in business" },
+        { name: "cra_business_number", type: "string", description: "CRA business number" },
+        { name: "identifier", type: "string", description: "Business identifier" }
       ],
       createdAt: new Date()
     };
 
-    const identityCred: CredentialDefinition = {
-      id: this.currentCredDefId++,
-      credentialType: "Identity Credential",
-      issuerDid: "did:example:government",
-      attributes: [
-        { name: "fullName", type: "string", description: "Full Name" },
-        { name: "dateOfBirth", type: "date", description: "Date of Birth" },
-        { name: "nationalId", type: "string", description: "National ID" },
-        { name: "address", type: "string", description: "Address" }
-      ],
-      createdAt: new Date()
-    };
-
-    const personCred: CredentialDefinition = {
+    const bcPersonCredential: CredentialDefinition = {
       id: this.currentCredDefId++,
       credentialType: "BC Person Credential",
-      issuerDid: "did:bcgov:person-issuer",
+      issuerDid: "RGjWbW1eycP7FrMf4QJvX8",
       attributes: [
-        { name: "given_names", type: "string", description: "Given Names" },
-        { name: "family_name", type: "string", description: "Family Name" },
-        { name: "birthdate_dateint", type: "string", description: "Birth Date" },
-        { name: "street_address", type: "string", description: "Street Address" },
+        { name: "given_names", type: "string", description: "Given names" },
+        { name: "family_name", type: "string", description: "Family name" },
+        { name: "birthdate_dateint", type: "string", description: "Birth date" },
+        { name: "street_address", type: "string", description: "Street address" },
         { name: "locality", type: "string", description: "City" },
         { name: "region", type: "string", description: "Province/State" },
-        { name: "postal_code", type: "string", description: "Postal Code" },
+        { name: "postal_code", type: "string", description: "Postal code" },
         { name: "country", type: "string", description: "Country" },
         { name: "picture", type: "string", description: "Photo" },
-        { name: "expiry_date_dateint", type: "string", description: "Expiry Date" }
+        { name: "expiry_date_dateint", type: "string", description: "Expiry date" }
       ],
       createdAt: new Date()
     };
 
-    this.credentialDefinitions.set(employmentCred.id, employmentCred);
-    this.credentialDefinitions.set(identityCred.id, identityCred);
-    this.credentialDefinitions.set(personCred.id, personCred);
+    this.credentialDefinitions.set(bcDigitalBusinessCard.id, bcDigitalBusinessCard);
+    this.credentialDefinitions.set(bcPersonCredential.id, bcPersonCredential);
   }
 
   // User methods

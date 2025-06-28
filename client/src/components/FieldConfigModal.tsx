@@ -26,8 +26,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     credentialMode: 'optional', // 'optional' | 'required'
     options: '',
     credentialType: '',
-    attributeName: '',
-    issuerDid: ''
+    attributeName: ''
   });
 
   const { data: credentialDefs } = useQuery({
@@ -46,8 +45,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         credentialMode: initialConfig.properties?.credentialMode || 'optional',
         options: initialConfig.properties?.options?.join('\n') || '',
         credentialType: initialConfig.properties?.vcMapping?.credentialType || '',
-        attributeName: initialConfig.properties?.vcMapping?.attributeName || '',
-        issuerDid: initialConfig.properties?.vcMapping?.issuerDid || ''
+        attributeName: initialConfig.properties?.vcMapping?.attributeName || ''
       });
     } else if (isOpen) {
       setConfig({
@@ -59,8 +57,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         credentialMode: 'optional',
         options: '',
         credentialType: '',
-        attributeName: '',
-        issuerDid: ''
+        attributeName: ''
       });
     }
   }, [initialConfig, isOpen]);
@@ -84,8 +81,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
         ...(config.dataSource === 'verified' && {
           vcMapping: {
             credentialType: config.credentialType,
-            attributeName: config.attributeName,
-            issuerDid: config.issuerDid || undefined
+            attributeName: config.attributeName
           }
         })
       }
@@ -270,8 +266,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                             <span className="font-medium">{type.label}</span>
                             <span className="text-xs text-gray-500">
                               {type.value === 'BC Person Credential' && 'BC Government issued identity credential'}
-                              {type.value === 'Employment Credential' && 'Workplace identity and role verification'}
-                              {type.value === 'Identity Credential' && 'Basic identity verification'}
+                              {type.value === 'BC Digital Business Card' && 'BC Government business registration credential'}
                             </span>
                           </div>
                         </SelectItem>
@@ -315,19 +310,6 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                     )}
                   </div>
                 )}
-                
-                <div>
-                  <Label htmlFor="issuerDid">Trusted Issuer (Optional)</Label>
-                  <Input
-                    id="issuerDid"
-                    value={config.issuerDid}
-                    onChange={(e) => setConfig({ ...config, issuerDid: e.target.value })}
-                    placeholder="did:bcgov:person-issuer (leave empty to accept any issuer)"
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Specify a trusted issuer DID to only accept credentials from that source
-                  </p>
-                </div>
               </div>
             </div>
           )}
