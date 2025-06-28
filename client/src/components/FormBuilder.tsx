@@ -3,12 +3,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { FormBuilder as FormioBuilder } from "@formio/react";
-import { formioConfig, extractVCMetadata } from "@/lib/formio";
-import { Card, CardContent } from "./ui/card";
-import { Badge } from "./ui/badge";
-import { Switch } from "./ui/switch";
-import { Label } from "./ui/label";
+import FieldConfigModal from "./FieldConfigModal";
 
 interface FormBuilderProps {
   initialForm?: any;
@@ -19,55 +14,149 @@ interface FormBuilderProps {
 export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps) {
   const [formTitle, setFormTitle] = useState(initialForm?.name || "");
   const [formDescription, setFormDescription] = useState(initialForm?.description || "");
-  const [formSchema, setFormSchema] = useState<any>(initialForm?.formSchema || { 
-    display: 'form',
-    components: [] 
-  });
-  const [isWizard, setIsWizard] = useState(initialForm?.formSchema?.display === 'wizard');
+  const [components, setComponents] = useState<any[]>(initialForm?.formSchema?.components || []);
+  const [selectedComponent, setSelectedComponent] = useState<any>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const { toast } = useToast();
 
-  // Handle form schema changes from Form.io builder
-  const handleFormChange = useCallback((form: any) => {
-    console.log('Form schema updated:', form);
-    setFormSchema(form);
+  // Add component function
+  const addComponent = useCallback((type: string) => {
+    const componentLabels: Record<string, string> = {
+      textfield: 'Text Input',
+      email: 'Email Address',
+      textarea: 'Text Area',
+      number: 'Number',
+      select: 'Select List',
+      checkbox: 'Checkbox'
+    };
+
+    const newComponent = {
+      type,
+      key: `${type}_${Date.now()}`,
+      label: componentLabels[type] || 'Component',
+      input: true,
+      tableView: true,
+      properties: {
+        dataSource: 'freetext'
+      }
+    };
+
+    setComponents(prev => {
+      const newComponents = [...prev, newComponent];
+      console.log('Adding component. Current components:', prev.length, 'New total:', newComponents.length);
+      console.log('Updated schema components:', newComponents);
+      return newComponents;
+    });
+
+    toast({
+      title: "Component Added",
+      description: `${componentLabels[type]} added to form`
+    });
+  }, [toast]);
+
+  // Remove component function
+  const removeComponent = useCallback((index: number) => {
+    setComponents(prev => prev.filter((_, i) => i !== index));
+    toast({
+      title: "Component Removed",
+      description: "Component removed from form"
+    });
+  }, [toast]);
+
+  // Edit component function
+  const editComponent = useCallback((component: any) => {
+    setSelectedComponent(component);
+    setIsConfigModalOpen(true);
   }, []);
 
-  // Toggle between form and wizard display
-  const handleDisplayToggle = useCallback((checked: boolean) => {
-    setIsWizard(checked);
-    setFormSchema((prev: any) => ({
-      ...prev,
-      display: checked ? 'wizard' : 'form'
-    }));
+  // Save component configuration
+  const saveComponentConfig = useCallback((config: any) => {
+    if (!selectedComponent) return;
+
+    setComponents(prev => prev.map(comp => 
+      comp.key === selectedComponent.key ? { ...comp, ...config } : comp
+    ));
+
+    setIsConfigModalOpen(false);
+    setSelectedComponent(null);
+
+    toast({
+      title: "Component Updated",
+      description: "Component configuration has been saved"
+    });
+  }, [selectedComponent, toast]);
+
+  // Drag and drop handlers
+  const [draggedIndex, setDraggedIndex] = useState<number>(-1);
+
+  const handleDragStart = useCallback((index: number) => {
+    setDraggedIndex(index);
   }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex !== -1 && draggedIndex !== dropIndex) {
+      setComponents(prev => {
+        const newComponents = [...prev];
+        const draggedComponent = newComponents[draggedIndex];
+        
+        if (draggedComponent) {
+          // Remove the dragged component
+          newComponents.splice(draggedIndex, 1);
+          
+          // Insert at new position
+          const adjustedDropIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
+          newComponents.splice(adjustedDropIndex, 0, draggedComponent);
+        }
+        
+        return newComponents;
+      });
+    }
+    
+    setDraggedIndex(-1);
+  }, [draggedIndex]);
 
   // Extract metadata for VC integration
-  const extractMetadata = useCallback(() => {
-    return extractVCMetadata(formSchema);
-  }, [formSchema]);
+  const extractMetadata = () => {
+    const metadata: any = {};
+    components.forEach(comp => {
+      if (comp.properties?.dataSource) {
+        metadata[comp.key] = {
+          type: comp.properties.dataSource,
+          ...(comp.properties.vcMapping && { vcMapping: comp.properties.vcMapping }),
+          ...(comp.properties.options && { options: comp.properties.options })
+        };
+      }
+    });
+    return metadata;
+  };
 
   // Handle save
-  const handleSave = useCallback(() => {
+  const handleSave = () => {
     const formData = {
       title: formTitle,
       description: formDescription,
-      formSchema: formSchema,
+      formSchema: { components },
       metadata: extractMetadata()
     };
-    console.log('Saving form:', formData);
     onSave(formData);
-  }, [formTitle, formDescription, formSchema, extractMetadata, onSave]);
+  };
 
   // Handle preview
-  const handlePreview = useCallback(() => {
+  const handlePreview = () => {
     const formData = {
       title: formTitle,
       description: formDescription,
-      formSchema: formSchema,
+      formSchema: { components },
       metadata: extractMetadata()
     };
     onPreview(formData);
-  }, [formTitle, formDescription, formSchema, extractMetadata, onPreview]);
+  };
 
   return (
     <div className="h-full flex flex-col">
@@ -89,74 +178,178 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
               rows={2}
             />
           </div>
-          
-          <div className="flex items-center gap-4 ml-6">
-            {/* Wizard Toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="wizard-mode"
-                checked={isWizard}
-                onCheckedChange={handleDisplayToggle}
-              />
-              <Label htmlFor="wizard-mode" className="text-sm font-medium">
-                Wizard Mode
-              </Label>
-            </div>
+          <div className="flex gap-3 ml-6">
+            <Button variant="outline" onClick={handlePreview}>
+              Preview
+            </Button>
+            <Button onClick={handleSave}>
+              Save Form
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex bg-gray-50">
+        {/* Component Library */}
+        <div className="w-80 bg-white border-r border-gray-200 flex-shrink-0">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Component Library</h3>
+            <p className="text-sm text-gray-600 mb-6">Click to add components to your form</p>
             
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={handlePreview}>
-                Preview
-              </Button>
-              <Button onClick={handleSave}>
-                Save Form
-              </Button>
+            <div className="space-y-3">
+              {[
+                { type: 'textfield', label: 'Text Input', icon: '📝', description: 'Single line text field' },
+                { type: 'email', label: 'Email', icon: '✉️', description: 'Email address input' },
+                { type: 'textarea', label: 'Text Area', icon: '📄', description: 'Multi-line text input' },
+                { type: 'number', label: 'Number', icon: '🔢', description: 'Numeric input field' },
+                { type: 'select', label: 'Select List', icon: '📋', description: 'Dropdown selection' },
+                { type: 'checkbox', label: 'Checkbox', icon: '☑️', description: 'Checkbox input' }
+              ].map((component) => (
+                <button
+                  key={component.type}
+                  onClick={() => addComponent(component.type)}
+                  className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex items-start space-x-3">
+                    <span className="text-2xl">{component.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-gray-900">{component.label}</h4>
+                      <p className="text-xs text-gray-500 mt-1">{component.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
-        
-        {/* Form Info */}
-        <div className="flex items-center gap-4 mt-3">
-          <Badge variant={isWizard ? "default" : "secondary"}>
-            {isWizard ? "Multi-Step Wizard" : "Single Page Form"}
-          </Badge>
-          {formSchema.components && formSchema.components.length > 0 && (
-            <Badge variant="outline">
-              {formSchema.components.length} Components
-            </Badge>
-          )}
-        </div>
-      </div>
 
-      {/* Form Builder */}
-      <div className="flex-1 bg-gray-50">
-        <div className="h-full">
-          <div className="formio-builder-container">
-            <FormioBuilder
-              form={formSchema}
-              onChange={handleFormChange}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Status Bar */}
-      <div className="bg-white border-t border-gray-200 px-6 py-3 flex-shrink-0">
-        <div className="flex justify-between items-center text-sm text-gray-600">
-          <div>
-            Form.io Builder - Drag components from the sidebar to build your form
-          </div>
-          <div className="flex items-center gap-4">
-            {isWizard && (
-              <span className="text-blue-600 font-medium">
-                ✨ Wizard mode enabled - Use panels to create steps
-              </span>
+        {/* Form Preview */}
+        <div className="flex-1 flex flex-col">
+          <div className="p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Form Preview</h3>
+            <p className="text-sm text-gray-600 mb-6">Your form components will appear here</p>
+            
+            {components.length === 0 ? (
+              <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
+                <p className="text-gray-500">No components added yet. Add components from the library on the left.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {components.map((component, index) => (
+                  <div
+                    key={component.key}
+                    draggable
+                    onDragStart={() => handleDragStart(index)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, index)}
+                    className="border border-gray-200 rounded-lg p-4 bg-white hover:border-blue-300 cursor-move"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <h4 className="text-sm font-medium text-gray-900">{component.label || 'Untitled Component'}</h4>
+                        <p className="text-xs text-gray-500 mt-1">Type: {component.type}</p>
+                        
+                        {/* Show VC integration status */}
+                        {component.properties?.dataSource === 'verified' && (
+                          <div className="flex items-center gap-2 mt-2">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              🛡️ Verifiable Credential
+                            </span>
+                            {component.properties?.credentialMode === 'required' && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                                ⚠️ Required
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {component.properties?.dataSource === 'picklist' && (
+                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-2">
+                            📋 Pick List
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => editComponent(component)}
+                          className="px-2 py-1 text-xs text-blue-600 hover:text-blue-800"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => removeComponent(index)}
+                          className="px-2 py-1 text-xs text-red-600 hover:text-red-800"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Component Preview */}
+                    <div className="mt-3">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {component.label}
+                        {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+                      </label>
+                      
+                      {component.type === 'select' ? (
+                        <select className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" disabled>
+                          <option>Select an option...</option>
+                          {component.properties?.options?.map((option: string, idx: number) => (
+                            <option key={idx} value={option}>{option}</option>
+                          ))}
+                        </select>
+                      ) : component.type === 'textarea' ? (
+                        <textarea 
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50" 
+                          rows={3}
+                          placeholder={component.placeholder || `Enter ${component.label?.toLowerCase()}`}
+                          disabled
+                        />
+                      ) : component.type === 'checkbox' ? (
+                        <div className="flex items-center">
+                          <input 
+                            type="checkbox" 
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                            disabled
+                          />
+                          <label className="ml-2 text-sm text-gray-900">
+                            {component.description || component.label}
+                          </label>
+                        </div>
+                      ) : (
+                        <input
+                          type={component.type === 'email' ? 'email' : component.type === 'number' ? 'number' : 'text'}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                          placeholder={component.placeholder || `Enter ${component.label?.toLowerCase()}`}
+                          disabled
+                        />
+                      )}
+                      
+                      {component.description && (
+                        <p className="text-xs text-gray-500 mt-1">{component.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
-            <span>
-              {formSchema.components?.length || 0} components
-            </span>
           </div>
         </div>
       </div>
+
+      {/* Field Configuration Modal */}
+      <FieldConfigModal
+        isOpen={isConfigModalOpen}
+        onClose={() => {
+          setIsConfigModalOpen(false);
+          setSelectedComponent(null);
+        }}
+        onSave={saveComponentConfig}
+        initialConfig={selectedComponent}
+      />
     </div>
   );
 }

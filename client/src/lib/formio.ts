@@ -4,130 +4,48 @@ export const formioConfig = {
   language: 'en',
   i18n: {},
   
-  // Enhanced builder configuration with all components enabled
+  // Custom component definitions for VC integration
+  components: {
+    // Extend default components with VC-specific properties
+  },
+  
+  // Builder configuration
   builder: {
-    // Basic components - most commonly used
-    basic: {
-      title: 'Basic Components',
-      weight: 0,
+    basic: false,
+    advanced: false,
+    data: false,
+    layout: false,
+    premium: false,
+    custom: {
+      title: 'Form Components',
       default: true,
-      components: {
-        textfield: true,
-        textarea: true,
-        number: true,
-        password: true,
-        checkbox: true,
-        selectboxes: true,
-        select: true,
-        radio: true,
-        email: true,
-        url: true,
-        phoneNumber: true,
-        tags: true,
-        datetime: true,
-        button: true
-      }
-    },
-    
-    // Advanced components for complex logic
-    advanced: {
-      title: 'Advanced',
       weight: 10,
       components: {
-        address: true,
-        day: true,
-        time: true,
-        currency: true,
-        survey: true,
-        signature: true,
-        file: true,
-        hidden: true,
-        htmlelement: true,
-        content: true
-      }
-    },
-    
-    // Layout components for wizards and organization
-    layout: {
-      title: 'Layout',
-      weight: 20,
-      components: {
-        columns: true,
-        fieldset: true,
-        panel: true,
-        table: true,
-        tabs: true,
-        well: true
-      }
-    },
-    
-    // Data components for dynamic content
-    data: {
-      title: 'Data',
-      weight: 30,
-      components: {
-        container: true,
-        datagrid: true,
-        editgrid: true
+        textfield: true,
+        email: true,
+        select: true,
+        checkbox: true,
+        textarea: true,
+        number: true,
+        datetime: true,
+        verified: {
+          title: 'Verified Field',
+          key: 'verified',
+          icon: 'shield-check',
+          schema: {
+            label: 'Verified Field',
+            type: 'textfield',
+            key: 'verified',
+            input: true,
+            tableView: true,
+            customClass: 'verified-field',
+            properties: {
+              dataSource: 'verified'
+            }
+          }
+        }
       }
     }
-  },
-  
-  // Enable conditional logic and calculations
-  options: {
-    sanitize: true,
-    template: 'bootstrap',
-    iconset: 'fontawesome',
-    hooks: {
-      beforeSubmit: function(submission: any, next: Function) {
-        // Hook for VC validation before submission
-        next();
-      }
-    }
-  }
-};
-
-// Enhanced form display options for wizards and advanced features
-export const formDisplayOptions = {
-  // Enable wizard mode
-  wizard: {
-    enabled: true,
-    options: {
-      breadcrumbSettings: {
-        clickable: true
-      },
-      buttonSettings: {
-        showCancel: true,
-        showPrevious: true,
-        showNext: true,
-        showSubmit: true
-      }
-    }
-  },
-  
-  // Enable conditional logic
-  conditional: {
-    enabled: true,
-    options: {
-      show: null,
-      when: null,
-      eq: ''
-    }
-  },
-  
-  // Enable calculations
-  calculateValue: {
-    enabled: true
-  },
-  
-  // Enable validation
-  validate: {
-    required: false,
-    custom: '',
-    customPrivate: false,
-    strictDateValidation: false,
-    multiple: false,
-    unique: false
   }
 };
 

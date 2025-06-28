@@ -139,6 +139,11 @@ Changelog:
     * Required: Users must present valid credential to proceed (no manual entry allowed)
   - Enhanced field configuration modal with credential mode selection
   - Updated component preview to display credential verification requirements
+- June 28, 2025. Reverted complex Form.io integration back to simple form builder
+  - User found full Form.io integration too complicated
+  - Restored clean, working form builder with basic components
+  - Maintained VC integration and flexible verification modes
+  - Kept simple drag-and-drop interface with 6 core component types
 ```
 
 ## User Preferences
