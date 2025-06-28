@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -18,6 +22,8 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const formBuilderRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const [isFormioLoaded, setIsFormioLoaded] = useState(false);
+  const [selectedComponent, setSelectedComponent] = useState<any>(null);
+  const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
 
   // Initialize Form.io builder
   useEffect(() => {
@@ -186,10 +192,37 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
             <h4 class="font-medium text-gray-900 mb-3">Form Preview</h4>
             <div id="form-preview" class="bg-white border rounded p-4 min-h-32">
               ${formSchema.components && formSchema.components.length > 0 
-                ? formSchema.components.map((comp: any) => `
-                  <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
-                    <div class="text-sm text-gray-500">${comp.type} component</div>
+                ? formSchema.components.map((comp: any, index: number) => `
+                  <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50 group hover:bg-gray-100 transition-colors">
+                    <div class="flex justify-between items-start">
+                      <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
+                        <div class="text-sm text-gray-500">${comp.type} component</div>
+                        ${comp.required ? '<span class="text-xs text-red-500">* Required</span>' : ''}
+                      </div>
+                      <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          type="button"
+                          onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
+                          class="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                          title="Edit component"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                          </svg>
+                        </button>
+                        <button 
+                          type="button"
+                          onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
+                          class="p-1 text-red-600 hover:bg-red-100 rounded"
+                          title="Remove component"
+                        >
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 `).join('') 
                 : '<div class="text-gray-500 text-center py-8">Add components above to build your form</div>'
@@ -228,28 +261,89 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         
         setFormSchema(updatedSchema);
 
-        // Update preview immediately
-        const preview = document.getElementById('form-preview');
-        if (preview) {
-          const componentHtml = `
-            <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50">
-              <label class="block text-sm font-medium text-gray-700 mb-1">${newComponent.label}</label>
-              <div class="text-sm text-gray-500">${type} component</div>
-            </div>
-          `;
-          
-          if (preview.innerHTML.includes('Add components above')) {
-            preview.innerHTML = componentHtml;
-          } else {
-            preview.innerHTML += componentHtml;
-          }
-        }
+        // Update preview with new component
+        updateFormPreview();
 
         toast({
           title: "Component Added",
           description: `${componentLabels[type]} has been added to your form`
         });
       };
+
+      // Edit component function
+      (window as any).editFormComponent = (componentKey: string) => {
+        const component = formSchema.components.find((comp: any) => comp.key === componentKey);
+        if (component) {
+          setSelectedComponent(component);
+          setIsConfigModalOpen(true);
+        }
+      };
+
+      // Remove component function
+      (window as any).removeFormComponent = (componentKey: string) => {
+        const updatedSchema = {
+          ...formSchema,
+          components: formSchema.components.filter((comp: any) => comp.key !== componentKey)
+        };
+        setFormSchema(updatedSchema);
+        updateFormPreview();
+        
+        toast({
+          title: "Component Removed",
+          description: "Component has been removed from your form"
+        });
+      };
+
+      // Function to update form preview
+      const updateFormPreview = () => {
+        const preview = document.getElementById('form-preview');
+        if (preview) {
+          if (formSchema.components && formSchema.components.length > 0) {
+            preview.innerHTML = formSchema.components.map((comp: any) => `
+              <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50 group hover:bg-gray-100 transition-colors">
+                <div class="flex justify-between items-start">
+                  <div class="flex-1">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
+                    <div class="text-sm text-gray-500">${comp.type} component</div>
+                    ${comp.required ? '<span class="text-xs text-red-500">* Required</span>' : ''}
+                    ${comp.placeholder ? `<div class="text-xs text-gray-400">Placeholder: ${comp.placeholder}</div>` : ''}
+                    ${comp.description ? `<div class="text-xs text-gray-400">Help: ${comp.description}</div>` : ''}
+                    ${comp.properties?.dataSource === 'verified' ? '<span class="text-xs text-green-600 font-medium">🔒 Verified Data</span>' : ''}
+                    ${comp.properties?.dataSource === 'picklist' ? '<span class="text-xs text-blue-600 font-medium">📋 Pick List</span>' : ''}
+                  </div>
+                  <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button 
+                      type="button"
+                      onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
+                      class="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                      title="Edit component"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                    <button 
+                      type="button"
+                      onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
+                      class="p-1 text-red-600 hover:bg-red-100 rounded"
+                      title="Remove component"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `).join('');
+          } else {
+            preview.innerHTML = '<div class="text-gray-500 text-center py-8">Add components above to build your form</div>';
+          }
+        }
+      };
+
+      // Make updateFormPreview globally available
+      (window as any).updateFormPreview = updateFormPreview;
     };
 
     loadFormioBuilder();
@@ -307,6 +401,26 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
     onPreview(formData);
   };
 
+  const updateComponent = (updatedConfig: any) => {
+    const updatedSchema = {
+      ...formSchema,
+      components: formSchema.components.map((comp: any) => 
+        comp.key === selectedComponent.key 
+          ? { ...comp, ...updatedConfig }
+          : comp
+      )
+    };
+    setFormSchema(updatedSchema);
+    
+    // Update the preview
+    setTimeout(() => {
+      const updateFormPreview = (window as any).updateFormPreview;
+      if (updateFormPreview) {
+        updateFormPreview();
+      }
+    }, 100);
+  };
+
   return (
     <div className="h-full flex flex-col">
       {/* Toolbar */}
@@ -347,6 +461,139 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
           className="h-full w-full"
           style={{ minHeight: '600px' }}
         />
+      </div>
+
+      {/* Component Configuration Modal */}
+      <Dialog open={isConfigModalOpen} onOpenChange={setIsConfigModalOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Configure Component</DialogTitle>
+          </DialogHeader>
+          
+          {selectedComponent && (
+            <ComponentConfigForm 
+              component={selectedComponent}
+              onSave={updateComponent}
+              onClose={() => setIsConfigModalOpen(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+interface ComponentConfigFormProps {
+  component: any;
+  onSave: (config: any) => void;
+  onClose: () => void;
+}
+
+function ComponentConfigForm({ component, onSave, onClose }: ComponentConfigFormProps) {
+  const [config, setConfig] = useState({
+    label: component.label || '',
+    placeholder: component.placeholder || '',
+    description: component.description || '',
+    required: component.required || false,
+    dataSource: component.properties?.dataSource || 'freetext'
+  });
+
+  const handleSave = () => {
+    onSave({
+      ...config,
+      properties: {
+        ...component.properties,
+        dataSource: config.dataSource
+      }
+    });
+    onClose();
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="label">Field Label</Label>
+          <Input
+            id="label"
+            value={config.label}
+            onChange={(e) => setConfig({ ...config, label: e.target.value })}
+            placeholder="Enter field label"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="placeholder">Placeholder Text</Label>
+          <Input
+            id="placeholder"
+            value={config.placeholder}
+            onChange={(e) => setConfig({ ...config, placeholder: e.target.value })}
+            placeholder="Enter placeholder text"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="description">Help Text</Label>
+          <Textarea
+            id="description"
+            value={config.description}
+            onChange={(e) => setConfig({ ...config, description: e.target.value })}
+            placeholder="Enter help text for this field"
+            rows={2}
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="required"
+            checked={config.required}
+            onCheckedChange={(checked) => setConfig({ ...config, required: !!checked })}
+          />
+          <Label htmlFor="required">Required field</Label>
+        </div>
+
+        <div>
+          <Label htmlFor="dataSource">Data Source</Label>
+          <Select value={config.dataSource} onValueChange={(value) => setConfig({ ...config, dataSource: value })}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select data source" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="freetext">Free Text Entry</SelectItem>
+              <SelectItem value="picklist">Pick List (Predefined Options)</SelectItem>
+              <SelectItem value="verified">Verified Credential Data</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {config.dataSource === 'verified' && (
+          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+            <h4 className="font-medium text-green-900 mb-2">Verifiable Credential Configuration</h4>
+            <p className="text-sm text-green-700">
+              This field will be auto-populated with verified data from digital credentials.
+              Configure the credential mapping in the VC Configuration section.
+            </p>
+          </div>
+        )}
+
+        {config.dataSource === 'picklist' && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Pick List Configuration</h4>
+            <p className="text-sm text-blue-700">
+              Define predefined options that users can select from.
+              Configure options in the advanced settings.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end space-x-3">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave}>
+          Save Changes
+        </Button>
       </div>
     </div>
   );
