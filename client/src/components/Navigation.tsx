@@ -1,13 +1,11 @@
 import { Link, useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { FileText, Database, Home, Plus, BarChart3 } from "lucide-react";
+import { FileText, Database } from "lucide-react";
 
 export default function Navigation() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
 
   const navItems = [
-    { path: "/", label: "Dashboard", icon: Home },
-    { path: "/builder", label: "Builder", icon: FileText },
+    { path: "/builder", label: "Form Builder", icon: FileText },
     { path: "/credentials", label: "Credentials", icon: Database },
   ];
 
@@ -18,12 +16,12 @@ export default function Navigation() {
         <Link href="/">
           <div className="flex items-center gap-2 text-xl font-semibold cursor-pointer">
             <FileText className="h-6 w-6 text-blue-600" />
-            <span className="text-gray-900">Form Builder Pro</span>
+            <span className="text-gray-900">Form Builder</span>
           </div>
         </Link>
 
         {/* Nav */}
-        <nav className="hidden md:flex gap-6">
+        <nav className="flex gap-6">
           {navItems.map(({ path, label, icon: Icon }) => (
             <Link key={path} href={path}>
               <div className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
@@ -37,15 +35,6 @@ export default function Navigation() {
             </Link>
           ))}
         </nav>
-
-        {/* CTA */}
-        <Button
-          onClick={() => setLocation('/builder')}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-        >
-          <Plus className="h-4 w-4" />
-          Create Form
-        </Button>
       </div>
     </header>
   );
