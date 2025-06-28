@@ -38,15 +38,15 @@ const wallets: Wallet[] = [
   {
     id: 2,
     name: "NB Orbit Edge Wallet",
-    provider: "Government of New Brunswick",
+    provider: "Northern Block",
     platforms: ["iOS", "Android"],
     supportedProtocols: ["AIP 2.0", "Aries", "DIDComm"],
-    features: ["Government Credentials", "Provincial Services", "Secure Storage", "Mobile First"],
+    features: ["Enterprise Ready", "AIP 2.0 Compatible", "Secure Storage", "Multi-Platform"],
     downloadLinks: {
       ios: "https://apps.apple.com/ca/app/nb-orbit-edge/id1234567894",
-      android: "https://play.google.com/store/apps/details?id=ca.nb.gov.orbit"
+      android: "https://play.google.com/store/apps/details?id=com.northernblock.orbit"
     },
-    description: "Official digital wallet from the Government of New Brunswick supporting AIP 2.0 for provincial credential services."
+    description: "Digital wallet from Northern Block supporting AIP 2.0 protocols for enterprise and government credential verification."
   }
 ];
 
