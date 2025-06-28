@@ -84,13 +84,15 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       if (!formBuilderRef.current) return;
       
       formBuilderRef.current.innerHTML = `
-        <div class="h-full bg-white border rounded-lg overflow-hidden">
-          <div class="bg-gray-50 border-b p-4">
-            <h3 class="font-medium text-gray-900">Form Components</h3>
-            <p class="text-sm text-gray-500 mt-1">Click to add components to your form</p>
-          </div>
-          
-          <div class="p-4 space-y-3">
+        <div class="h-full flex bg-gray-50">
+          <!-- Component Library -->
+          <div class="w-1/3 bg-white border-r">
+            <div class="bg-gray-50 border-b p-4">
+              <h3 class="font-medium text-gray-900">Form Components</h3>
+              <p class="text-sm text-gray-500 mt-1">Click to add components to your form</p>
+            </div>
+            
+            <div class="p-4 space-y-3 overflow-y-auto" style="height: calc(100vh - 200px);">
             <button 
               type="button"
               class="w-full p-3 text-left border border-gray-200 rounded hover:bg-gray-50 transition-colors"
@@ -186,47 +188,17 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                 </div>
               </div>
             </button>
+            </div>
           </div>
           
-          <div class="border-t bg-gray-50 p-4">
-            <h4 class="font-medium text-gray-900 mb-3">Form Preview</h4>
-            <div id="form-preview" class="bg-white border rounded p-4 min-h-32">
-              ${formSchema.components && formSchema.components.length > 0 
-                ? formSchema.components.map((comp: any, index: number) => `
-                  <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50 group hover:bg-gray-100 transition-colors">
-                    <div class="flex justify-between items-start">
-                      <div class="flex-1">
-                        <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
-                        <div class="text-sm text-gray-500">${comp.type} component</div>
-                        ${comp.required ? '<span class="text-xs text-red-500">* Required</span>' : ''}
-                      </div>
-                      <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button 
-                          type="button"
-                          onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
-                          class="p-1 text-blue-600 hover:bg-blue-100 rounded"
-                          title="Edit component"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                          </svg>
-                        </button>
-                        <button 
-                          type="button"
-                          onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
-                          class="p-1 text-red-600 hover:bg-red-100 rounded"
-                          title="Remove component"
-                        >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                `).join('') 
-                : '<div class="text-gray-500 text-center py-8">Add components above to build your form</div>'
-              }
+          <!-- Form Preview -->
+          <div class="flex-1 bg-white">
+            <div class="bg-gray-50 border-b p-4">
+              <h4 class="font-medium text-gray-900">Form Preview</h4>
+              <p class="text-sm text-gray-500 mt-1">Your form components will appear here</p>
+            </div>
+            <div id="form-preview" class="p-6 overflow-y-auto" style="height: calc(100vh - 200px);">
+              <div class="text-gray-500 text-center py-8">Add components from the left to build your form</div>
             </div>
           </div>
         </div>
@@ -300,22 +272,22 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         if (preview) {
           if (formSchema.components && formSchema.components.length > 0) {
             preview.innerHTML = formSchema.components.map((comp: any) => `
-              <div class="mb-4 p-3 border border-gray-200 rounded bg-gray-50 group hover:bg-gray-100 transition-colors">
+              <div class="mb-4 p-4 border border-gray-200 rounded-lg bg-white group hover:bg-gray-50 transition-colors shadow-sm">
                 <div class="flex justify-between items-start">
                   <div class="flex-1">
                     <label class="block text-sm font-medium text-gray-700 mb-1">${comp.label}</label>
-                    <div class="text-sm text-gray-500">${comp.type} component</div>
-                    ${comp.required ? '<span class="text-xs text-red-500">* Required</span>' : ''}
-                    ${comp.placeholder ? `<div class="text-xs text-gray-400">Placeholder: ${comp.placeholder}</div>` : ''}
-                    ${comp.description ? `<div class="text-xs text-gray-400">Help: ${comp.description}</div>` : ''}
-                    ${comp.properties?.dataSource === 'verified' ? '<span class="text-xs text-green-600 font-medium">🔒 Verified Data</span>' : ''}
-                    ${comp.properties?.dataSource === 'picklist' ? '<span class="text-xs text-blue-600 font-medium">📋 Pick List</span>' : ''}
+                    <div class="text-sm text-gray-500 mb-2">${comp.type} component</div>
+                    ${comp.required ? '<span class="inline-block text-xs text-red-500 bg-red-50 px-2 py-1 rounded mb-2">* Required</span>' : ''}
+                    ${comp.placeholder ? `<div class="text-xs text-gray-400 mb-1">Placeholder: ${comp.placeholder}</div>` : ''}
+                    ${comp.description ? `<div class="text-xs text-gray-400 mb-1">Help: ${comp.description}</div>` : ''}
+                    ${comp.properties?.dataSource === 'verified' ? '<span class="inline-block text-xs text-green-600 font-medium bg-green-50 px-2 py-1 rounded">🔒 Verified Data</span>' : ''}
+                    ${comp.properties?.dataSource === 'picklist' ? '<span class="inline-block text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">📋 Pick List</span>' : ''}
                   </div>
                   <div class="flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       type="button"
                       onclick="window.editFormComponent && window.editFormComponent('${comp.key}')"
-                      class="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                      class="p-2 text-blue-600 hover:bg-blue-100 rounded"
                       title="Edit component"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -325,7 +297,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
                     <button 
                       type="button"
                       onclick="window.removeFormComponent && window.removeFormComponent('${comp.key}')"
-                      class="p-1 text-red-600 hover:bg-red-100 rounded"
+                      class="p-2 text-red-600 hover:bg-red-100 rounded"
                       title="Remove component"
                     >
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -337,7 +309,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
               </div>
             `).join('');
           } else {
-            preview.innerHTML = '<div class="text-gray-500 text-center py-8">Add components above to build your form</div>';
+            preview.innerHTML = '<div class="text-gray-500 text-center py-12">Add components from the left to build your form</div>';
           }
         }
       };
