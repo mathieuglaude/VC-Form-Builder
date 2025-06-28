@@ -17,6 +17,11 @@ export default function CredentialsPage() {
 
   const { data: templates = [], isLoading } = useQuery({
     queryKey: ['/api/cred-lib'],
+    queryFn: async () => {
+      const response = await fetch('/api/cred-lib');
+      if (!response.ok) throw new Error('Failed to fetch templates');
+      return response.json();
+    }
   });
 
   const deleteMutation = useMutation({
