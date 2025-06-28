@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { Switch } from "./ui/switch";
+import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import FieldConfigModal from "./FieldConfigModal";
 import WalletSelector from "./WalletSelector";
@@ -21,6 +23,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
   const [revocationPolicies, setRevocationPolicies] = useState<Record<string, boolean>>(initialForm?.revocationPolicies || {});
+  const [isPublic, setIsPublic] = useState<boolean>(initialForm?.isPublic || false);
   const { toast } = useToast();
 
   // Fetch credential templates for wallet compatibility
@@ -177,7 +180,10 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       description: formDescription,
       formSchema: { components },
       metadata: extractMetadata(),
-      revocationPolicies
+      revocationPolicies,
+      isPublic,
+      authorId: "demo",
+      authorName: "Demo User"
     };
     onSave(formData);
   };
@@ -212,6 +218,16 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
               className="text-sm resize-none"
               rows={2}
             />
+            <div className="flex items-center space-x-2 mt-3">
+              <Switch
+                id="publish-form"
+                checked={isPublic}
+                onCheckedChange={setIsPublic}
+              />
+              <Label htmlFor="publish-form" className="text-sm text-gray-600">
+                Publish to Community (makes form visible to all users)
+              </Label>
+            </div>
           </div>
           <div className="flex gap-3 ml-6">
             <Button variant="outline" onClick={handlePreview}>

@@ -102,6 +102,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get public forms for community section
+  app.get('/api/forms/public', async (req, res) => {
+    try {
+      const publicForms = await storage.listPublicFormConfigs();
+      res.json(publicForms);
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to retrieve public forms' });
+    }
+  });
+
+  // Clone a form (create a copy)
+  app.post('/api/forms/:id/clone', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { authorId = "demo", authorName = "Demo User" } = req.body;
+      
+      const clonedForm = await storage.cloneFormConfig(id, authorId, authorName);
+      res.json(clonedForm);
+    } catch (error) {
+      if (error.message === 'Form not found') {
+        res.status(404).json({ error: 'Form not found' });
+      } else {
+        res.status(500).json({ error: 'Failed to clone form' });
+      }
+    }
+  });
+
   app.get('/api/forms/slug/:slug', async (req, res) => {
     try {
       const slug = req.params.slug;

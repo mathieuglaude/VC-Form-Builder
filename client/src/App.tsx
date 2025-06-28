@@ -9,6 +9,7 @@ import FillPage from "@/pages/FillPage";
 import CredentialsPage from "@/pages/CredentialsPage";
 import CredentialDetailPage from "@/pages/CredentialDetailPage";
 import WalletLibraryPage from "@/pages/WalletLibraryPage";
+import CommunityPage from "@/pages/CommunityPage";
 
 function Router() {
   return (
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/builder" component={BuilderPage} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
+      <Route path="/community" component={CommunityPage} />
       <Route path="/credentials" component={CredentialsPage} />
       <Route path="/credentials/:id" component={CredentialDetailPage} />
       <Route path="/wallets" component={WalletLibraryPage} />

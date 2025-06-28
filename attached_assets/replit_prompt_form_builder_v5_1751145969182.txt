@@ -1,0 +1,183 @@
+**Prompt – Add “Community Forms” Section with Publish / Clone Workflow**
+
+We already have:
+• Mongo-backed `FormConfig` (name, slug, meta, formJson, proofRequests, logo, etc.)
+• Dashboard showing “Your Forms”
+• Builder / Preview pages
+
+Goal: introduce **Community Forms**—public templates any user can browse, clone, or edit.
+
+----------------------------------------------------------------
+## 1 · Data-model changes (`FormConfig.ts`)
+```ts
+interface AuthorInfo {
+  userId: string;        // ObjectId → match users collection
+  displayName: string;   // "BC Gov" or "Alice Smith"
+  orgName?: string;      // optional org
+}
+interface FormConfigDoc extends Document {
+  ...
+  isPublic: boolean;          // default false
+  author: AuthorInfo;         // set on create
+  clonedFrom?: string;        // original form _id if this is a clone
+}
+Index { isPublic: 1 } for fast community query.
+
+2 · API Endpoints
+Method	Path	Auth	Purpose
+GET	/api/forms/public	none	List public forms → cards
+POST	/api/forms/:id/clone	user	Clone public form → returns new form _id
+PATCH	/api/forms/:id/visibility	owner	{ isPublic: boolean } toggle; only owner; returns updated doc
+
+Add server-side guard: only the form owner can change visibility.
+
+3 · Seed Script (sample community templates)
+backend/src/seedCommunityForms.ts
+
+ts
+Copy
+Edit
+import FormConfig from './models/FormConfig';
+await FormConfig.deleteMany({ isPublic: true });
+
+await FormConfig.insertMany([
+  {
+    meta: {
+      name: 'Employee Travel Request',
+      slug: 'employee-travel-request',
+      purpose: 'Collect travel details & approvals',
+      logoUrl: '/uploads/sample-travel.png'
+    },
+    author: { userId:'seed', displayName:'Demo Co.' },
+    isPublic: true,
+    formJson: {/* minimal form schema with travel fields */},
+    proofRequests: []
+  },
+  {
+    meta: {
+      name: 'Supplier On-boarding',
+      slug: 'supplier-onboarding',
+      purpose: 'KYC & compliance info from new suppliers',
+      logoUrl: '/uploads/sample-supplier.png'
+    },
+    author: { userId:'seed', displayName:'Open Templates' },
+    isPublic: true,
+    formJson: {/* supplier form */},
+    proofRequests: []
+  }
+]);
+console.log('🌱 Seeded community forms');
+Add to root package.json: "seed:community": "ts-node backend/src/seedCommunityForms.ts"
+
+4 · Front-end Components
+css
+Copy
+Edit
+frontend/src/components/
+├─ CommunitySection.tsx
+├─ CommunityCard.tsx
+└─ PublishToggle.tsx      // in Builder header
+4.1 CommunitySection
+tsx
+Copy
+Edit
+const CommunitySection = () => {
+  const { data } = useSWR('/api/forms/public');
+  if (!data?.length) return null;
+  return (
+    <section className="mt-12">
+      <h2 className="text-xl font-semibold mb-4">Community Forms</h2>
+      <p className="text-gray-500 mb-6">Browse templates shared by others.</p>
+      <div className="grid md:grid-cols-3 gap-4">
+        {data.map(f => <CommunityCard key={f._id} form={f} />)}
+      </div>
+    </section>
+  );
+};
+4.2 CommunityCard
+Cards show Logo, Name, Author, Purpose, buttons:
+
+Preview → /f/{slug} (new tab)
+
+Use as-is → call /api/forms/:id/clone → redirect to our Fill page
+
+Edit & Use → clone then redirect to /builder/{newId}
+
+4.3 HomePage.tsx
+tsx
+Copy
+Edit
+<>
+  <YourFormsSection />
+  <CommunitySection />
+</>
+5 · Publish / Unpublish UI
+In Builder header (next to Save)
+
+tsx
+Copy
+Edit
+<PublishToggle
+  isPublic={form.isPublic}
+  onChange={async (next) => {
+    if (next) {
+      const confirmed = await confirmDialog(
+        'Publish to Community?',
+        'Making this form public means anyone can clone or submit it. Personal data you collect may be visible to others. Continue?'
+      );
+      if (!confirmed) return;
+    }
+    await axios.patch(`/api/forms/${form._id}/visibility`, { isPublic: next });
+    mutateForm(); // re-fetch SWR
+  }}
+/>
+PublishToggle is a Switch from Headless UI or Radix.
+
+6 · Copy Logic (POST /api/forms/:id/clone)
+Server clones entire document except:
+
+_id, slug (regenerate), isPublic=false, clonedFrom=origId, author=currentUser.
+
+Keep formJson, proofRequests, meta.logoUrl, etc.
+
+7 · Access Control
+Owner is author.userId.
+
+Only owner can edit visibility or edit the form itself (existing guards).
+
+Anyone (even anonymous) can GET /api/forms/public.
+
+8 · Confirmation & Disclaimer
+Use a single reusable confirmDialog hook (Radix Dialog + Promise) with message above.
+Add DISCLAIMER.md in repo root explaining template license (MIT) for transparency.
+
+9 · README Add-ons
+Explain Community section workflow.
+
+Note seed script (npm run seed:community).
+
+Document API for cloning & visibility patch.
+
+Ghostwriter, implement all of the above:
+• Update model, add endpoints & auth guards
+• Seed two sample community forms (minimal schemas OK)
+• Build CommunitySection + card actions
+• Add publish toggle with confirmation dialog & disclaimer
+• Update README and run prettier.
+Leave TODO comments where exact sample form JSON should be populated.
+
+markdown
+Copy
+Edit
+
+---
+
+### After running the generated code
+
+* **Home page** shows “Your Forms” ➜ **Community Forms** with two demo templates.  
+* Clicking **Use** creates a private copy in *Your Forms*.  
+* Form owners flip the **Public** switch in Builder; confirmation pop-up appears.  
+* They can later unpublish with one click.  
+* Everyone sees author info on community cards and in `PreviewPage` footer.
+
+Enjoy! Let me know if you need licensing badges, rating stars, or search filters next.

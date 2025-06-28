@@ -31,6 +31,8 @@ export interface IStorage {
   getFormConfigBySlug(slug: string): Promise<FormConfig | undefined>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
   listFormConfigs(): Promise<FormConfig[]>;
+  listPublicFormConfigs(): Promise<FormConfig[]>;
+  cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig>;
 
   // Form submission methods
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
@@ -156,6 +158,11 @@ export class MemStorage implements IStorage {
       metadata: formConfig.metadata,
       proofRequests: formConfig.proofRequests || [],
       revocationPolicies: formConfig.revocationPolicies || {},
+      isPublic: formConfig.isPublic || false,
+      authorId: formConfig.authorId || "demo",
+      authorName: formConfig.authorName || "Demo User",
+      authorOrg: formConfig.authorOrg || null,
+      clonedFrom: formConfig.clonedFrom || null,
       createdAt: now,
       updatedAt: now
     };
@@ -188,6 +195,40 @@ export class MemStorage implements IStorage {
 
   async listFormConfigs(): Promise<FormConfig[]> {
     return Array.from(this.formConfigs.values());
+  }
+
+  async listPublicFormConfigs(): Promise<FormConfig[]> {
+    return Array.from(this.formConfigs.values()).filter(form => form.isPublic);
+  }
+
+  async cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig> {
+    const original = this.formConfigs.get(id);
+    if (!original) {
+      throw new Error('Form not found');
+    }
+
+    const newId = this.currentFormConfigId++;
+    const now = new Date();
+    const generateSlug = (name: string) => {
+      return name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    };
+
+    const cloned: FormConfig = {
+      ...original,
+      id: newId,
+      name: `${original.name} (Copy)`,
+      slug: `${generateSlug(original.name)}-copy-${newId}`,
+      isPublic: false,
+      authorId,
+      authorName,
+      authorOrg: null,
+      clonedFrom: original.id,
+      createdAt: now,
+      updatedAt: now
+    };
+
+    this.formConfigs.set(newId, cloned);
+    return cloned;
   }
 
   // Form submission methods
@@ -396,6 +437,45 @@ export class DatabaseStorage implements IStorage {
 
   async listFormConfigs(): Promise<FormConfig[]> {
     return await db.select().from(formConfigs);
+  }
+
+  async listPublicFormConfigs(): Promise<FormConfig[]> {
+    return await db.select().from(formConfigs).where(eq(formConfigs.isPublic, true));
+  }
+
+  async cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig> {
+    const [original] = await db.select().from(formConfigs).where(eq(formConfigs.id, id));
+    if (!original) {
+      throw new Error('Form not found');
+    }
+
+    const generateSlug = (name: string, suffix: string) => {
+      return `${name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}-${suffix}`;
+    };
+
+    const clonedForm = {
+      name: `${original.name} (Copy)`,
+      slug: generateSlug(original.name, `copy-${Date.now()}`),
+      purpose: original.purpose,
+      logoUrl: original.logoUrl,
+      title: `${original.title} (Copy)`,
+      description: original.description,
+      formSchema: original.formSchema,
+      metadata: original.metadata,
+      proofRequests: original.proofRequests,
+      revocationPolicies: original.revocationPolicies,
+      isPublic: false,
+      authorId,
+      authorName,
+      authorOrg: null,
+      clonedFrom: original.id
+    };
+
+    const [cloned] = await db
+      .insert(formConfigs)
+      .values(clonedForm)
+      .returning();
+    return cloned;
   }
 
   async createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission> {

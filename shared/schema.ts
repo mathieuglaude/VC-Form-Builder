@@ -25,6 +25,11 @@ export const formConfigs = pgTable("form_configs", {
   metadata: jsonb("metadata").notNull(), // Extended metadata for VC integration
   proofRequests: jsonb("proof_requests").default([]), // VC proof requirements
   revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}), // Revocation acceptance policies per credential type
+  isPublic: boolean("is_public").notNull().default(false), // Whether form is published to community
+  authorId: text("author_id").notNull().default("demo"), // User ID of form creator
+  authorName: text("author_name").notNull().default("Demo User"), // Display name of form creator
+  authorOrg: text("author_org"), // Optional organization name
+  clonedFrom: integer("cloned_from").references(() => formConfigs.id), // Original form if this is a clone
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -80,6 +85,11 @@ export const insertFormConfigSchema = createInsertSchema(formConfigs).pick({
   metadata: true,
   proofRequests: true,
   revocationPolicies: true,
+  isPublic: true,
+  authorId: true,
+  authorName: true,
+  authorOrg: true,
+  clonedFrom: true,
 });
 
 export const insertFormSubmissionSchema = createInsertSchema(formSubmissions).pick({
