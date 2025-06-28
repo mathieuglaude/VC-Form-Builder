@@ -258,46 +258,75 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
               </h5>
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="credentialType">Credential Type</Label>
+                  <Label htmlFor="credentialType">Select from Credential Catalogue</Label>
                   <Select value={config.credentialType} onValueChange={(value) => setConfig({ ...config, credentialType: value, attributeName: '' })}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select credential type..." />
+                      <SelectValue placeholder="Choose a credential from your catalogue..." />
                     </SelectTrigger>
                     <SelectContent>
                       {getCredentialTypes().map((type) => (
-                        <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex flex-col items-start">
+                            <span className="font-medium">{type.label}</span>
+                            <span className="text-xs text-gray-500">
+                              {type.value === 'BC Person Credential' && 'BC Government issued identity credential'}
+                              {type.value === 'Employment Credential' && 'Workplace identity and role verification'}
+                              {type.value === 'Identity Credential' && 'Basic identity verification'}
+                            </span>
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  {config.credentialType && (
+                    <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                      <ShieldCheck className="w-3 h-3" />
+                      Selected: {config.credentialType}
+                    </p>
+                  )}
                 </div>
+                
+                {config.credentialType && (
+                  <div>
+                    <Label htmlFor="attributeName">Map to Attribute</Label>
+                    <Select value={config.attributeName} onValueChange={(value) => setConfig({ ...config, attributeName: value })}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select which attribute to map to this field..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getCredentialAttributes().map((attr: any) => {
+                          const attrName = typeof attr === 'string' ? attr : attr.name;
+                          const attrDesc = typeof attr === 'string' ? attr : attr.description;
+                          return (
+                            <SelectItem key={attrName} value={attrName}>
+                              <div className="flex flex-col items-start">
+                                <span className="font-medium">{attrDesc || attrName}</span>
+                                <span className="text-xs text-gray-400">Field: {attrName}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {config.attributeName && (
+                      <p className="text-xs text-blue-600 mt-1">
+                        This form field will be auto-populated with the "{config.attributeName}" attribute from the credential
+                      </p>
+                    )}
+                  </div>
+                )}
+                
                 <div>
-                  <Label htmlFor="attributeName">Attribute Name</Label>
-                  <Select value={config.attributeName} onValueChange={(value) => setConfig({ ...config, attributeName: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select attribute..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getCredentialAttributes().map((attr: any) => {
-                        const attrName = typeof attr === 'string' ? attr : attr.name;
-                        const attrDesc = typeof attr === 'string' ? attr : attr.description;
-                        return (
-                          <SelectItem key={attrName} value={attrName}>
-                            {attrDesc || attrName}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="issuerDid">Issuer DID (Optional)</Label>
+                  <Label htmlFor="issuerDid">Trusted Issuer (Optional)</Label>
                   <Input
                     id="issuerDid"
                     value={config.issuerDid}
                     onChange={(e) => setConfig({ ...config, issuerDid: e.target.value })}
-                    placeholder="did:example:issuer123..."
+                    placeholder="did:bcgov:person-issuer (leave empty to accept any issuer)"
                   />
-                  <p className="text-xs text-gray-500 mt-1">Leave empty to accept credentials from any issuer</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Specify a trusted issuer DID to only accept credentials from that source
+                  </p>
                 </div>
               </div>
             </div>

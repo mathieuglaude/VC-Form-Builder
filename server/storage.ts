@@ -102,8 +102,28 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
 
+    const personCred: CredentialDefinition = {
+      id: this.currentCredDefId++,
+      credentialType: "BC Person Credential",
+      issuerDid: "did:bcgov:person-issuer",
+      attributes: [
+        { name: "given_names", type: "string", description: "Given Names" },
+        { name: "family_name", type: "string", description: "Family Name" },
+        { name: "birthdate_dateint", type: "string", description: "Birth Date" },
+        { name: "street_address", type: "string", description: "Street Address" },
+        { name: "locality", type: "string", description: "City" },
+        { name: "region", type: "string", description: "Province/State" },
+        { name: "postal_code", type: "string", description: "Postal Code" },
+        { name: "country", type: "string", description: "Country" },
+        { name: "picture", type: "string", description: "Photo" },
+        { name: "expiry_date_dateint", type: "string", description: "Expiry Date" }
+      ],
+      createdAt: new Date()
+    };
+
     this.credentialDefinitions.set(employmentCred.id, employmentCred);
     this.credentialDefinitions.set(identityCred.id, identityCred);
+    this.credentialDefinitions.set(personCred.id, personCred);
   }
 
   // User methods
