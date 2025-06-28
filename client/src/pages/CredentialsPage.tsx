@@ -45,6 +45,14 @@ export default function CredentialsPage() {
   });
 
   const handleEdit = (template: CredentialTemplate) => {
+    if (template.isPredefined) {
+      toast({
+        title: "Cannot Edit",
+        description: "Predefined BC Government credentials cannot be edited.",
+        variant: "destructive"
+      });
+      return;
+    }
     setEditingTemplate(template);
     setIsModalOpen(true);
   };
@@ -97,7 +105,14 @@ export default function CredentialsPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <CardTitle className="text-lg">{template.label}</CardTitle>
-                  <CardDescription>Version {template.version}</CardDescription>
+                  <div className="flex items-center gap-2 mt-1">
+                    <CardDescription>Version {template.version}</CardDescription>
+                    {template.isPredefined && (
+                      <Badge variant="default" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
+                        BC Government
+                      </Badge>
+                    )}
+                  </div>
                 </div>
                 <Badge variant="secondary">Active</Badge>
               </div>
@@ -153,7 +168,9 @@ export default function CredentialsPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => handleEdit(template)}
+                  disabled={template.isPredefined}
                   className="h-8 w-8 p-0"
+                  title={template.isPredefined ? "BC Government credentials cannot be edited" : "Edit credential"}
                 >
                   <Edit className="h-4 w-4" />
                 </Button>
@@ -161,7 +178,9 @@ export default function CredentialsPage() {
                   size="sm"
                   variant="ghost"
                   onClick={() => handleDelete(template.id)}
-                  className="h-8 w-8 p-0 text-red-600 hover:text-red-800"
+                  disabled={template.isPredefined}
+                  className="h-8 w-8 p-0 text-red-600 hover:text-red-800 disabled:text-gray-400"
+                  title={template.isPredefined ? "BC Government credentials cannot be deleted" : "Delete credential"}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

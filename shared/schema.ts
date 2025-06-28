@@ -53,6 +53,7 @@ export const credentialTemplates = pgTable("credential_templates", {
   issuerDid: text("issuer_did").notNull(),
   schemaUrl: text("schema_url"),
   attributes: jsonb("attributes").$type<AttributeDef[]>().notNull(),
+  isPredefined: boolean("is_predefined").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -95,6 +96,7 @@ export const insertCredentialTemplateSchema = createInsertSchema(credentialTempl
   issuerDid: true,
   schemaUrl: true,
   attributes: true,
+  isPredefined: true,
 });
 
 // Types

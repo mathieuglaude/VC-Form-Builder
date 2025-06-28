@@ -220,37 +220,51 @@ export class MemStorage implements IStorage {
     const bcBusinessCard: CredentialTemplate = {
       id: this.currentTemplateId++,
       label: 'BC Digital Business Card v1',
-      version: '1.0',
-      schemaId: 'M6M4n:2:DigitalBusinessCard:1.0', // TODO: Replace with actual schema ID
-      credDefId: 'M6M4n:3:CL:12345:tag', // TODO: Replace with actual cred def ID
-      issuerDid: 'did:sov:M6M4n', // TODO: Replace with actual issuer DID
-      schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/business/digital-business-card-v1/',
+      version: '1.0.0',
+      schemaId: 'AcZpBDz3oxmKrpcuPcdKai:2:Digital Business Card:1.0.0',
+      credDefId: 'AcZpBDz3oxmKrpcuPcdKai:3:CL:350:default',
+      issuerDid: 'AcZpBDz3oxmKrpcuPcdKai',
+      schemaUrl: 'https://candyscan.idlab.org/tx/CANDY_PROD/domain/351',
       attributes: [
-        { name: 'business_legal_name', description: 'Legal name of the business' },
-        { name: 'business_number', description: 'Business registration number' },
-        { name: 'incorporation_number', description: 'Incorporation number' },
-        { name: 'jurisdiction', description: 'Jurisdiction of incorporation' }
+        { name: 'business_type', description: 'Type of business' },
+        { name: 'given_names', description: 'Given names of the business contact' },
+        { name: 'registered_on_dateint', description: 'Date business was registered (dateint format)' },
+        { name: 'family_name', description: 'Family name of the business contact' },
+        { name: 'credential_id', description: 'Unique credential identifier' },
+        { name: 'company_status', description: 'Current status of the company' },
+        { name: 'business_name', description: 'Legal name of the business' },
+        { name: 'role', description: 'Role of the person in the business' },
+        { name: 'cra_business_number', description: 'Canada Revenue Agency business number' },
+        { name: 'identifier', description: 'Business identifier' }
       ],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      isPredefined: true,
+      createdAt: new Date('2023-11-10'),
+      updatedAt: new Date('2023-11-10'),
     };
 
     const bcPersonCred: CredentialTemplate = {
       id: this.currentTemplateId++,
       label: 'BC Person Credential v1',
       version: '1.0',
-      schemaId: 'M6M4n:2:PersonCredential:1.0', // TODO: Replace with actual schema ID
-      credDefId: 'M6M4n:3:CL:67890:tag', // TODO: Replace with actual cred def ID
-      issuerDid: 'did:sov:M6M4n', // TODO: Replace with actual issuer DID
+      schemaId: 'RGjWbW1eycP7FrMf4QJvX8:2:Person:1.0',
+      credDefId: 'RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person',
+      issuerDid: 'RGjWbW1eycP7FrMf4QJvX8',
       schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/person/person-cred-doc/',
       attributes: [
         { name: 'given_names', description: 'Given names of the person' },
         { name: 'family_name', description: 'Family name of the person' },
-        { name: 'birth_date', description: 'Date of birth' },
-        { name: 'person_identifier', description: 'Unique person identifier' }
+        { name: 'birthdate_dateint', description: 'Date of birth in dateint format' },
+        { name: 'street_address', description: 'Street address' },
+        { name: 'locality', description: 'City or locality' },
+        { name: 'region', description: 'Province or region' },
+        { name: 'postal_code', description: 'Postal code' },
+        { name: 'country', description: 'Country' },
+        { name: 'picture', description: 'Base64 encoded photo' },
+        { name: 'expiry_date_dateint', description: 'Credential expiry date in dateint format' }
       ],
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      isPredefined: true,
+      createdAt: new Date('2023-10-25'),
+      updatedAt: new Date('2023-10-25'),
     };
 
     this.credentialTemplates.set(bcBusinessCard.id, bcBusinessCard);
@@ -263,6 +277,7 @@ export class MemStorage implements IStorage {
     const credentialTemplate: CredentialTemplate = {
       id,
       ...template,
+      isPredefined: template.isPredefined || false,
       createdAt: now,
       updatedAt: now,
     };
@@ -281,6 +296,11 @@ export class MemStorage implements IStorage {
   async updateCredentialTemplate(id: number, template: Partial<InsertCredentialTemplate>): Promise<CredentialTemplate | undefined> {
     const existing = this.credentialTemplates.get(id);
     if (!existing) return undefined;
+    
+    // Prevent editing of predefined credentials
+    if (existing.isPredefined) {
+      throw new Error('Cannot edit predefined credential templates');
+    }
 
     const updated: CredentialTemplate = {
       ...existing,

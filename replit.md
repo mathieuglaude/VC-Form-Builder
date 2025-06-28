@@ -125,6 +125,12 @@ Changelog:
   - Added PreviewPage for public form access via /f/:slug
   - Enhanced form builder with metadata collection
   - Updated database schema and storage layer
+- June 28, 2025. Added navigation menu and updated BC Government credentials
+  - Created top navigation bar with Form Builder and Credentials menu items
+  - Updated BC Digital Business Card v1 with real attributes from CANdy ledger
+  - Updated BC Person Credential v1 with official attributes from BC documentation
+  - Added isPredefined flag to prevent editing of government credentials
+  - Enhanced credential library UI with BC Government badges and disabled editing
 ```
 
 ## User Preferences
