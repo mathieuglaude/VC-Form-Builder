@@ -196,6 +196,13 @@ Changelog:
   - Included professional details: LinkedIn profile, website, bio, location settings
   - Built account activity statistics showing form usage and engagement metrics
   - Added edit mode with proper form validation and success notifications
+- June 28, 2025. Added LinkedIn-style image cropping tool and cleaned up credential library
+  - Built interactive image cropper with drag-to-position and zoom controls for profile pictures
+  - Implemented circular crop preview with real-time positioning feedback
+  - Enhanced profile picture upload workflow with two-step process: upload → crop → save
+  - Removed "View Documentation" links from credential library cards for cleaner interface
+  - Documentation links still accessible on individual credential detail pages
+  - Confirmed ExternalLink icon usage throughout homepage for consistent UX
 ```
 
 ## User Preferences

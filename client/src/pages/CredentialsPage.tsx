@@ -265,19 +265,7 @@ export default function CredentialsPage() {
                   </div>
                 )}
 
-                {template.schemaUrl && (
-                  <div>
-                    <a
-                      href={template.schemaUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                    >
-                      View Documentation
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                )}
+
 
                 <div className="text-xs text-gray-500">
                   Updated {new Date(template.updatedAt).toLocaleDateString()}
