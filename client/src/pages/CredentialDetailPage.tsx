@@ -83,60 +83,42 @@ export default function CredentialDetailPage() {
 
       {/* Professional Credential Card */}
       <div className="mb-8 flex justify-center">
-        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-          {/* Card Header with branding */}
-          <div 
-            className="relative h-24 flex items-center justify-between px-6"
-            style={{
-              backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-              backgroundColor: credential.branding?.primaryColor || '#00698c'
-            }}
-          >
-            <div className="flex items-center gap-3">
+        <div 
+          className="relative w-full max-w-lg h-56 rounded-lg shadow-xl overflow-hidden"
+          style={{
+            backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundColor: credential.branding?.primaryColor || '#4a90a4'
+          }}
+        >
+          {/* Card Content */}
+          <div className="relative h-full p-8 flex flex-col justify-between text-white">
+            {/* Top section with logo */}
+            <div className="flex items-start justify-between">
               {credential.branding?.logoUrl ? (
-                <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
+                <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
                   <img 
                     src={credential.branding.logoUrl} 
                     alt="LSBC Logo"
-                    className="h-6 w-6 object-contain"
+                    className="h-10 w-10 object-contain"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
                 </div>
               ) : (
-                <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
-                  <span className="text-sm font-bold text-gray-600">LS</span>
+                <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-800">LS</span>
                 </div>
               )}
-              <div className="text-white">
-                <div className="text-sm font-medium">
-                  {credential.metaOverlay?.issuer?.replace(' (LSBC)', '') || 'Law Society of BC'}
-                </div>
-                <div className="text-xs opacity-90">Lawyer Credential</div>
-              </div>
             </div>
-          </div>
 
-          {/* Card Content */}
-          <div className="p-6 space-y-4">
-            {/* Credential attributes based on OCA bundle */}
-            <div className="space-y-3">
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-700">Credential Type</span>
-                <span className="text-xs text-gray-400">••••••••••</span>
+            {/* Bottom section with text */}
+            <div className="space-y-2">
+              <div className="text-lg font-medium">
+                {credential.metaOverlay?.issuer?.replace(' (LSBC)', '') || 'Law Society of BC'}
               </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-700">Given Name</span>
-                <span className="text-xs text-gray-400">••••••••••</span>
-              </div>
-              <div className="flex justify-between items-center py-2">
-                <span className="text-sm font-medium text-gray-700">Member Status</span>
-                <span className="text-xs text-gray-400">••••••••••</span>
-              </div>
-              <div className="flex justify-between items-center py-2 border-b-0">
-                <span className="text-sm font-medium text-gray-700">Member Status Code</span>
-                <span className="text-xs text-gray-400">••••••••••</span>
+              <div className="text-2xl font-bold">
+                Lawyer Credential
               </div>
             </div>
           </div>
