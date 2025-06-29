@@ -210,6 +210,13 @@ Changelog:
   - Added 6 key attributes: given_name, surname, public_person_id, member_status, member_status_code, credential_type
   - Tagged with BC Ecosystem and AIP 2.0 compatibility, restricted to BC Wallet
   - Links to official governance documentation at bcgov.github.io/digital-trust-toolkit
+- June 29, 2025. Enhanced BC Lawyer Credential with official OCA branding and accurate governance
+  - Fetched authentic Law Society of BC branding from official OCA bundle repository
+  - Applied official LSBC logo, colors (#00698c primary, #1a2930 secondary), and background image
+  - Updated issuer name to "Law Society of British Columbia (LSBC)" per governance documentation
+  - Enhanced credential library to display human-readable issuer names instead of DIDs
+  - Created professional credential card view on detail pages with authentic LSBC styling
+  - Added issuer website links and accurate credential descriptions from governance document
 ```
 
 ## User Preferences

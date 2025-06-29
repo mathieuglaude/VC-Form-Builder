@@ -162,6 +162,24 @@ export default function CredentialDetailPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="text-sm font-medium text-gray-700">Issuer</label>
+                <p className="text-sm text-gray-900 mt-1">
+                  {credential.metaOverlay?.issuer || credential.issuerDid}
+                </p>
+                {credential.metaOverlay?.issuerUrl && (
+                  <a 
+                    href={credential.metaOverlay.issuerUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-xs text-blue-600 hover:text-blue-800 inline-flex items-center gap-1 mt-1"
+                  >
+                    Visit Issuer Website
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </div>
+
               {(credential.ecosystem || credential.interopProfile) && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">Technical Classification</label>

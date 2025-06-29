@@ -223,9 +223,9 @@ export default function CredentialsPage() {
             <CardContent>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm font-medium text-gray-700">Issuer DID</p>
-                  <p className="text-xs text-gray-500 font-mono break-all">
-                    {template.issuerDid}
+                  <p className="text-sm font-medium text-gray-700">Issuer</p>
+                  <p className="text-sm text-gray-600">
+                    {template.metaOverlay?.issuer || template.issuerDid}
                   </p>
                 </div>
                 
