@@ -1,10 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import path from "path";
+import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false, limit: '10mb' }));
+
+// Serve OCA assets statically
+app.use(
+  '/oca-assets',
+  express.static(path.join(__dirname, '../public/oca-assets'), {
+    immutable: true,
+    maxAge: '365d'
+  })
+);
 
 app.use((req, res, next) => {
   const start = Date.now();

@@ -1,5 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const ASSET_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../public/oca-assets/lsbc'
+);
+fs.mkdirSync(ASSET_DIR, { recursive: true });
 
 interface OCAOverlay {
   type: string;
@@ -10,26 +17,19 @@ interface OCABundle {
   overlays: OCAOverlay[];
 }
 
-export async function cacheAsset(url: string, filename: string): Promise<string> {
+export async function cacheAsset(url: string, localName: string): Promise<string> {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
     }
     
     const arrayBuffer = await response.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const assetsDir = path.join(__dirname, '../public/oca-assets/lsbc');
-    
-    // Ensure directory exists
-    if (!fs.existsSync(assetsDir)) {
-      fs.mkdirSync(assetsDir, { recursive: true });
-    }
-    
-    const localPath = path.join(assetsDir, filename);
+    const localPath = path.join(ASSET_DIR, localName);
     fs.writeFileSync(localPath, buffer);
     
-    return `/oca-assets/lsbc/${filename}`;
+    return `/oca-assets/lsbc/${localName}`;
   } catch (error) {
     console.error(`Failed to cache asset ${url}:`, error);
     return url; // Fallback to original URL

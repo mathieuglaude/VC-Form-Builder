@@ -1,0 +1,140 @@
+**Prompt – Fix LSBC card: download OCA assets locally & use absolute paths**
+
+The BC Lawyer card still shows broken images because the UI is pointing at raw GitHub URLs that (a) hit CORS limits and (b) occasionally redirect to HTML.  
+We must **download the asset files at seed-time**, serve them from `/oca-assets/…`, and update the card component so it never references remote GitHub links.
+
+----------------------------------------------------------------
+## 1 · Extend the asset-cache helper (`server/ocaAssets.ts`)
+
+```ts
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const ASSET_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../public/oca-assets/lsbc'
+);
+fs.mkdirSync(ASSET_DIR, { recursive: true });
+
+export async function cacheAsset(url: string, localName: string) {
+  const res = await fetch(url, { cache: 'no-store' });
+  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  const localPath = path.join(ASSET_DIR, localName);
+  fs.writeFileSync(localPath, buf);
+  return `/oca-assets/lsbc/${localName}`;          // <-- public URL
+}
+2 · Update the Lawyer seed block (seedCredentials.ts)
+Replace the hard-coded GitHub URLs with cached versions:
+
+ts
+Copy
+Edit
+const baseRaw = 'https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/overlays/branding';
+
+const logoLocal = await cacheAsset(`${baseRaw}/logo.png`, 'logo.png');
+const bannerLocal = await cacheAsset(`${baseRaw}/background_image.png`, 'banner.png');
+
+await CredentialTemplate.updateOne(
+  { label: 'BC Lawyer Credential v1' },
+  {
+    $set: {
+      branding: {
+        logoUrl: logoLocal,
+        backgroundImage: bannerLocal,
+        primaryColor: '#00698c',
+        layout: 'banner-bottom'
+      }
+    }
+  },
+  { upsert: true }
+);
+3 · Serve /oca-assets statics once in backend/src/index.ts
+ts
+Copy
+Edit
+import path from 'path';
+app.use(
+  '/oca-assets',
+  express.static(path.join(__dirname, '../../public/oca-assets'), {
+    immutable: true,
+    maxAge: '365d'
+  })
+);
+4 · Tighten the BannerBottomCard component
+Use fixed heights so images never collapse.
+
+Add object-cover so banner scales.
+
+Layer the logo inside the teal strip if banner height is too small.
+
+tsx
+Copy
+Edit
+const BannerBottomCard = ({ cred }) => {
+  const { logoUrl, backgroundImage, primaryColor = '#00698c' } = cred.branding!;
+  const issuer = cred.metaOverlay?.issuer ?? 'Law Society of British Columbia (LSBC)';
+
+  return (
+    <div className="rounded-lg overflow-hidden shadow-md w-[340px]">
+      {/* banner (60%) */}
+      <div className="h-[140px] w-full relative">
+        <img src={backgroundImage} alt={`${cred.label} banner`} className="h-full w-full object-cover" />
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt="issuer logo"
+            className="absolute top-4 left-4 h-12 w-12 rounded-lg bg-white shadow-sm"
+          />
+        )}
+      </div>
+      {/* teal strip (40%) */}
+      <div style={{ backgroundColor: primaryColor }} className="px-4 py-3 space-y-1">
+        <p className="text-xs text-gray-200 font-medium truncate">{issuer}</p>
+        <h3 className="text-lg text-white font-semibold">{cred.label}</h3>
+      </div>
+    </div>
+  );
+};
+Remove any gradient/opacity overlay previously applied.
+
+5 · Hide attribute lists on detail page
+In CredentialDetailPage.tsx:
+
+tsx
+Copy
+Edit
+if (cred.branding?.layout === 'banner-bottom') {
+  return (
+    <div className="flex justify-center">
+      <BannerBottomCard cred={cred} />
+    </div>
+  );
+}
+Do not render attribute tables for this credential.
+
+6 · One-time re-seed + restart
+bash
+Copy
+Edit
+npm run seed:creds      # re-runs with local asset caching
+npm run dev             # restart all services
+7 · README patch
+“All branding assets are cached under /public/oca-assets during the seed step to avoid CORS and rate-limit issues with raw GitHub URLs.”
+
+Ghostwriter, implement precisely the steps above—especially downloading logo.png and background_image.png to the local /oca-assets/lsbc folder and updating all Lawyer-credential URLs accordingly. Remove any broken <img> fallbacks. After the seed, the Credential Library and the detail page must show the reference card exactly as in the supplied mock-up.
+
+yaml
+Copy
+Edit
+
+---
+
+### What will happen
+
+* Images download to `public/oca-assets/lsbc/`.  
+* The backend now serves them locally—no more CORS or 404s.  
+* The Lawyer card displays banner + teal strip perfectly in both the library grid and the detail page.  
+
+Use this prompt verbatim in Replit Ghostwriter and the broken-image issue should disappear. L
