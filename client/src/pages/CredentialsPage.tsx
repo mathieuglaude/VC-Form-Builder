@@ -181,18 +181,16 @@ export default function CredentialsPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 sm:auto-cols-[420px] sm:grid-flow-col md:grid-cols-2 lg:grid-cols-3 justify-center">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
-            {template.branding?.layout === 'banner-bottom' ? (
-              <div className="group hover:scale-105 transition-transform cursor-pointer mx-auto">
+            <div className="group hover:scale-105 transition-transform cursor-pointer">
+              {template.branding?.layout === 'banner-bottom' ? (
                 <BannerBottomCard credential={template} />
-              </div>
-            ) : (
-              <Card className="relative group hover:shadow-lg transition-shadow cursor-pointer w-[420px] mx-auto">
+              ) : (
                 <DefaultCard credential={template} />
-              </Card>
-            )}
+              )}
+            </div>
           </Link>
         ))}
 
