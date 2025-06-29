@@ -333,8 +333,34 @@ export class MemStorage implements IStorage {
       updatedAt: new Date('2023-10-25'),
     };
 
+    const bcLawyerCred: CredentialTemplate = {
+      id: this.currentTemplateId++,
+      label: 'BC Lawyer Credential v1',
+      version: '1.0',
+      schemaId: 'QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0',
+      credDefId: 'QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer',
+      issuerDid: 'did:indy:QzLYGuAebsy3MXQ6b1sFiT',
+      schemaUrl: 'https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance',
+      attributes: [
+        { name: 'given_name', description: 'Legal given name(s)' },
+        { name: 'surname', description: 'Legal surname' },
+        { name: 'public_person_id', description: 'Unique LSBC Public Person ID (PPID)' },
+        { name: 'member_status', description: 'Current membership status (e.g., PRAC)' },
+        { name: 'member_status_code', description: 'Code for membership status' },
+        { name: 'credential_type', description: 'Credential type (Lawyer)' }
+      ],
+      isPredefined: true,
+      ecosystem: 'BC Ecosystem',
+      interopProfile: 'AIP 2.0',
+      compatibleWallets: ['BC Wallet'],
+      walletRestricted: true,
+      createdAt: new Date('2023-12-01'),
+      updatedAt: new Date('2023-12-01'),
+    };
+
     this.credentialTemplates.set(bcBusinessCard.id, bcBusinessCard);
     this.credentialTemplates.set(bcPersonCred.id, bcPersonCred);
+    this.credentialTemplates.set(bcLawyerCred.id, bcLawyerCred);
   }
 
   async createCredentialTemplate(template: InsertCredentialTemplate): Promise<CredentialTemplate> {
@@ -611,6 +637,28 @@ export const storage = new DatabaseStorage();
         isPredefined: true,
         ecosystem: "BC Ecosystem", 
         interopProfile: "AIP 2.0",
+        compatibleWallets: ["BC Wallet"],
+        walletRestricted: true
+      });
+
+      await storage.createCredentialTemplate({
+        label: "BC Lawyer Credential v1",
+        version: "1.0",
+        schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
+        credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
+        issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
+        schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+        attributes: [
+          { name: "given_name", description: "Legal given name(s)" },
+          { name: "surname", description: "Legal surname" },
+          { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
+          { name: "member_status", description: "Current membership status (e.g., PRAC)" },
+          { name: "member_status_code", description: "Code for membership status" },
+          { name: "credential_type", description: "Credential type (Lawyer)" }
+        ] as AttributeDef[],
+        isPredefined: true,
+        ecosystem: "BC Ecosystem",
+        interopProfile: "AIP 2.0", 
         compatibleWallets: ["BC Wallet"],
         walletRestricted: true
       });

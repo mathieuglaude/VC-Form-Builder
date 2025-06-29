@@ -203,6 +203,13 @@ Changelog:
   - Removed "View Documentation" links from credential library cards for cleaner interface
   - Documentation links still accessible on individual credential detail pages
   - Confirmed ExternalLink icon usage throughout homepage for consistent UX
+- June 28, 2025. Added BC Lawyer Credential v1 to credential library
+  - Seeded new BC Lawyer Credential from Law Society of BC (LSBC) production environment
+  - Added real CANdy ledger schema ID: QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0
+  - Included official credential definition ID and LSBC issuer DID
+  - Added 6 key attributes: given_name, surname, public_person_id, member_status, member_status_code, credential_type
+  - Tagged with BC Ecosystem and AIP 2.0 compatibility, restricted to BC Wallet
+  - Links to official governance documentation at bcgov.github.io/digital-trust-toolkit
 ```
 
 ## User Preferences
