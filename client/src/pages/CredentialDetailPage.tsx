@@ -81,48 +81,65 @@ export default function CredentialDetailPage() {
         </Link>
       </div>
 
-      {/* Branded Header Section */}
-      <section 
-        className="rounded-lg overflow-hidden shadow-lg mb-8"
-        style={{
-          backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundColor: credential.branding?.primaryColor || '#f8fafc'
-        }}
-      >
-        <div className="bg-white/90 backdrop-blur-sm p-8">
-          <div className="flex items-start gap-6">
-            {credential.branding?.logoUrl && (
-              <img 
-                src={credential.branding.logoUrl} 
-                alt={`${credential.label} logo`}
-                className="h-12 object-contain flex-shrink-0"
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            )}
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-gray-900">{credential.label}</h1>
-              {credential.metaOverlay?.description && (
-                <p className="text-gray-700 mt-2 text-lg">{credential.metaOverlay.description}</p>
+      {/* Professional Credential Card */}
+      <div className="mb-8 flex justify-center">
+        <div 
+          className="relative w-full max-w-md h-64 rounded-xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
+          style={{
+            backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundColor: credential.branding?.primaryColor || '#1e40af'
+          }}
+        >
+          {/* Card Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40"></div>
+          
+          {/* Card Content */}
+          <div className="relative h-full p-6 flex flex-col justify-between text-white">
+            {/* Header with Logo */}
+            <div className="flex items-center justify-between">
+              {credential.branding?.logoUrl ? (
+                <img 
+                  src={credential.branding.logoUrl} 
+                  alt={`${credential.label} logo`}
+                  className="h-8 object-contain filter brightness-0 invert"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              ) : (
+                <div className="w-8 h-8 bg-white/20 rounded"></div>
               )}
+              {credential.isPredefined && (
+                <Badge className="bg-white/20 text-white border-white/30">
+                  BC Government
+                </Badge>
+              )}
+            </div>
+
+            {/* Credential Info */}
+            <div className="space-y-2">
+              <h2 className="text-xl font-bold">{credential.label}</h2>
               {credential.metaOverlay?.issuer && (
-                <p className="text-gray-600 mt-1">
-                  Issued by: <span className="font-medium">{credential.metaOverlay.issuer}</span>
+                <p className="text-white/90 text-sm">
+                  {credential.metaOverlay.issuer}
                 </p>
               )}
-              <div className="flex gap-2 mt-4">
-                {credential.isPredefined && (
-                  <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-200">
-                    BC Government
-                  </Badge>
-                )}
-                <Badge variant="secondary">Version {credential.version}</Badge>
+              <div className="flex justify-between items-end">
+                <span className="text-white/80 text-xs">Version {credential.version}</span>
+                <span className="text-white/80 text-xs">{credential.ecosystem}</span>
               </div>
             </div>
           </div>
         </div>
-      </section>
+      </div>
+
+      {/* Page Title */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">{credential.label}</h1>
+        {credential.metaOverlay?.description && (
+          <p className="text-gray-600 mt-2">{credential.metaOverlay.description}</p>
+        )}
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}
