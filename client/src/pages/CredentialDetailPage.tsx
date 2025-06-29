@@ -8,6 +8,7 @@ import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import type { CredentialTemplate } from "@shared/schema";
+import BannerBottomCard from "@/components/BannerBottomCard";
 
 export default function CredentialDetailPage() {
   const { id } = useParams();
@@ -83,46 +84,28 @@ export default function CredentialDetailPage() {
 
       {/* Professional Credential Card */}
       <div className="mb-8 flex justify-center">
-        <div 
-          className="relative w-full max-w-lg h-56 rounded-lg shadow-xl overflow-hidden"
-          style={{
-            backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundColor: credential.branding?.primaryColor || '#4a90a4'
-          }}
-        >
-          {/* Card Content */}
-          <div className="relative h-full p-8 flex flex-col justify-between text-white">
-            {/* Top section with logo */}
-            <div className="flex items-start justify-between">
-              {credential.branding?.logoUrl ? (
-                <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
-                  <img 
-                    src={credential.branding.logoUrl} 
-                    alt="LSBC Logo"
-                    className="h-10 w-10 object-contain"
+        {credential.branding?.layout === 'banner-bottom' ? (
+          <BannerBottomCard credential={credential} />
+        ) : (
+          <Card className="w-full max-w-lg">
+            <CardHeader>
+              <div className="flex items-center gap-4">
+                {credential.branding?.logoUrl && (
+                  <img
+                    src={credential.branding.logoUrl}
+                    alt={`${credential.label} logo`}
+                    className="h-12 w-12 object-contain"
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
+                )}
+                <div>
+                  <CardTitle className="text-xl">{credential.label}</CardTitle>
+                  <CardDescription>Version {credential.version}</CardDescription>
                 </div>
-              ) : (
-                <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">LS</span>
-                </div>
-              )}
-            </div>
-
-            {/* Bottom section with text */}
-            <div className="space-y-2">
-              <div className="text-lg font-medium">
-                {credential.metaOverlay?.issuer?.replace(' (LSBC)', '') || 'Law Society of BC'}
               </div>
-              <div className="text-2xl font-bold">
-                Lawyer Credential
-              </div>
-            </div>
-          </div>
-        </div>
+            </CardHeader>
+          </Card>
+        )}
       </div>
 
       {/* Page Title */}

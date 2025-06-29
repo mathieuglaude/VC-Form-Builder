@@ -1,0 +1,166 @@
+**Prompt – Make OCA-branded cards match LSBC mock-up**
+
+We have the OCA bundle for the **BC Lawyer Credential**:
+
+https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test
+
+markdown
+Copy
+Edit
+
+It exposes **three** key overlays:
+
+| OCA overlay | Purpose | Field keys we care about |
+|-------------|---------|--------------------------|
+| `aries/overlays/branding/1.0` | artwork + colours | `logo`, `background_image`, `primary_background_color` |
+| `spec/overlays/meta/1.0`      | issuer / descriptions | `issuer`, `issuer_url`, `description` |
+| `spec/overlays/card/1.0`      | *layout hints* (overrides) | `layout` → `"banner-bottom"` |
+
+Our card currently ignores *layout* and renders a generic tile (second screenshot).  
+Fix it so that **if** an OCA bundle advertises `layout: "banner-bottom"` we follow the exact visual spec:
+
+┌────────────── card 320-360px wide ────────────────┐
+│ ┌──────────────── Banner (60%) ──────────────┐ │
+│ │ background_image (object-cover) │ │
+│ │ │ │
+│ │ logo (48×48, rounded, shadow) │ │
+│ └────────────────────────────────────────────┘ │
+│ ┌──────────── Teal strip (40%) ──────────────┐ │
+│ │ issuer (small, #d4d4d8) │ │
+│ │ credential name (lg, #fff) │ │
+│ └────────────────────────────────────────────┘ │
+└───────────────────────────────────────────────────┘
+
+csharp
+Copy
+Edit
+
+----------------------------------------------------------------
+## 1 · Extend Branding Model
+
+```ts
+interface Branding {
+  logoUrl: string;
+  backgroundImage?: string;
+  primaryColor?: string;      // default “#00698c” if absent
+  layout?: 'banner-bottom' | 'logo-left' | 'default';
+}
+When seeding, pull layout from spec/overlays/card/1.0 if present; fallback “default”.
+
+2 · Update seedCredentials.ts (Lawyer only)
+ts
+Copy
+Edit
+const cardOverlay = bundle.overlays.find(o =>
+  o.type === 'spec/overlays/card/1.0'
+);
+
+branding.layout = cardOverlay?.layout || 'default';
+3 · Rewrite CredentialCard component
+3.1 Detect layout
+tsx
+Copy
+Edit
+const layout = cred.branding?.layout ?? 'default';
+
+if (layout === 'banner-bottom') return <BannerBottomCard cred={cred} />;
+return <DefaultCard cred={cred} />;
+3.2 BannerBottomCard.tsx
+tsx
+Copy
+Edit
+const BannerBottomCard = ({ cred }) => {
+  const { label } = cred;
+  const { logoUrl, backgroundImage, primaryColor = '#00698c' } = cred.branding!;
+  const issuer = cred.metaOverlay?.issuer ?? 'Law Society of BC';
+
+  return (
+    <div className="rounded-lg overflow-hidden shadow-lg">
+      {/* Banner */}
+      <div className="relative h-36 w-full">
+        <img
+          src={backgroundImage}
+          className="h-full w-full object-cover"
+          alt={`${label} banner`}
+        />
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            className="absolute top-4 left-4 h-12 w-12 rounded-lg bg-white shadow"
+            alt="issuer logo"
+          />
+        )}
+      </div>
+      {/* Teal strip */}
+      <div
+        style={{ backgroundColor: primaryColor }}
+        className="p-4 space-y-1"
+      >
+        <p className="text-xs text-gray-200 font-medium">{issuer}</p>
+        <h3 className="text-lg text-white font-semibold">{label}</h3>
+      </div>
+    </div>
+  );
+};
+3.3 Card skeleton width / height
+Add Tailwind utility w-[340px] in parent grid or use className="aspect-[16/9]" in wrapper to keep consistent heights.
+
+4 · Asset paths & CORS
+During seed download logo and background_image into public/oca-assets/lsbc/… and rewrite URLs to /oca-assets/….
+Use node-fetch plus fs.writeFileSync.
+
+ts
+Copy
+Edit
+function cache(url, filename) {
+  const res = await fetch(url);
+  const buf = await res.buffer();
+  const local = path.join(__dirname, '../../public/oca-assets/lsbc', filename);
+  fs.writeFileSync(local, buf);
+  return '/oca-assets/lsbc/' + filename;
+}
+branding.logoUrl = await cache(branding.logoUrl, 'lsbc_logo.png');
+branding.backgroundImage = await cache(branding.backgroundImage, 'lsbc_banner.jpg');
+Serve folder:
+
+ts
+Copy
+Edit
+app.use('/oca-assets', express.static(path.join(__dirname, '../public/oca-assets')));
+5 · Tailwind tweaks
+Add single utility class so text never overlaps banner:
+
+css
+Copy
+Edit
+/* globals.css */
+.banner-blur { @apply bg-white/60 backdrop-blur-sm; }
+But for now not needed because banner and text are in separate divs.
+
+6 · Remove old inline styles
+Delete the generic gradient overlay you added earlier that caused washed-out look (second screenshot). All colours now come from OCA primaryColor.
+
+7 · README “Branding” section update
+Cards respect spec/overlays/card/1.0 → layout:"banner-bottom".
+Assets cached locally at /oca-assets to avoid GitHub raw CORS delays.
+
+Ghostwriter, implement everything:\
+• model tweak + seeder asset cache\
+• CredentialCard split into BannerBottomCard and fallback\
+• remove overlay filter that dims banner\
+• serve /oca-assets statics\
+• run prettier & update README. No other pages change.
+
+yaml
+Copy
+Edit
+
+---
+
+### After Ghostwriter runs
+
+1. `npm run seed:creds` caches the banner + logo.  
+2. Reload Credential Library: Lawyer card shows the **exact** teal-strip layout (first screenshot).  
+3. Detail page still uses the nicer header you already built.
+
+Ping me if other credentials need unique layouts (some OCA bundles specify `logo-left` etc.).

@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Filter, X, ChevronRight } from "lucide-react";
 import type { CredentialTemplate } from "@shared/schema";
+import BannerBottomCard from "@/components/BannerBottomCard";
+import DefaultCard from "@/components/DefaultCard";
 
 export default function CredentialsPage() {
   const [showFilters, setShowFilters] = useState(false);
@@ -182,116 +184,15 @@ export default function CredentialsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
-            <Card 
-              className="relative group hover:shadow-lg transition-shadow cursor-pointer"
-              style={{ 
-                borderTop: template.branding?.primaryColor ? `4px solid ${template.branding.primaryColor}` : undefined 
-              }}
-            >
-              <CardHeader>
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    {template.branding?.logoUrl && (
-                      <img
-                        src={template.branding.logoUrl}
-                        alt={`${template.label} logo`}
-                        className="h-6 mb-3 object-contain"
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                    <CardTitle className="text-lg">{template.label}</CardTitle>
-                    <div className="flex items-center gap-2 mt-1">
-                      <CardDescription>Version {template.version}</CardDescription>
-                      {template.isPredefined && (
-                        <Badge variant="default" className="text-xs bg-blue-100 text-blue-800 border-blue-200">
-                          BC Government
-                        </Badge>
-                      )}
-                    </div>
-                    {template.metaOverlay?.issuer && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Issued by: {template.metaOverlay.issuer}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary">Active</Badge>
-                    <ChevronRight className="h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-              </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Issuer</p>
-                  <p className="text-sm text-gray-600">
-                    {template.metaOverlay?.issuer || template.issuerDid}
-                  </p>
-                </div>
-                
-                <div>
-                  <p className="text-sm font-medium text-gray-700">Attributes</p>
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {template.attributes.slice(0, 3).map((attr, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {attr.name}
-                      </Badge>
-                    ))}
-                    {template.attributes.length > 3 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{template.attributes.length - 3} more
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-
-                {/* Ecosystem and Interop Profile */}
-                {(template.ecosystem || template.interopProfile) && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Technical Details</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {template.ecosystem && (
-                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
-                          {template.ecosystem}
-                        </Badge>
-                      )}
-                      {template.interopProfile && (
-                        <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-800">
-                          {template.interopProfile}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Wallet Compatibility */}
-                {(template.walletRestricted || (template.compatibleWallets && template.compatibleWallets.length > 0)) && (
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Wallet Compatibility</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {template.walletRestricted && (
-                        <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">
-                          Restricted
-                        </Badge>
-                      )}
-                      {template.compatibleWallets && template.compatibleWallets.map((wallet: string) => (
-                        <Badge key={wallet} variant="secondary" className="text-xs bg-blue-50 text-blue-700">
-                          {wallet}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-
-
-                <div className="text-xs text-gray-500">
-                  Updated {new Date(template.updatedAt).toLocaleDateString()}
-                </div>
+            {template.branding?.layout === 'banner-bottom' ? (
+              <div className="group hover:scale-105 transition-transform cursor-pointer">
+                <BannerBottomCard credential={template} />
               </div>
-            </CardContent>
-
-            </Card>
+            ) : (
+              <Card className="relative group hover:shadow-lg transition-shadow cursor-pointer">
+                <DefaultCard credential={template} />
+              </Card>
+            )}
           </Link>
         ))}
 

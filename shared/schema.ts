@@ -69,6 +69,7 @@ export const credentialTemplates = pgTable("credential_templates", {
     backgroundImage?: string;
     primaryColor?: string;
     secondaryColor?: string;
+    layout?: 'banner-bottom' | 'logo-left' | 'default';
   }>(),
   metaOverlay: jsonb("meta_overlay").$type<{
     issuer?: string;
