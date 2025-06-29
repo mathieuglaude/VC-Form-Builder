@@ -1,0 +1,172 @@
+**Prompt – FINAL fix for BC Lawyer card (broken images + wrong gradient)**
+
+We still see the teal gradient because the `backgroundImage` and `logoUrl` are **null**: the 404’s happen because we guessed the filenames.  
+The correct filenames are embedded in the OCA bundle itself, so let’s:
+
+1. Parse `OCABundle.json` to get the real asset filenames (`branding.logo`, `branding.background_image`).  
+2. Build absolute GitHub raw URLs *programmatically*.  
+3. Download those files and serve from `/oca-assets/lsbc/`.  
+4. Re-seed the template with the **local** URLs.  
+5. Use the *same* BannerBottomCard in both the library grid and the detail page.
+
+----------------------------------------------------------------
+## 1 · Robust asset-fetch helper (`server/ocaAssets.ts`)
+
+```ts
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fetch from 'node-fetch';
+
+const BASE_DIR = path.join(
+  path.dirname(fileURLToPath(import.meta.url)),
+  '../../public/oca-assets/lsbc'
+);
+
+export async function downloadAsset(relUrl: string): Promise<string> {
+  await fs.mkdir(BASE_DIR, { recursive: true });
+
+  // relUrl example: "branding/logo.png"
+  const filename = path.basename(relUrl);
+  const savePath = path.join(BASE_DIR, filename);
+
+  // avoid re-download
+  try { await fs.access(savePath); }
+  catch {
+    const raw = `https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/overlays/${relUrl}`;
+    const res = await fetch(raw);
+    if (!res.ok) throw new Error(`404 for ${raw}`);
+    await fs.writeFile(savePath, Buffer.from(await res.arrayBuffer()));
+  }
+  return `/oca-assets/lsbc/${filename}`;   // public URL
+}
+2 · One-off seed script patch
+ts
+Copy
+Edit
+import CredentialTemplate from './models/CredentialTemplate.js';
+import { downloadAsset } from './ocaAssets.js';
+import fetch from 'node-fetch';
+
+const bundleUrl = 'https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/OCABundle.json';
+const [bundle] = await fetch(bundleUrl).then(r => r.json());
+
+const brandingOverlay = bundle.overlays.find(o => o.type === 'aries/overlays/branding/1.0');
+const cardOverlay     = bundle.overlays.find(o => o.type === 'spec/overlays/card/1.0');
+const metaOverlay     = bundle.overlays.find(o => o.type === 'spec/overlays/meta/1.0');
+
+const logoUrl       = await downloadAsset(brandingOverlay.logo);
+const bannerUrl     = await downloadAsset(brandingOverlay.background_image);
+
+await CredentialTemplate.updateOne(
+  { label: 'BC Lawyer Credential v1' },
+  {
+    $set: {
+      branding: {
+        logoUrl,
+        backgroundImage: bannerUrl,
+        primaryColor: brandingOverlay.primary_background_color || '#00698c',
+        layout: cardOverlay?.layout || 'banner-bottom'
+      },
+      metaOverlay: {
+        issuer: metaOverlay.issuer || 'Law Society of British Columbia (LSBC)',
+        description: metaOverlay.description
+      }
+    }
+  },
+  { upsert: true }
+);
+console.log('✅ LSBC credential updated with real assets');
+process.exit(0);
+Run once:
+
+bash
+Copy
+Edit
+npx tsx server/seedLSBC.ts
+(Leave existing seedCredentials.ts alone.)
+
+3 · Express static route (already there, but ensure correct)
+ts
+Copy
+Edit
+import path from 'path';
+import { fileURLToPath } from 'url';
+app.use(
+  '/oca-assets',
+  express.static(
+    path.join(path.dirname(fileURLToPath(import.meta.url)), '../../public/oca-assets'),
+    { immutable: true, maxAge: '1y' }
+  )
+);
+4 · Single BannerBottomCard everywhere
+Replace the switch logic in CredentialCard.tsx:
+
+tsx
+Copy
+Edit
+import BannerBottomCard from './BannerBottomCard';
+
+export default function CredentialCard({ cred }) {
+  if (cred.branding?.layout === 'banner-bottom') return <BannerBottomCard cred={cred} />;
+  return <DefaultCard cred={cred} />;
+}
+And in CredentialDetailPage.tsx render only:
+
+tsx
+Copy
+Edit
+{cred.branding?.layout === 'banner-bottom' && (
+  <div className="flex justify-center mb-12">
+    <BannerBottomCard cred={cred} />
+  </div>
+)}
+Delete any gradient placeholder code inside BannerBottomCard—with real images it isn’t needed.
+
+5 · CSS hard-sizes (so the card matches screenshot)
+Inside BannerBottomCard.tsx:
+
+tsx
+Copy
+Edit
+const BANNER_H = 180;    // px
+
+<div className="rounded-lg shadow-md overflow-hidden w-[380px]">
+  <div className={`relative h-[${BANNER_H}px]`}>
+    <img src={backgroundImage} className="w-full h-full object-cover" />
+    {logoUrl && (
+      <img src={logoUrl} className="absolute top-6 left-6 w-16 h-16 rounded-lg bg-white shadow-lg" />
+    )}
+  </div>
+  <div style={{ backgroundColor: primaryColor }} className="p-4 space-y-1">
+    <p className="text-xs text-gray-200 font-medium">{issuer}</p>
+    <h3 className="text-xl text-white font-semibold">Lawyer Credential</h3>
+  </div>
+</div>
+(label can be split to “Lawyer Credential” text-only as per mock-up.)
+
+6 · Clear cache & restart
+bash
+Copy
+Edit
+rm -rf public/oca-assets/lsbc   # ensure stale 0-byte files removed
+npm run seed:lsbc               # run the new script
+npm run dev
+Ghostwriter, execute everything above in order:
+• add downloadAsset, create seedLSBC.ts, fetch filenames dynamically;
+• purge old broken paths, reseed, and restart.
+After this, both the Credential Library tile and the detail card MUST show the exact banner and LS logo like the reference screenshot—no gradient fallbacks.
+
+yaml
+Copy
+Edit
+
+---
+
+### After running
+
+* **Credential Library** card now shows the grey banner with red slash, LS logo, teal strip, “Law Society of BC” and “Lawyer Credential” exactly like your reference.  
+* **Detail page** shows the same card centred at the top—no attributes list, no gradient.  
+* Broken-image icons are gone because all assets come from `/oca-assets/lsbc/…` served locally.
+
+If you still see empty images after reseeding, force-refresh the browser (⌘-Shift-R) to bypass its cache.  L

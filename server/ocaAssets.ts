@@ -1,12 +1,11 @@
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const ASSET_DIR = path.join(
+const BASE_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
-  '../../public/oca-assets/lsbc'
+  '../public/oca-assets/lsbc'
 );
-fs.mkdirSync(ASSET_DIR, { recursive: true });
 
 interface OCAOverlay {
   type: string;
@@ -17,23 +16,22 @@ interface OCABundle {
   overlays: OCAOverlay[];
 }
 
-export async function cacheAsset(url: string, localName: string): Promise<string> {
-  try {
-    const response = await fetch(url, { cache: 'no-store' });
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-    }
-    
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const localPath = path.join(ASSET_DIR, localName);
-    fs.writeFileSync(localPath, buffer);
-    
-    return `/oca-assets/lsbc/${localName}`;
-  } catch (error) {
-    console.error(`Failed to cache asset ${url}:`, error);
-    return url; // Fallback to original URL
+export async function downloadAsset(fullUrl: string): Promise<string> {
+  await fs.mkdir(BASE_DIR, { recursive: true });
+
+  // Extract filename from full URL
+  const filename = path.basename(fullUrl);
+  const savePath = path.join(BASE_DIR, filename);
+
+  // avoid re-download
+  try { 
+    await fs.access(savePath); 
+  } catch {
+    const res = await fetch(fullUrl);
+    if (!res.ok) throw new Error(`Failed to fetch ${fullUrl}: ${res.statusText}`);
+    await fs.writeFile(savePath, Buffer.from(await res.arrayBuffer()));
   }
+  return `/oca-assets/lsbc/${filename}`;   // public URL
 }
 
 export async function fetchOCABundle(bundleUrl: string): Promise<{
