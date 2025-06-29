@@ -4,7 +4,10 @@ interface BannerBottomCardProps {
   credential: CredentialTemplate;
 }
 
-const BANNER_H = 180; // px
+const CARD_W   = 420;  // px — same everywhere
+const BANNER_H = 170;  // px
+const LOGO_SZ  = 56;   // square
+const LOGO_INSET = 20; // px from top-left
 
 export default function BannerBottomCard({ credential }: BannerBottomCardProps) {
   const { label } = credential;
@@ -12,24 +15,31 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
   const issuer = credential.metaOverlay?.issuer || 'Law Society of British Columbia (LSBC)';
 
   return (
-    <div className="rounded-lg shadow-md overflow-hidden w-[380px]">
-      <div className={`relative h-[${BANNER_H}px]`}>
-        <img 
-          src={backgroundImage} 
-          className="w-full h-full object-cover" 
-          alt={`${label} banner`}
-        />
+    <div className="rounded-lg shadow-md overflow-hidden" style={{ width: CARD_W }}>
+      {/* banner */}
+      <div style={{ height: BANNER_H }} className="relative">
+        <img src={backgroundImage} className="w-full h-full object-cover" alt={`${label} banner`} />
         {logoUrl && (
-          <img 
-            src={logoUrl} 
-            className="absolute top-6 left-6 w-16 h-16 rounded-lg bg-white shadow-lg object-contain p-1" 
+          <img
+            src={logoUrl}
+            className="absolute"
+            style={{
+              top: LOGO_INSET,
+              left: LOGO_INSET,
+              width: LOGO_SZ,
+              height: LOGO_SZ,
+              borderRadius: 12,
+              background: '#fff',
+              boxShadow: '0 1px 3px rgb(0 0 0 / .2)'
+            }}
             alt="issuer logo"
           />
         )}
       </div>
-      <div style={{ backgroundColor: primaryColor }} className="p-4 space-y-1">
+      {/* teal strip */}
+      <div className="p-4 space-y-1" style={{ backgroundColor: primaryColor }}>
         <p className="text-xs text-gray-200 font-medium">{issuer}</p>
-        <h3 className="text-xl text-white font-semibold">Lawyer Credential</h3>
+        <h3 className="text-lg text-white font-semibold">Lawyer Credential</h3>
       </div>
     </div>
   );

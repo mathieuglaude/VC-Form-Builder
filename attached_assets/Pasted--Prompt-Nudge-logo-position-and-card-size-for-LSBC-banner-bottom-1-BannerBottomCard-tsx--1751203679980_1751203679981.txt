@@ -1,0 +1,58 @@
+**Prompt – Nudge logo position and card size for LSBC “banner-bottom”**
+
+1. **BannerBottomCard.tsx**
+   * Change constants:
+     ```ts
+     const CARD_W   = 420;  // px — same everywhere
+     const BANNER_H = 170;  // px
+     const LOGO_SZ  = 56;   // square
+     const LOGO_INSET = 20; // px from top-left
+     ```
+   * Update JSX:
+     ```tsx
+     <div className={`rounded-lg shadow-md overflow-hidden`} style={{ width: CARD_W }}>
+       {/* banner */}
+       <div style={{ height: BANNER_H }} className="relative">
+         <img src={backgroundImage} className="w-full h-full object-cover" />
+         {logoUrl && (
+           <img
+             src={logoUrl}
+             className="absolute"
+             style={{
+               top: LOGO_INSET,
+               left: LOGO_INSET,
+               width: LOGO_SZ,
+               height: LOGO_SZ,
+               borderRadius: 12,
+               background: '#fff',
+               boxShadow: '0 1px 3px rgb(0 0 0 / .2)'
+             }}
+             alt="issuer logo"
+           />
+         )}
+       </div>
+       {/* teal strip */}
+       <div className="p-4 space-y-1" style={{ backgroundColor: primaryColor }}>
+         <p className="text-xs text-gray-200 font-medium">{issuer}</p>
+         <h3 className="text-lg text-white font-semibold">Lawyer Credential</h3>
+       </div>
+     </div>
+     ```
+
+2. **CredentialCard** *and* **CredentialDetailPage**
+   * Pass `className="mx-auto"` when rendering `<BannerBottomCard />` so it’s centred.
+   * For the detail page, wrap the card in:
+     ```tsx
+     <section className="flex justify-center mb-12">
+       <BannerBottomCard cred={cred} />
+     </section>
+     ```
+
+3. **Library grid**
+   * Give **all** cards the same width by adding `w-[420px]` to the grid item wrapper or using `auto-cols-[420px]` in the Tailwind grid.
+
+4. **Test**
+   * `npm run dev`, hard-refresh.  
+   * Logo should sit **20 px** from the top-left, card width 420 px in both the library and the detail page, with the banner fully visible (no gradient overlay).
+
+No other files need touching. After this tweak the LSBC card will match the reference exactly. Let Ghostwriter implement just these adjustments.
