@@ -670,28 +670,78 @@ export const storage = new DatabaseStorage();
     
     // Add BC Lawyer Credential if it doesn't exist
     if (!hasLawyerCred) {
-      await storage.createCredentialTemplate({
-        label: "BC Lawyer Credential v1",
-        version: "1.0",
-        schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
-        credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
-        issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
-        schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
-        attributes: [
-          { name: "given_name", description: "Legal given name(s)" },
-          { name: "surname", description: "Legal surname" },
-          { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
-          { name: "member_status", description: "Current membership status (e.g., PRAC)" },
-          { name: "member_status_code", description: "Code for membership status" },
-          { name: "credential_type", description: "Credential type (Lawyer)" }
-        ] as AttributeDef[],
-        isPredefined: true,
-        ecosystem: "BC Ecosystem",
-        interopProfile: "AIP 2.0", 
-        compatibleWallets: ["BC Wallet"],
-        walletRestricted: true
-      });
-      console.log('BC Lawyer Credential v1 added to credential library');
+      console.log('Fetching OCA bundle for BC Lawyer Credential...');
+      
+      try {
+        // Fetch OCA bundle data
+        const ocaUrl = 'https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/OCABundle.json';
+        const response = await fetch(ocaUrl);
+        const ocaData = await response.json();
+        const bundle = Array.isArray(ocaData) ? ocaData[0] : ocaData;
+        
+        // Extract branding and meta overlays
+        const brandingOverlay = bundle.overlays?.find((o: any) => o.type === 'aries/overlays/branding/1.0');
+        const metaOverlay = bundle.overlays?.find((o: any) => o.type === 'spec/overlays/meta/1.0');
+        
+        await storage.createCredentialTemplate({
+          label: "BC Lawyer Credential v1",
+          version: "1.0",
+          schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
+          credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
+          issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
+          schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+          attributes: [
+            { name: "given_name", description: "Legal given name(s)" },
+            { name: "surname", description: "Legal surname" },
+            { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
+            { name: "member_status", description: "Current membership status (e.g., PRAC)" },
+            { name: "member_status_code", description: "Code for membership status" },
+            { name: "credential_type", description: "Credential type (Lawyer)" }
+          ] as AttributeDef[],
+          isPredefined: true,
+          ecosystem: "BC Ecosystem",
+          interopProfile: "AIP 2.0", 
+          compatibleWallets: ["BC Wallet"],
+          walletRestricted: true,
+          branding: brandingOverlay ? {
+            logoUrl: brandingOverlay.logo,
+            backgroundImage: brandingOverlay.background_image,
+            primaryColor: brandingOverlay.primary_background_color,
+            secondaryColor: brandingOverlay.secondary_background_color
+          } : null,
+          metaOverlay: metaOverlay ? {
+            issuer: metaOverlay.issuer,
+            issuerUrl: metaOverlay.issuer_url,
+            description: metaOverlay.description
+          } : null
+        });
+        console.log('BC Lawyer Credential v1 added with OCA branding');
+      } catch (error) {
+        console.error('Error fetching OCA bundle, adding credential without branding:', error);
+        // Fallback to credential without branding
+        await storage.createCredentialTemplate({
+          label: "BC Lawyer Credential v1",
+          version: "1.0",
+          schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
+          credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
+          issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
+          schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+          attributes: [
+            { name: "given_name", description: "Legal given name(s)" },
+            { name: "surname", description: "Legal surname" },
+            { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
+            { name: "member_status", description: "Current membership status (e.g., PRAC)" },
+            { name: "member_status_code", description: "Code for membership status" },
+            { name: "credential_type", description: "Credential type (Lawyer)" }
+          ] as AttributeDef[],
+          isPredefined: true,
+          ecosystem: "BC Ecosystem",
+          interopProfile: "AIP 2.0", 
+          compatibleWallets: ["BC Wallet"],
+          walletRestricted: true
+        });
+        console.log('BC Lawyer Credential v1 added without branding');
+      }
     }
     
   } catch (error) {

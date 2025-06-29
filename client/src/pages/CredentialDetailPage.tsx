@@ -79,11 +79,50 @@ export default function CredentialDetailPage() {
             Back to Library
           </Button>
         </Link>
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold">{credential.label}</h1>
-          <p className="text-gray-600 mt-1">Detailed credential information and technical specifications</p>
-        </div>
       </div>
+
+      {/* Branded Header Section */}
+      <section 
+        className="rounded-lg overflow-hidden shadow-lg mb-8"
+        style={{
+          backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundColor: credential.branding?.primaryColor || '#f8fafc'
+        }}
+      >
+        <div className="bg-white/90 backdrop-blur-sm p-8">
+          <div className="flex items-start gap-6">
+            {credential.branding?.logoUrl && (
+              <img 
+                src={credential.branding.logoUrl} 
+                alt={`${credential.label} logo`}
+                className="h-12 object-contain flex-shrink-0"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
+            <div className="flex-1">
+              <h1 className="text-3xl font-bold text-gray-900">{credential.label}</h1>
+              {credential.metaOverlay?.description && (
+                <p className="text-gray-700 mt-2 text-lg">{credential.metaOverlay.description}</p>
+              )}
+              {credential.metaOverlay?.issuer && (
+                <p className="text-gray-600 mt-1">
+                  Issued by: <span className="font-medium">{credential.metaOverlay.issuer}</span>
+                </p>
+              )}
+              <div className="flex gap-2 mt-4">
+                {credential.isPredefined && (
+                  <Badge variant="default" className="bg-blue-100 text-blue-800 border-blue-200">
+                    BC Government
+                  </Badge>
+                )}
+                <Badge variant="secondary">Version {credential.version}</Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Main Content */}

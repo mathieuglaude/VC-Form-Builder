@@ -182,10 +182,23 @@ export default function CredentialsPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
-            <Card className="relative group hover:shadow-lg transition-shadow cursor-pointer">
+            <Card 
+              className="relative group hover:shadow-lg transition-shadow cursor-pointer"
+              style={{ 
+                borderTop: template.branding?.primaryColor ? `4px solid ${template.branding.primaryColor}` : undefined 
+              }}
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
-                  <div>
+                  <div className="flex-1">
+                    {template.branding?.logoUrl && (
+                      <img
+                        src={template.branding.logoUrl}
+                        alt={`${template.label} logo`}
+                        className="h-6 mb-3 object-contain"
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
                     <CardTitle className="text-lg">{template.label}</CardTitle>
                     <div className="flex items-center gap-2 mt-1">
                       <CardDescription>Version {template.version}</CardDescription>
@@ -195,6 +208,11 @@ export default function CredentialsPage() {
                         </Badge>
                       )}
                     </div>
+                    {template.metaOverlay?.issuer && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Issued by: {template.metaOverlay.issuer}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">Active</Badge>
