@@ -228,6 +228,8 @@ Changelog:
   - BC Lawyer Credential now displays with banner-bottom layout showing grey banner with red diagonal stripe
   - Fixed logo positioning to sit beside text in teal strip for better readability
   - Cleaned up grid layout with proper spacing to prevent card overlapping
+  - Finalized LSBC card layout with larger 80px logo and proper text positioning
+  - "Law Society of BC" appears to the right of logo, "Lawyer Credential" below logo on left
 ```
 
 ## User Preferences

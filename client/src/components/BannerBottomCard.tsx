@@ -27,15 +27,19 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
       {/* Teal strip */}
       <div
         style={{ top: BANNER_H, backgroundColor: primaryColor }}
-        className="absolute inset-x-0 h-[90px] px-4 py-3 flex items-start"
+        className="absolute inset-x-0 h-[90px] px-4 py-3 flex"
       >
-        {/* Space for logo */}
-        <div className="w-20 flex-shrink-0"></div>
+        {/* Left section with logo and credential name */}
+        <div className="w-20 flex-shrink-0 flex flex-col">
+          {/* Space for logo */}
+          <div className="h-10"></div>
+          {/* Credential name below logo */}
+          <h3 className="text-lg text-white font-semibold mt-2">Lawyer Credential</h3>
+        </div>
         
-        {/* Text content positioned to the right of logo */}
-        <div className="ml-4 flex flex-col justify-center h-full">
+        {/* Issuer name to the right of logo */}
+        <div className="ml-4 flex items-center">
           <p className="text-sm text-white font-medium">Law Society of BC</p>
-          <h3 className="text-xl text-white font-semibold">Lawyer Credential</h3>
         </div>
       </div>
       {/* Logo positioned at banner/teal boundary */}
