@@ -226,6 +226,8 @@ Changelog:
   - Served assets from /oca-assets/lsbc/ endpoint with immutable caching headers
   - Updated credential library grid with consistent 420px card widths and proper centering
   - BC Lawyer Credential now displays with banner-bottom layout showing grey banner with red diagonal stripe
+  - Fixed logo positioning to sit beside text in teal strip for better readability
+  - Cleaned up grid layout with proper spacing to prevent card overlapping
 ```
 
 ## User Preferences

@@ -181,7 +181,7 @@ export default function CredentialsPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center">
+      <div className="grid gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 place-items-center max-w-7xl mx-auto">
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
             <div className="group hover:scale-105 transition-transform cursor-pointer">
