@@ -40,7 +40,7 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
         <img
           src={logoUrl}
           alt=""
-          className="absolute left-6 top-[calc(146px-28px)] w-14 h-14 rounded-xl bg-white shadow"
+          className="absolute left-6 top-[calc(146px-36px)] w-20 h-20 rounded-xl bg-white shadow"
         />
       )}
     </div>
