@@ -584,6 +584,10 @@ export const storage = new DatabaseStorage();
 (async () => {
   try {
     const existingTemplates = await storage.listCredentialTemplates();
+    
+    // Check if BC Lawyer Credential already exists
+    const hasLawyerCred = existingTemplates.some(t => t.label === "BC Lawyer Credential v1");
+    
     if (existingTemplates.length === 0) {
       // Seed BC Government credentials
       await storage.createCredentialTemplate({
@@ -663,6 +667,33 @@ export const storage = new DatabaseStorage();
         walletRestricted: true
       });
     }
+    
+    // Add BC Lawyer Credential if it doesn't exist
+    if (!hasLawyerCred) {
+      await storage.createCredentialTemplate({
+        label: "BC Lawyer Credential v1",
+        version: "1.0",
+        schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
+        credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
+        issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
+        schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+        attributes: [
+          { name: "given_name", description: "Legal given name(s)" },
+          { name: "surname", description: "Legal surname" },
+          { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
+          { name: "member_status", description: "Current membership status (e.g., PRAC)" },
+          { name: "member_status_code", description: "Code for membership status" },
+          { name: "credential_type", description: "Credential type (Lawyer)" }
+        ] as AttributeDef[],
+        isPredefined: true,
+        ecosystem: "BC Ecosystem",
+        interopProfile: "AIP 2.0", 
+        compatibleWallets: ["BC Wallet"],
+        walletRestricted: true
+      });
+      console.log('BC Lawyer Credential v1 added to credential library');
+    }
+    
   } catch (error) {
     console.error('Error seeding credential templates:', error);
   }
