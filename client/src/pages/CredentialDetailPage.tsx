@@ -83,50 +83,60 @@ export default function CredentialDetailPage() {
 
       {/* Professional Credential Card */}
       <div className="mb-8 flex justify-center">
-        <div 
-          className="relative w-full max-w-md h-64 rounded-xl shadow-xl overflow-hidden transform hover:scale-105 transition-transform duration-300"
-          style={{
-            backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            backgroundColor: credential.branding?.primaryColor || '#1e40af'
-          }}
-        >
-          {/* Card Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-black/40"></div>
-          
-          {/* Card Content */}
-          <div className="relative h-full p-6 flex flex-col justify-between text-white">
-            {/* Header with Logo */}
-            <div className="flex items-center justify-between">
+        <div className="w-full max-w-sm bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+          {/* Card Header with branding */}
+          <div 
+            className="relative h-24 flex items-center justify-between px-6"
+            style={{
+              backgroundImage: credential.branding?.backgroundImage ? `url(${credential.branding.backgroundImage})` : undefined,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundColor: credential.branding?.primaryColor || '#00698c'
+            }}
+          >
+            <div className="flex items-center gap-3">
               {credential.branding?.logoUrl ? (
-                <img 
-                  src={credential.branding.logoUrl} 
-                  alt={`${credential.label} logo`}
-                  className="h-8 object-contain filter brightness-0 invert"
-                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                />
+                <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
+                  <img 
+                    src={credential.branding.logoUrl} 
+                    alt="LSBC Logo"
+                    className="h-6 w-6 object-contain"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                </div>
               ) : (
-                <div className="w-8 h-8 bg-white/20 rounded"></div>
+                <div className="w-10 h-10 bg-white rounded flex items-center justify-center">
+                  <span className="text-sm font-bold text-gray-600">LS</span>
+                </div>
               )}
-              {credential.isPredefined && (
-                <Badge className="bg-white/20 text-white border-white/30">
-                  BC Government
-                </Badge>
-              )}
+              <div className="text-white">
+                <div className="text-sm font-medium">
+                  {credential.metaOverlay?.issuer?.replace(' (LSBC)', '') || 'Law Society of BC'}
+                </div>
+                <div className="text-xs opacity-90">Lawyer Credential</div>
+              </div>
             </div>
+          </div>
 
-            {/* Credential Info */}
-            <div className="space-y-2">
-              <h2 className="text-xl font-bold">{credential.label}</h2>
-              {credential.metaOverlay?.issuer && (
-                <p className="text-white/90 text-sm">
-                  {credential.metaOverlay.issuer}
-                </p>
-              )}
-              <div className="flex justify-between items-end">
-                <span className="text-white/80 text-xs">Version {credential.version}</span>
-                <span className="text-white/80 text-xs">{credential.ecosystem}</span>
+          {/* Card Content */}
+          <div className="p-6 space-y-4">
+            {/* Credential attributes based on OCA bundle */}
+            <div className="space-y-3">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-700">Credential Type</span>
+                <span className="text-xs text-gray-400">••••••••••</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-700">Given Name</span>
+                <span className="text-xs text-gray-400">••••••••••</span>
+              </div>
+              <div className="flex justify-between items-center py-2">
+                <span className="text-sm font-medium text-gray-700">Member Status</span>
+                <span className="text-xs text-gray-400">••••••••••</span>
+              </div>
+              <div className="flex justify-between items-center py-2 border-b-0">
+                <span className="text-sm font-medium text-gray-700">Member Status Code</span>
+                <span className="text-xs text-gray-400">••••••••••</span>
               </div>
             </div>
           </div>
