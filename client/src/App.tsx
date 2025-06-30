@@ -24,7 +24,6 @@ function Router() {
     <Switch>
       <Route path="/" component={HomePage} />
       <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/builder/new" component={BuilderPage} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
       <Route path="/community" component={CommunityPage} />
