@@ -9,65 +9,54 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
   const { logoUrl, backgroundImage, primaryColor = '#00698c' } = credential.branding || {};
   const issuer = credential.metaOverlay?.issuer || 'Law Society of British Columbia (LSBC)';
   
-  // Debug log to check props
-  console.log('BannerBottomCard rendering:', { 
-    label, 
-    backgroundImage, 
-    logoUrl, 
-    primaryColor,
-    hasBranding: !!credential.branding 
-  });
-
   return (
     <div 
-      className="relative rounded-lg shadow-md overflow-hidden bg-white border" 
+      className="rounded-lg shadow-md overflow-hidden bg-white border flex-shrink-0" 
       style={{ 
-        width: '100%', 
-        maxWidth: '420px', 
-        height: '236px',
-        minHeight: '236px' // Ensure minimum height
+        width: '420px', 
+        height: '236px'
       }}
     >
-      {/* Banner */}
-      <img
-        src={backgroundImage}
-        alt=""
-        className="absolute top-0 w-full h-[62%] object-cover"
-        onError={(e) => {
-          console.error('Failed to load background image:', backgroundImage);
-          e.currentTarget.style.display = 'none';
-        }}
-        onLoad={() => console.log('Background image loaded successfully:', backgroundImage)}
-      />
-      {/* Teal strip */}
+      {/* Top section - Banner Image */}
+      <div className="relative h-[146px] bg-gray-100">
+        {backgroundImage && (
+          <img
+            src={backgroundImage}
+            alt=""
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Failed to load background image:', backgroundImage);
+            }}
+            onLoad={() => console.log('Background image loaded successfully:', backgroundImage)}
+          />
+        )}
+      </div>
+      
+      {/* Bottom section - Teal strip with content */}
       <div
         style={{ backgroundColor: primaryColor }}
-        className="absolute bottom-0 inset-x-0 h-[38%] px-4 py-3"
+        className="h-[90px] px-4 py-3 relative"
       >
-        {/* Layout container */}
-        <div className="flex h-full">
-          {/* Left section - logo space */}
-          <div className="w-20 flex-shrink-0 relative">
-            {/* Issuer name positioned at logo level */}
-            <div className="absolute top-2 left-24">
-              <p className="text-lg text-white font-medium whitespace-nowrap">Law Society of BC</p>
-            </div>
+        {/* Logo */}
+        {logoUrl && (
+          <div className="absolute top-2 left-4 w-16 h-16 bg-white rounded shadow flex items-center justify-center">
+            <img
+              src={logoUrl}
+              alt="LSBC Logo"
+              className="w-12 h-12 object-contain"
+              onError={(e) => {
+                console.error('Failed to load logo:', logoUrl);
+              }}
+            />
           </div>
-        </div>
+        )}
         
-        {/* Credential name positioned below logo */}
-        <div className="absolute bottom-3 left-4">
-          <h3 className="text-xl text-white font-semibold whitespace-nowrap">Lawyer Credential</h3>
+        {/* Text content */}
+        <div className={`pt-1 ${logoUrl ? 'ml-20' : ''}`}>
+          <p className="text-lg text-white font-medium">Law Society of BC</p>
+          <h3 className="text-xl text-white font-semibold">Lawyer Credential</h3>
         </div>
       </div>
-      {/* Logo positioned at banner/teal boundary */}
-      {logoUrl && (
-        <img
-          src={logoUrl}
-          alt=""
-          className="absolute left-6 top-[calc(146px-36px)] w-20 h-20 rounded-xl bg-white shadow"
-        />
-      )}
     </div>
   );
 }
