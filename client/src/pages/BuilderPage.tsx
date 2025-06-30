@@ -8,9 +8,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, FileText, Eye, Settings, Shield, Send, Loader2 } from "lucide-react";
+import { Plus, FileText, Eye, Settings, Shield, Send, Loader2, Share2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import PublishModal from "@/components/PublishModal";
 
 // FormPreviewMode component that mimics FillPage layout exactly
 function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => void }) {
@@ -280,6 +281,7 @@ export default function BuilderPage() {
   const queryClient = useQueryClient();
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewData, setPreviewData] = useState<any>(null);
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   // Determine if we're editing an existing form or creating new
   const isEditing = id && id !== 'new';
@@ -337,6 +339,29 @@ export default function BuilderPage() {
       toast({
         title: "Error",
         description: "Failed to save form",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Publish form mutation
+  const publishFormMutation = useMutation({
+    mutationFn: async ({ transport }: { transport: 'connection' | 'oob' }) => {
+      const response = await apiRequest('PATCH', `/api/forms/${id}/publish`, { transport });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: `Form published successfully! Public link: /f/${data.slug}`
+      });
+      queryClient.invalidateQueries({ queryKey: [`/api/forms/${id}`] });
+      setShowPublishModal(false);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to publish form",
         variant: "destructive"
       });
     }
@@ -471,9 +496,18 @@ export default function BuilderPage() {
           initialForm={formConfig}
           onSave={handleSave}
           onPreview={handlePreview}
+          onPublish={() => setShowPublishModal(true)}
           onDelete={() => setLocation('/builder')}
         />
       </div>
+
+      {/* Publish Modal */}
+      <PublishModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        onPublish={(transport) => publishFormMutation.mutate({ transport })}
+        isPublishing={publishFormMutation.isPending}
+      />
     </div>
   );
 }

@@ -10,16 +10,17 @@ import WalletSelector from "./WalletSelector";
 import IssuanceActionModal from "./IssuanceActionModal";
 import DeleteFormModal from "./DeleteFormModal";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Trash2, Share2 } from "lucide-react";
 
 interface FormBuilderProps {
   initialForm?: any;
   onSave: (formData: any) => void;
   onPreview: (formData: any) => void;
+  onPublish?: () => void;
   onDelete?: () => void;
 }
 
-export default function FormBuilder({ initialForm, onSave, onPreview, onDelete }: FormBuilderProps) {
+export default function FormBuilder({ initialForm, onSave, onPreview, onPublish, onDelete }: FormBuilderProps) {
   const [formTitle, setFormTitle] = useState(initialForm?.name || "");
   const [formDescription, setFormDescription] = useState(initialForm?.description || "");
   const [components, setComponents] = useState<any[]>(initialForm?.formSchema?.components || []);
@@ -302,6 +303,16 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onDelete }
             <Button onClick={handleSave}>
               Save Form
             </Button>
+            {initialForm?.id && onPublish && (
+              <Button 
+                variant="default" 
+                onClick={onPublish}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Share2 className="h-4 w-4 mr-2" />
+                Publish
+              </Button>
+            )}
             {initialForm?.id && (
               <Button 
                 variant="outline" 

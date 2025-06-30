@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -28,13 +28,19 @@ export const formConfigs = pgTable("form_configs", {
   proofRequests: jsonb("proof_requests").default([]),
   revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}),
   isPublic: boolean("is_public").notNull().default(false),
+  isTemplate: boolean("is_template").notNull().default(true),
+  isPublished: boolean("is_published").notNull().default(false),
+  publicSlug: text("public_slug"),
+  proofTransport: text("proof_transport").$type<'connection' | 'oob'>(),
   authorId: text("author_id").notNull().default("demo"),
   authorName: text("author_name").notNull().default("Demo User"),
   authorOrg: text("author_org"),
   clonedFrom: integer("cloned_from"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  publishedSlugIndex: index("form_configs_published_slug_idx").on(table.isPublished, table.publicSlug),
+}));
 
 export const formSubmissions = pgTable("form_submissions", {
   id: serial("id").primaryKey(),

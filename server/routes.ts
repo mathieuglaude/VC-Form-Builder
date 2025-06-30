@@ -126,6 +126,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Publish form endpoint
+  app.patch('/api/forms/:id/publish', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { transport } = req.body;
+      
+      if (!transport || !['connection', 'oob'].includes(transport)) {
+        return res.status(400).json({ error: 'Valid transport (connection or oob) is required' });
+      }
+      
+      const publishedForm = await storage.publishFormConfig(id, transport);
+      
+      if (!publishedForm) {
+        return res.status(409).json({ error: 'Form not found or already published' });
+      }
+      
+      res.json({ slug: publishedForm.publicSlug });
+    } catch (error: any) {
+      console.error('Form publish error:', error);
+      res.status(500).json({ error: 'Failed to publish form', details: error.message });
+    }
+  });
+
+  // Get form by public slug (for published forms)
+  app.get('/f/:slug', async (req, res) => {
+    try {
+      const publicSlug = req.params.slug;
+      const form = await storage.getFormConfigByPublicSlug(publicSlug);
+      
+      if (!form) {
+        return res.status(404).json({ error: 'Published form not found' });
+      }
+      
+      res.json(form);
+    } catch (error: any) {
+      console.error('Get published form error:', error);
+      res.status(500).json({ error: 'Failed to retrieve published form' });
+    }
+  });
+
   app.delete('/api/forms/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);

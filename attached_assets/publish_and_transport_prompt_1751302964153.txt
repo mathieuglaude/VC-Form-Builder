@@ -1,0 +1,132 @@
+**Prompt – Add Template/Publish workflow + Transport selector**
+
+----------------------------------------------------------------
+## 0 · Schema bumps (FormConfig.ts)
+
+```ts
+isTemplate: boolean;                // default true
+isPublished: boolean;               // default false
+publicSlug?: string;                // generated when published
+proofTransport?: 'connection' | 'oob';   // select on publish
+Add compound index { isPublished:1, publicSlug:1 }.
+
+1 · Builder UI changes
+1.1 Header buttons
+Save Template (existing “Save”)
+
+Publish… (opens modal)
+
+1.2 PublishModal.tsx
+tsx
+Copy
+Edit
+const [transport, setTransport] = useState<'oob'|'connection'>('oob');
+return (
+  <Dialog>
+    <h2 className="text-lg font-semibold mb-4">Publish Form</h2>
+    <RadioGroup value={transport} onChange={setTransport}>
+      <Radio value="oob"        label="Out of Band (QR only)" />
+      <Radio value="connection" label="Connection-based (wallet pair then proof)" />
+    </RadioGroup>
+    <Button onClick={() => publishForm(transport)}>Publish</Button>
+  </Dialog>
+);
+1.3 publishForm()
+ts
+Copy
+Edit
+await axios.patch(`/api/forms/${id}/publish`, { transport });
+navigate(`/f/${res.data.slug}`);
+2 · Backend routes
+PATCH /api/forms/:id/publish
+ts
+Copy
+Edit
+if (form.isPublished) return 409;
+form.isTemplate  = false;
+form.isPublished = true;
+form.proofTransport = req.body.transport;
+form.publicSlug = slugify(form.meta.name + '-' + nanoid(6));
+await form.save();
+res.json({ slug: form.publicSlug });
+GET /f/:slug
+Existing Preview route already works → just find by publicSlug.
+
+3 · Proof Router update
+ts
+Copy
+Edit
+if (form.proofTransport === 'oob') {
+  // existing prepare-url flow
+} else {
+  // 1) create invitation (Orbit /connection/create-invitation)
+  // 2) return { qr: invite.qrCode, mode:'connection', connectionId }
+}
+New endpoint /api/proofs/send/:connectionId
+ts
+Copy
+Edit
+const { proofRequestId, qrCodePng } = await sendProofRequest(defId, connectionId);
+res.json({ reqId: proofRequestId });
+In PreviewPage, if mode==='connection' show QR for invitation; once connection_active, call /api/proofs/send/:connId then continue polling.
+
+(Ghostwriter may leave TODO comments for invitation polling; fine for now).
+
+4 · “Your Forms” dashboard
+add column “Status”
+
+Draft (grey) — isTemplate || !isPublished
+
+Published: OOB (green) / Conn (blue)
+
+clicking a Published row opens /f/:slug in new tab.
+
+5 · Credential-offer stub
+In PreviewPage – after form submission success:
+
+ts
+Copy
+Edit
+if (form.proofTransport === 'connection') {
+  // TODO: call Orbit issuer API to send credential_offer to connectionId
+}
+Leave TODO comment.
+
+6 · Utilities
+bash
+Copy
+Edit
+npm i slugify nanoid
+7 · README addendum
+css
+Copy
+Edit
+### Publishing a Form
+1. Build your form, tag VC fields.
+2. Click “Publish…”
+3. Choose:
+   • Out-of-Band – respondent scans single QR for proof.
+   • Connection – respondent scans invitation QR, pairs wallet, proof + optional credential offer.
+Form moves from Draft → Published, visible at /f/{slug}.
+Ghostwriter, implement every bullet above, ensure TypeScript passes, UI pills show status, and preview still renders. For connection mode you may stub invitation polling with a fake setTimeout but structure the code so adding real Orbit /connection endpoints requires minimal edits.
+
+yaml
+Copy
+Edit
+
+---
+
+### After Ghostwriter runs
+
+* **Your Forms** shows status chips (“Draft”, “OOB”, “Conn”).  
+* Clicking **Publish** walks you through transport selection and creates a public slug.  
+* Previewing a Connection-based form shows two QR steps (invitation → proof).  
+* Out-of-Band still shows a single QR.
+
+When this is stable we can swap the invitation stub for Orbit’s real `/connection` endpoints and wire the credential offer.
+
+
+
+
+
+

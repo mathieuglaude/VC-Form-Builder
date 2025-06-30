@@ -17,7 +17,7 @@ import {
   type AttributeDef
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -29,7 +29,9 @@ export interface IStorage {
   createFormConfig(formConfig: InsertFormConfig): Promise<FormConfig>;
   getFormConfig(id: number): Promise<FormConfig | undefined>;
   getFormConfigBySlug(slug: string): Promise<FormConfig | undefined>;
+  getFormConfigByPublicSlug(publicSlug: string): Promise<FormConfig | undefined>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
+  publishFormConfig(id: number, transport: 'connection' | 'oob'): Promise<FormConfig | undefined>;
   deleteFormConfig(id: number): Promise<boolean>;
   listFormConfigs(): Promise<FormConfig[]>;
   listPublicFormConfigs(): Promise<FormConfig[]>;
@@ -157,9 +159,15 @@ export class MemStorage implements IStorage {
       description: formConfig.description || null,
       formSchema: formConfig.formSchema,
       metadata: formConfig.metadata,
+      proofDef: formConfig.proofDef || null,
+      proofDefId: formConfig.proofDefId || null,
       proofRequests: formConfig.proofRequests || [],
       revocationPolicies: formConfig.revocationPolicies || {},
       isPublic: formConfig.isPublic || false,
+      isTemplate: formConfig.isTemplate ?? true,
+      isPublished: formConfig.isPublished ?? false,
+      publicSlug: formConfig.publicSlug || null,
+      proofTransport: formConfig.proofTransport || null,
       authorId: formConfig.authorId || "demo",
       authorName: formConfig.authorName || "Demo User",
       authorOrg: formConfig.authorOrg || null,
@@ -181,6 +189,12 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getFormConfigByPublicSlug(publicSlug: string): Promise<FormConfig | undefined> {
+    return Array.from(this.formConfigs.values()).find(
+      (form) => form.publicSlug === publicSlug && form.isPublished,
+    );
+  }
+
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
     const existing = this.formConfigs.get(id);
     if (!existing) return undefined;
@@ -188,6 +202,25 @@ export class MemStorage implements IStorage {
     const updated: FormConfig = {
       ...existing,
       ...formConfig,
+      updatedAt: new Date()
+    };
+    this.formConfigs.set(id, updated);
+    return updated;
+  }
+
+  async publishFormConfig(id: number, transport: 'connection' | 'oob'): Promise<FormConfig | undefined> {
+    const existing = this.formConfigs.get(id);
+    if (!existing || existing.isPublished) return undefined;
+
+    // Generate public slug using nanoid
+    const publicSlug = `${existing.name.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).substring(2, 8)}`;
+
+    const updated: FormConfig = {
+      ...existing,
+      isTemplate: false,
+      isPublished: true,
+      publicSlug,
+      proofTransport: transport,
       updatedAt: new Date()
     };
     this.formConfigs.set(id, updated);
@@ -494,6 +527,13 @@ export class DatabaseStorage implements IStorage {
     return config || undefined;
   }
 
+  async getFormConfigByPublicSlug(publicSlug: string): Promise<FormConfig | undefined> {
+    const [config] = await db.select().from(formConfigs).where(
+      and(eq(formConfigs.publicSlug, publicSlug), eq(formConfigs.isPublished, true))
+    );
+    return config || undefined;
+  }
+
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
     const [updated] = await db
       .update(formConfigs)
@@ -501,6 +541,33 @@ export class DatabaseStorage implements IStorage {
       .where(eq(formConfigs.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async publishFormConfig(id: number, transport: 'connection' | 'oob'): Promise<FormConfig | undefined> {
+    try {
+      const [existing] = await db.select().from(formConfigs).where(eq(formConfigs.id, id));
+      if (!existing || existing.isPublished) return undefined;
+
+      // Generate public slug
+      const publicSlug = `${existing.name.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).substring(2, 8)}`;
+
+      const [updated] = await db
+        .update(formConfigs)
+        .set({
+          isTemplate: false,
+          isPublished: true,
+          publicSlug,
+          proofTransport: transport,
+          updatedAt: new Date()
+        })
+        .where(eq(formConfigs.id, id))
+        .returning();
+      
+      return updated || undefined;
+    } catch (error) {
+      console.error('Database error in publishFormConfig:', error);
+      return undefined;
+    }
   }
 
   async deleteFormConfig(id: number): Promise<boolean> {
