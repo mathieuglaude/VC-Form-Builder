@@ -9,7 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import VCModal from "@/components/VCModal";
 import VerifiedBadge from "@/components/VerifiedBadge";
-import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Send, Loader2, Image, ArrowLeft } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
@@ -20,7 +19,7 @@ export default function PreviewPage() {
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
   const [isVCModalOpen, setIsVCModalOpen] = useState(false);
-  const [clientId] = useState(() => `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
 
   // Fetch form configuration by slug
   const { data: formConfig, isLoading, error } = useQuery({
@@ -31,7 +30,7 @@ export default function PreviewPage() {
   // Submit form mutation
   const submitFormMutation = useMutation({
     mutationFn: async (submissionData: any) => {
-      const response = await apiRequest('POST', `/api/forms/${formConfig.id}/submit`, submissionData);
+      const response = await apiRequest('POST', `/api/forms/${(formConfig as any)?.id}/submit`, submissionData);
       return response.json();
     },
     onSuccess: () => {
@@ -51,22 +50,28 @@ export default function PreviewPage() {
     }
   });
 
-  // Socket connection for VC verification
-  const { isConnected } = useSocket({
-    clientId,
-    onMessage: (message) => {
-      if (message.type === 'proof_verified' && message.formId === formConfig?.id) {
-        handleVerificationSuccess(message.attributes);
+  // Check if form requires VC verification and trigger modal
+  useEffect(() => {
+    if (formConfig) {
+      const config = formConfig as any;
+      const metadata = config?.metadata as any;
+      const hasVCFields = Object.values(metadata?.fields || {}).some((fieldMeta: any) => 
+        fieldMeta.type === 'verified'
+      );
+      
+      if (hasVCFields && Object.keys(verifiedFields).length === 0) {
+        setIsVCModalOpen(true);
       }
     }
-  });
+  }, [formConfig, verifiedFields]);
 
   const handleVerificationSuccess = (attributes: Record<string, any>) => {
     setVerifiedFields(attributes);
     
     // Auto-populate form fields with verified attributes
     const newFormData = { ...formData };
-    const metadata = formConfig?.metadata as any;
+    const config = formConfig as any;
+    const metadata = config?.metadata as any;
     
     Object.entries(metadata?.fields || {}).forEach(([fieldKey, fieldMeta]: [string, any]) => {
       if (fieldMeta.type === 'verified' && fieldMeta.vcMapping) {
@@ -94,8 +99,9 @@ export default function PreviewPage() {
     e.preventDefault();
     
     // Validate required fields
-    const metadata = formConfig?.metadata as any;
-    const components = formConfig?.formSchema?.components || [];
+    const config = formConfig as any;
+    const metadata = config?.metadata as any;
+    const components = config?.formSchema?.components || [];
     
     for (const component of components) {
       if (component.validate?.required && !formData[component.key] && verifiedFields[component.key] === undefined) {
@@ -115,12 +121,14 @@ export default function PreviewPage() {
   };
 
   const hasVerifiedFields = () => {
-    const metadata = formConfig?.metadata as any;
+    const config = formConfig as any;
+    const metadata = config?.metadata as any;
     return Object.values(metadata?.fields || {}).some((field: any) => field.type === 'verified');
   };
 
   const isFieldVerified = (fieldKey: string) => {
-    const metadata = formConfig?.metadata as any;
+    const config = formConfig as any;
+    const metadata = config?.metadata as any;
     const fieldMeta = metadata?.fields?.[fieldKey];
     
     if (fieldMeta?.type === 'verified' && fieldMeta.vcMapping) {
@@ -132,7 +140,8 @@ export default function PreviewPage() {
   };
 
   const getFieldValue = (fieldKey: string) => {
-    const metadata = formConfig?.metadata as any;
+    const config = formConfig as any;
+    const metadata = config?.metadata as any;
     const fieldMeta = metadata?.fields?.[fieldKey];
     
     if (fieldMeta?.type === 'verified' && fieldMeta.vcMapping) {
@@ -189,25 +198,24 @@ export default function PreviewPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
-              {formConfig.logoUrl && (
+              {(formConfig as any)?.logoUrl && (
                 <img 
-                  src={formConfig.logoUrl} 
-                  alt={formConfig.name} 
+                  src={(formConfig as any).logoUrl} 
+                  alt={(formConfig as any).name} 
                   className="h-8 w-8 object-contain"
                 />
               )}
-              <h1 className="text-xl font-medium text-gray-900">{formConfig.name || formConfig.title}</h1>
+              <h1 className="text-xl font-medium text-gray-900">{(formConfig as any)?.name || (formConfig as any)?.title}</h1>
             </div>
             {hasVerifiedFields() && (
               <div className="flex items-center space-x-2">
                 <span className="text-sm text-gray-600">
-                  Socket: {isConnected ? "Connected" : "Disconnected"}
+                  Ready for verification
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsVCModalOpen(true)}
-                  disabled={!isConnected}
                 >
                   <Shield className="w-4 h-4 mr-2" />
                   Verify Credentials
@@ -222,18 +230,18 @@ export default function PreviewPage() {
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
-            {formConfig.logoUrl && (
+            {(formConfig as any)?.logoUrl && (
               <div className="mb-6">
                 <img 
-                  src={formConfig.logoUrl} 
-                  alt={formConfig.name} 
+                  src={(formConfig as any).logoUrl} 
+                  alt={(formConfig as any).name} 
                   className="h-24 w-24 mx-auto object-contain rounded-lg shadow-sm"
                 />
               </div>
             )}
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">{formConfig.name || formConfig.title}</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">{(formConfig as any)?.name || (formConfig as any)?.title}</h1>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              {formConfig.purpose || formConfig.description || "Please complete this form"}
+              {(formConfig as any)?.purpose || (formConfig as any)?.description || "Please complete this form"}
             </p>
             {hasVerifiedFields() && Object.keys(verifiedFields).length === 0 && (
               <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg max-w-2xl mx-auto">
@@ -252,8 +260,9 @@ export default function PreviewPage() {
         <Card className="p-8">
           {/* Form Fields */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {formConfig.formSchema?.components?.map((component: any) => {
-              const metadata = formConfig.metadata as any;
+            {(formConfig as any)?.formSchema?.components?.map((component: any) => {
+              const config = formConfig as any;
+              const metadata = config?.metadata as any;
               const fieldMeta = metadata?.fields?.[component.key] || { type: 'freetext' };
               const isVerified = isFieldVerified(component.key);
               const fieldValue = getFieldValue(component.key);
@@ -364,8 +373,7 @@ export default function PreviewPage() {
       <VCModal
         isOpen={isVCModalOpen}
         onClose={() => setIsVCModalOpen(false)}
-        formId={formConfig.id}
-        clientId={clientId}
+        formId={(formConfig as any)?.id}
         onVerificationSuccess={handleVerificationSuccess}
       />
     </div>

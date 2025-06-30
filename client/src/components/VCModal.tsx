@@ -2,36 +2,48 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Loader2, QrCode, Smartphone } from "lucide-react";
-import { useSocket } from "@/hooks/useSocket";
 import { useToast } from "@/hooks/use-toast";
 
 interface VCModalProps {
   isOpen: boolean;
   onClose: () => void;
   formId: number;
-  clientId: string;
   onVerificationSuccess: (attributes: Record<string, any>) => void;
 }
 
-export default function VCModal({ isOpen, onClose, formId, clientId, onVerificationSuccess }: VCModalProps) {
+export default function VCModal({ isOpen, onClose, formId, onVerificationSuccess }: VCModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [proofRequest, setProofRequest] = useState<any>(null);
+  const [socket, setSocket] = useState<WebSocket | null>(null);
   const { toast } = useToast();
 
-  const { isConnected } = useSocket({
-    clientId,
-    onMessage: (message) => {
-      if (message.type === 'proof_verified' && message.formId === formId) {
-        setIsLoading(false);
-        onVerificationSuccess(message.attributes);
-        onClose();
-        toast({
-          title: "Verification Successful",
-          description: "Your credentials have been verified and form fields have been auto-populated.",
-        });
-      }
+  // Establish WebSocket connection
+  useEffect(() => {
+    if (isOpen) {
+      const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      const ws = new WebSocket(wsUrl);
+      
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === 'proof_verified' && message.txId === proofRequest?.txId) {
+          setIsLoading(false);
+          onVerificationSuccess(message.attributes);
+          onClose();
+          toast({
+            title: "Verification Successful",
+            description: "Your credentials have been verified and form fields have been auto-populated.",
+          });
+        }
+      };
+      
+      setSocket(ws);
+      
+      return () => {
+        ws.close();
+      };
     }
-  });
+  }, [isOpen, proofRequest?.txId, onVerificationSuccess, onClose, toast]);
 
   const requestProof = async () => {
     setIsLoading(true);
@@ -49,15 +61,6 @@ export default function VCModal({ isOpen, onClose, formId, clientId, onVerificat
       const data = await response.json();
       setProofRequest(data);
 
-      // For demo purposes, also trigger simulation
-      setTimeout(() => {
-        fetch('/api/proofs/simulate-verification', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId, clientId })
-        });
-      }, 1000);
-
     } catch (error) {
       setIsLoading(false);
       toast({
@@ -69,10 +72,10 @@ export default function VCModal({ isOpen, onClose, formId, clientId, onVerificat
   };
 
   useEffect(() => {
-    if (isOpen && isConnected) {
+    if (isOpen) {
       requestProof();
     }
-  }, [isOpen, isConnected]);
+  }, [isOpen]);
 
   const handleClose = () => {
     setIsLoading(false);

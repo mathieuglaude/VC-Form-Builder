@@ -113,47 +113,32 @@ export async function orbitRequest(endpoint: string, options: RequestInit = {}):
     throw error;
   }
 }
-// Proof lifecycle API wrappers
+// Orbit Proof Request API wrappers using AIP2 present-proof endpoints
 
-export async function createProofRequest(formId: number, attributes: string[]): Promise<any> {
+export async function createProofRequest(templateIds: string[]): Promise<any> {
   const payload = {
-    formId,
-    attributes,
-    requestedAttributes: attributes.map(attr => ({
-      name: attr,
-      restrictions: []
+    templateIds: templateIds,
+    requestedAttributes: templateIds.map(id => ({
+      templateId: id,
+      required: true
     }))
   };
 
-  return await orbitRequest('/api/proofs/create', {
+  return await orbitRequest('/api/present-proof/aip2/create', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
 }
 
-export async function sendProofRequest(proofReqId: string, walletDid?: string): Promise<any> {
-  const payload = {
-    proofRequestId: proofReqId,
-    ...(walletDid && { walletDid })
-  };
-
-  return await orbitRequest('/api/proofs/send', {
+export async function sendProofRequest(proofRequestId: string): Promise<any> {
+  return await orbitRequest('/api/present-proof/aip2/send', {
     method: 'POST',
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ proofRequestId })
   });
 }
 
 export async function getProofStatus(txId: string): Promise<any> {
-  return await orbitRequest(`/api/proofs/status/${txId}`);
-}
-
-export async function verifyProofCallback(payload: any): Promise<any> {
-  return {
-    verified: payload.verified || false,
-    attributes: payload.attributes || {},
-    transactionId: payload.transactionId,
-    timestamp: new Date().toISOString()
-  };
+  return await orbitRequest(`/api/present-proof/aip2/status/${txId}`);
 }
 
 // Credential Issuance API wrappers

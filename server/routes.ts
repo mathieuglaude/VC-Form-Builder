@@ -3,7 +3,8 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
-import { createProofRequest, sendProofRequest, getProofStatus, verifyProofCallback, createSchema, createCredentialDefinition, issueCredential, getIssuanceStatus, verifyIssuanceCallback } from "./services/orbit";
+import { createSchema, createCredentialDefinition, issueCredential, getIssuanceStatus, verifyIssuanceCallback } from "./services/orbit";
+import proofsRouter from "./routes/proofs";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -416,79 +417,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Orbit Proof API routes
-  app.post('/api/proofs/init', async (req, res) => {
-    try {
-      const { formId } = req.body;
-      
-      const formConfig = await storage.getFormConfig(formId);
-      if (!formConfig) {
-        return res.status(404).json({ error: 'Form not found' });
-      }
-
-      // Extract VC requirements from form metadata
-      const metadata = formConfig.metadata as any;
-      const vcFields = Object.entries(metadata.fields || {})
-        .filter(([_, fieldMeta]: [string, any]) => fieldMeta.type === 'verified')
-        .map(([fieldKey, fieldMeta]: [string, any]) => fieldMeta.vcMapping);
-
-      if (vcFields.length === 0) {
-        return res.json({ message: 'No VC verification required for this form' });
-      }
-
-      // Extract required attributes from VC fields
-      const attributes = vcFields.map((field: any) => field.attributeName);
-      
-      // Create proof request via Orbit Enterprise
-      const result = await createProofRequest(formId, attributes);
-      
-      res.json({
-        proofReqId: result.proofRequestId,
-        qr: result.qrCode,
-        deepLink: result.deepLink
-      });
-    } catch (error: any) {
-      console.error('Proof request creation error:', error);
-      res.status(500).json({ error: 'Failed to create proof request', details: error.message });
-    }
-  });
-
-  // Proof status polling endpoint
-  app.get('/api/proofs/:txId', async (req, res) => {
-    try {
-      const { txId } = req.params;
-      const status = await getProofStatus(txId);
-      res.json(status);
-    } catch (error: any) {
-      console.error('Proof status error:', error);
-      res.status(500).json({ error: 'Failed to get proof status', details: error.message });
-    }
-  });
+  // Register proofs router
+  app.use('/api/proofs', proofsRouter);
 
   // Orbit webhook endpoint
   app.post('/webhook/orbit', async (req, res) => {
     try {
-      const webhookType = req.body.type || 'proof';
+      const payload = req.body;
+      console.log('Orbit webhook received:', JSON.stringify(payload, null, 2));
       
-      if (webhookType === 'proof') {
-        const proofResult = await verifyProofCallback(req.body);
-        
-        if (proofResult.verified) {
-          const { formId, clientId } = req.body;
-          
-          notifyClient(clientId, {
-            type: 'proof_verified',
-            attributes: proofResult.attributes,
-            formId,
-            timestamp: proofResult.timestamp,
-            transactionId: proofResult.transactionId
-          });
-        }
-      } else if (webhookType === 'issuance') {
-        const issuanceResult = await verifyIssuanceCallback(req.body);
+      // Handle proof verification webhook
+      if (payload.state === 'verified' && payload.txId) {
+        // Broadcast proof verification success via WebSocket
+        wss.clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'proof_verified',
+              txId: payload.txId,
+              attributes: payload.attributes || {},
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+      }
+      
+      // Handle credential issuance webhook
+      if (payload.type === 'issuance') {
+        const issuanceResult = await verifyIssuanceCallback(payload);
         
         if (issuanceResult.issued) {
-          const { submissionId, clientId } = req.body;
+          const { submissionId, clientId } = payload;
           
           if (clientId) {
             notifyClient(clientId, {
