@@ -1,0 +1,102 @@
+**Task – Restore Tailwind styles in monorepo**
+
+### 1 · Use ONE Tailwind version (3.4.x)
+
+```bash
+# clean up duplicates
+pnpm -r remove tailwindcss postcss autoprefixer
+pnpm add -w -D tailwindcss@3.4.4 postcss@8 autoprefixer@10
+pnpx tailwindcss init -p   # will re-create postcss.config.cjs if missing
+(3.x is the last version that plays nicely with most React plugins; 4.x caused “traverse is not a function”.)
+
+2 · Point Tailwind “content” globs at the monorepo
+apps/web/tailwind.config.js
+
+js
+Copy
+Edit
+module.exports = {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    "../../packages/**/*.{js,ts,jsx,tsx}"   // shared + external packages
+  ],
+  theme: { extend: {} },
+  plugins: []
+};
+Remove any ./dist/** or .vite/** paths.
+
+3 · Delete manual dist/output.css build hack
+Remove the dist folder you created in apps/web.
+
+Ensure src/index.css still has the three Tailwind directives:
+
+css
+Copy
+Edit
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+and that main.tsx imports it:
+
+ts
+Copy
+Edit
+import './index.css';
+4 · Vite already injects CSS — no extra plugin needed
+Check apps/web/vite.config.ts:
+
+ts
+Copy
+Edit
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+export default defineConfig({
+  plugins: [react()],
+  server: { port: 5173 }
+});
+Nothing else—remove Cartographer or custom PostCSS plugin lines.
+
+5 · Clear cache & restart
+bash
+Copy
+Edit
+pnpm -r exec rimraf node_modules/.vite
+pnpm --filter web dev
+Visit localhost:5173 — cards should be styled again.
+
+6 · CI guard
+Add to apps/web/package.json
+
+json
+Copy
+Edit
+"scripts": {
+  "build:css": "tailwindcss -i ./src/index.css -o ./src/generated.css --minify"
+}
+and run it in the GitHub Action before the front-end test step so a broken Tailwind config fails CI.
+
+Ghostwriter instructions
+
+Execute the package-cleanup commands.
+
+Replace tailwind.config.js content array.
+
+Delete apps/web/dist folder & any references.
+
+Verify src/index.css has the three directives and is imported.
+
+Remove Cartographer plugin entry from Vite if present.
+
+pnpm --filter web dev must open a styled dashboard (not plain text).
+
+Commit with message “fix: tailwind paths & version lock”.
+
+yaml
+Copy
+Edit
+
+---
+
+Running this prompt resets Tailwind to a single stable version, points it at the correct glob paths inside the monorepo, and lets Vite handle HMR/style injection again—your cards and buttons reappear instantly.
