@@ -1,0 +1,122 @@
+**Prompt – End-to-End Proof Request + QR on Form Launch**
+
+We already have VC-field tagging and a minimal `/api/proofs/init`.  
+Now make it production-ready:
+
+----------------------------------------------------------------
+## 1 · Builder: capture per-form Proof Definition
+
+### 1.1 Extend component edit panel
+* For `dataSource === 'vc'` keep the **Credential Template** and **Attribute** dropdowns (already there).  
+* On **Save Form**, run:
+
+```ts
+// extract proof definition
+const proofDef = form.components
+  .filter(c => c.dataSource === 'vc')
+  .reduce((map, c) => {
+     const { templateId, attribute } = c.vc;
+     if (!map[templateId]) map[templateId] = [];
+     map[templateId].push(attribute);
+     return map;
+  }, {} as Record<string, string[]>);
+
+formConfig.proofDef = proofDef;  // store in Mongo
+1.2 Update FormConfigDoc
+ts
+Copy
+Edit
+proofDef: Record<string, string[]>; // { templateId -> [attr, attr] }
+2 · Orbit service – create Proof & QR
+Add to services/orbit.ts
+
+ts
+Copy
+Edit
+export async function createProofQR(
+  name: string,
+  templates: Record<string, string[]>
+) {
+  const requested_attributes: any = {};
+  let i = 1;
+  for (const [templateId, attrs] of Object.entries(templates)) {
+    for (const attr of attrs) {
+      requested_attributes[`attr${i++}_referent`] = {
+        name: attr,
+        restrictions: [{ cred_def_id: templateId }]
+      };
+    }
+  }
+  const { presentationExchangeId, qrCodePng } = await createProofRequest({
+    name,
+    requested_attributes
+  });
+  return { txId: presentationExchangeId, qr: qrCodePng };
+}
+3 · Proofs router – use stored proofDef
+ts
+Copy
+Edit
+r.post('/init', async (req,res) => {
+  const { formId } = req.body;
+  const cfg = await FormConfig.findById(formId);
+  if (!cfg?.proofDef) return res.status(400).send('No VC fields');
+
+  const { txId, qr } = await createProofQR(cfg.meta.name, cfg.proofDef);
+  res.json({ txId, qr });
+});
+4 · Front-end – auto-launch VCModal
+4.1 PreviewPage
+tsx
+Copy
+Edit
+const [modal, setModal] = useState<{txId:string;qr:string}|null>(null);
+
+useEffect(() => {
+  if (formContainsVC && !modal) {
+    fetch('/api/proofs/init', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ formId })
+    }).then(r=>r.json()).then(setModal);
+  }
+}, [formContainsVC, modal, formId]);
+4.2 VCModal (reuse earlier polling version)
+When it becomes "verified" call onVerified(attrs) (we’ll map later).
+
+5 · (Optional) auto-fill verified values
+Inside onVerified(attrs):
+
+tsx
+Copy
+Edit
+formioRef.current?.submissions.replace({ data: attrs });
+Object.keys(attrs).forEach(key =>
+  formioRef.current?.getComponent(key)?.setDisabled(true)
+);
+(attrs is returned by Orbit webhook—leave TODO to parse.)
+
+6 · README quick-start
+markdown
+Copy
+Edit
+1. Tag VC fields in Builder → choose credential + attribute
+2. Save form → proofDef stored
+3. Open /form/:slug → QR pops up
+4. Scan with BC Wallet → wallet sends proof
+5. Modal turns green; form autofills (next iteration)
+Ghostwriter, implement all six sections:
+• migrate schema to include proofDef
+• update Builder save logic
+• extend Orbit service with createProofQR
+• patch proofs router
+• add Preview-side auto modal
+• keep compile green. Do NOT add socket.io yet – polling only.
+
+yaml
+Copy
+Edit
+
+---
+
+Run `npm run dev`, open a form that has a VC field, and you’ll see a QR immediately—ready for BC Wallet to present the proof.  After this works we can switch to real-time sockets and auto-fill attributes.

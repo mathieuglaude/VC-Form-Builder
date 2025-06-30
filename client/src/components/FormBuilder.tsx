@@ -179,6 +179,31 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
     return metadata;
   };
 
+  // Extract proof definition from VC components
+  const extractProofDef = () => {
+    const proofDef: Record<string, string[]> = {};
+    
+    components.forEach(component => {
+      if (component.properties?.dataSource === 'verified' && 
+          component.properties?.credential?.templateId && 
+          component.properties?.credential?.attribute) {
+        
+        const templateId = component.properties.credential.templateId;
+        const attribute = component.properties.credential.attribute;
+        
+        if (!proofDef[templateId]) {
+          proofDef[templateId] = [];
+        }
+        
+        if (!proofDef[templateId].includes(attribute)) {
+          proofDef[templateId].push(attribute);
+        }
+      }
+    });
+    
+    return Object.keys(proofDef).length > 0 ? proofDef : undefined;
+  };
+
   // Handle save
   const handleSave = () => {
     const formData = {
@@ -186,6 +211,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
       description: formDescription,
       formSchema: { components },
       metadata: extractMetadata(),
+      proofDef: extractProofDef(),
       revocationPolicies,
       isPublic,
       authorId: "demo",

@@ -1,18 +1,24 @@
 import { Router } from 'express';
-import { createProofRequest, getProofStatus } from '../services/orbit';
+import { createProofQR, getProofStatus } from '../services/orbit';
+import { storage } from '../storage';
 
 const r = Router();
 
 r.post('/init', async (req, res) => {
-  const { formId } = req.body;
-  // TEMP payload: request ANY credential with "given_name"
-  const { presentationExchangeId, qrCode } = await createProofRequest({
-    name: formId,
-    requested_attributes: {
-      attr1_referent: { name: 'given_name' }
+  try {
+    const { formId } = req.body;
+    
+    const formConfig = await storage.getFormConfig(parseInt(formId));
+    if (!formConfig?.proofDef) {
+      return res.status(400).json({ error: 'No VC fields configured' });
     }
-  });
-  res.json({ txId: presentationExchangeId, qr: qrCode });
+
+    const { txId, qr } = await createProofQR(formConfig.name, formConfig.proofDef);
+    res.json({ txId, qr });
+  } catch (error) {
+    console.error('Failed to create proof request:', error);
+    res.status(500).json({ error: 'Failed to create proof request' });
+  }
 });
 
 r.get('/:txId', async (req, res) => {

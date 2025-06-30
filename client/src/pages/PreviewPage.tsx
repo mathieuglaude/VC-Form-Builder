@@ -155,7 +155,26 @@ export default function PreviewPage() {
     return formData[fieldKey] || '';
   };
 
-  // Removed old VC modal trigger - now handled by auto-detection above
+  // Auto-launch VCModal when form contains VC fields
+  useEffect(() => {
+    if (formConfig && !vcModal) {
+      const config = formConfig as any;
+      const formContainsVC = config?.formSchema?.components?.some((c: any) => 
+        c.properties?.dataSource === 'verified'
+      );
+      
+      if (formContainsVC) {
+        fetch('/api/proofs/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formId: config.id })
+        })
+          .then(r => r.json())
+          .then(setVcModal)
+          .catch(console.error);
+      }
+    }
+  }, [formConfig, vcModal]);
 
   if (isLoading) {
     return (

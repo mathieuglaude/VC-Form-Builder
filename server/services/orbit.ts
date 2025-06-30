@@ -26,3 +26,27 @@ export async function getProofStatus(txId: string) {
   if (!res.ok) throw new Error(await res.text());
   return res.json(); // { state: 'verified' | ... }
 }
+
+export async function createProofQR(
+  name: string,
+  templates: Record<string, string[]>
+) {
+  const requested_attributes: any = {};
+  let i = 1;
+  
+  for (const [templateId, attrs] of Object.entries(templates)) {
+    for (const attr of attrs) {
+      requested_attributes[`attr${i++}_referent`] = {
+        name: attr,
+        restrictions: [{ cred_def_id: templateId }]
+      };
+    }
+  }
+
+  const { presentationExchangeId, qrCodePng } = await createProofRequest({
+    name,
+    requested_attributes
+  });
+  
+  return { txId: presentationExchangeId, qr: qrCodePng };
+}

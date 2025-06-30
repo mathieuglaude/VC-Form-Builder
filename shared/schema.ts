@@ -23,6 +23,7 @@ export const formConfigs = pgTable("form_configs", {
   description: text("description"),
   formSchema: jsonb("form_schema").notNull(), // Form.io JSON schema
   metadata: jsonb("metadata").notNull(), // Extended metadata for VC integration
+  proofDef: jsonb("proof_def").$type<Record<string, string[]>>(), // { templateId -> [attr, attr] }
   proofRequests: jsonb("proof_requests").default([]), // VC proof requirements
   revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}), // Revocation acceptance policies per credential type
   isPublic: boolean("is_public").notNull().default(false), // Whether form is published to community
