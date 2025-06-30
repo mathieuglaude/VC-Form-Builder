@@ -1,9 +1,25 @@
+const VERIFIER_BASE = process.env.VERIFIER_BASE || 'https://testapi-verifier.nborbit.ca';
+const VERIFIER_API_KEY = process.env.VERIFIER_API_KEY || 'demo-key';
+
 const headers = { 
   'Content-Type': 'application/json', 
-  'x-api-key': process.env.VERIFIER_API_KEY || '' 
+  'x-api-key': VERIFIER_API_KEY
 };
 
+// Debug logging for environment variables
+console.log('Verifier API Config:', {
+  base: VERIFIER_BASE,
+  hasKey: VERIFIER_API_KEY ? 'yes' : 'no'
+});
+
 export async function defineProof(defName: string, attrsByCred: Record<string, string[]>) {
+  // Check if we have valid API credentials
+  if (!VERIFIER_API_KEY || VERIFIER_API_KEY === 'demo-key' || VERIFIER_API_KEY === 'your_verifier_api_key_here') {
+    console.log('No valid Verifier API key - using mock proof definition');
+    // Return a mock proof definition ID for demo purposes
+    return `mock-proof-def-${Date.now()}`;
+  }
+
   const requested_attributes: any[] = [];
   Object.entries(attrsByCred).forEach(([credDefId, attrs]) =>
     attrs.forEach(a => requested_attributes.push({ 
@@ -18,7 +34,7 @@ export async function defineProof(defName: string, attrsByCred: Record<string, s
     requested_attributes 
   };
   
-  const response = await fetch(`${process.env.VERIFIER_BASE}/api/proof-definition`, { 
+  const response = await fetch(`${VERIFIER_BASE}/api/proof-definition`, { 
     method: 'POST', 
     headers, 
     body: JSON.stringify(body) 
@@ -33,7 +49,54 @@ export async function defineProof(defName: string, attrsByCred: Record<string, s
 }
 
 export async function prepareProofURL(defId: string) {
-  const response = await fetch(`${process.env.VERIFIER_BASE}/api/proof-request/prepare-url/${defId}`, { 
+  // Check if we have valid API credentials
+  if (!VERIFIER_API_KEY || VERIFIER_API_KEY === 'demo-key' || VERIFIER_API_KEY === 'your_verifier_api_key_here') {
+    console.log('No valid Verifier API key - generating mock QR code');
+    
+    // Generate a mock QR code with a sample BC Wallet deep link
+    const mockQrData = `https://digitalwallet.gov.bc.ca/presentation-request?request_uri=https://testapi-verifier.nborbit.ca/api/proof-request/mock-${Date.now()}`;
+    
+    // Create a simple SVG QR code placeholder
+    const qrCodeSvg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+      <rect width="200" height="200" fill="white"/>
+      <rect x="10" y="10" width="20" height="20" fill="black"/>
+      <rect x="50" y="10" width="20" height="20" fill="black"/>
+      <rect x="90" y="10" width="20" height="20" fill="black"/>
+      <rect x="130" y="10" width="20" height="20" fill="black"/>
+      <rect x="170" y="10" width="20" height="20" fill="black"/>
+      <rect x="10" y="50" width="20" height="20" fill="black"/>
+      <rect x="50" y="50" width="20" height="20" fill="black"/>
+      <rect x="90" y="50" width="20" height="20" fill="black"/>
+      <rect x="130" y="50" width="20" height="20" fill="black"/>
+      <rect x="170" y="50" width="20" height="20" fill="black"/>
+      <rect x="10" y="90" width="20" height="20" fill="black"/>
+      <rect x="50" y="90" width="20" height="20" fill="black"/>
+      <rect x="90" y="90" width="20" height="20" fill="black"/>
+      <rect x="130" y="90" width="20" height="20" fill="black"/>
+      <rect x="170" y="90" width="20" height="20" fill="black"/>
+      <rect x="10" y="130" width="20" height="20" fill="black"/>
+      <rect x="50" y="130" width="20" height="20" fill="black"/>
+      <rect x="90" y="130" width="20" height="20" fill="black"/>
+      <rect x="130" y="130" width="20" height="20" fill="black"/>
+      <rect x="170" y="130" width="20" height="20" fill="black"/>
+      <rect x="10" y="170" width="20" height="20" fill="black"/>
+      <rect x="50" y="170" width="20" height="20" fill="black"/>
+      <rect x="90" y="170" width="20" height="20" fill="black"/>
+      <rect x="130" y="170" width="20" height="20" fill="black"/>
+      <rect x="170" y="170" width="20" height="20" fill="black"/>
+      <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="8" fill="white">DEMO QR</text>
+    </svg>`;
+    
+    const qrCodePng = `data:image/svg+xml;base64,${Buffer.from(qrCodeSvg).toString('base64')}`;
+    
+    return {
+      proofRequestId: `mock-request-${Date.now()}`,
+      qrCodePng,
+      deepLink: mockQrData
+    };
+  }
+
+  const response = await fetch(`${VERIFIER_BASE}/api/proof-request/prepare-url/${defId}`, { 
     method: 'POST', 
     headers 
   });
@@ -46,7 +109,7 @@ export async function prepareProofURL(defId: string) {
 }
 
 export async function getProofStatus(reqId: string) {
-  const response = await fetch(`${process.env.VERIFIER_BASE}/api/proof-request/${reqId}`, { 
+  const response = await fetch(`${VERIFIER_BASE}/api/proof-request/${reqId}`, { 
     headers 
   });
   

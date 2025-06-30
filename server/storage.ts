@@ -461,7 +461,32 @@ export class DatabaseStorage implements IStorage {
 
   async getFormConfig(id: number): Promise<FormConfig | undefined> {
     const [config] = await db.select().from(formConfigs).where(eq(formConfigs.id, id));
-    return config || undefined;
+    if (!config) return undefined;
+    
+    // Build proofDef dynamically from metadata
+    const metadata = config.metadata as any;
+    const proofDef: Record<string, string[]> = {};
+    
+    if (metadata?.fields) {
+      Object.entries(metadata.fields).forEach(([fieldKey, fieldMeta]: [string, any]) => {
+        if (fieldMeta.type === 'verified' && fieldMeta.vcMapping?.credDefId) {
+          const credDefId = fieldMeta.vcMapping.credDefId;
+          const attributeName = fieldMeta.vcMapping.attributeName || fieldKey;
+          
+          if (!proofDef[credDefId]) {
+            proofDef[credDefId] = [];
+          }
+          proofDef[credDefId].push(attributeName);
+        }
+      });
+    }
+    
+    // Add proofDef to the config
+    return { 
+      ...config, 
+      proofDef: Object.keys(proofDef).length > 0 ? proofDef : null,
+      proofDefId: null 
+    } as FormConfig;
   }
 
   async getFormConfigBySlug(slug: string): Promise<FormConfig | undefined> {

@@ -1,202 +1,150 @@
-import { useState, useEffect } from "react";
-import { useParams } from "wouter";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import VCModal from "@/components/VCModal";
-import VerifiedBadge from "@/components/VerifiedBadge";
-import { useToast } from "@/hooks/use-toast";
-import { Shield, Send, Loader2, Image, ArrowLeft } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { useState, useEffect } from 'react';
+import { useParams, useLocation } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/hooks/use-toast';
+import { Shield, Send, ArrowLeft, Loader2 } from 'lucide-react';
+import VerifiedBadge from '@/components/VerifiedBadge';
 
 export default function PreviewPage() {
   const { slug } = useParams();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
-  const [vcModal, setVcModal] = useState<null | { txId: string; qr: string }>(null);
+  const [vcModal, setVcModal] = useState<{ reqId: string; qr: string } | null>(null);
 
-
-  // Fetch form configuration by slug
-  const { data: formConfig, isLoading, error } = useQuery({
-    queryKey: [`/api/forms/slug/${slug}`],
-    enabled: !!slug
+  // Fetch form configuration
+  const { data: formConfig, isLoading } = useQuery({
+    queryKey: ['/api/forms/slug', slug],
+    enabled: !!slug,
   });
 
   // Submit form mutation
   const submitFormMutation = useMutation({
-    mutationFn: async (submissionData: any) => {
-      const response = await apiRequest('POST', `/api/forms/${(formConfig as any)?.id}/submit`, submissionData);
+    mutationFn: async (data: any) => {
+      const response = await fetch(`/api/forms/${formConfig.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Failed to submit form');
       return response.json();
     },
     onSuccess: () => {
       toast({
-        title: "Success",
-        description: "Form submitted successfully!"
+        title: 'Form submitted successfully',
+        description: 'Thank you for your submission!',
       });
-      setFormData({});
-      setVerifiedFields({});
+      navigate('/');
     },
-    onError: () => {
+    onError: (error) => {
       toast({
-        title: "Error",
-        description: "Failed to submit form",
-        variant: "destructive"
+        title: 'Submission failed',
+        description: error.message,
+        variant: 'destructive',
       });
-    }
+    },
   });
 
-  // Check if form requires VC verification and trigger modal  
+  // Initialize form data and check for VC requirements
   useEffect(() => {
-    if (formConfig && !vcModal) {
-      const config = formConfig as any;
-      const needsVc = config?.formSchema?.components?.some((c: any) => c.properties?.dataSource === 'verified');
-      
-      if (needsVc) {
-        fetch('/api/proofs/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId: config.id })
+    if (formConfig && hasVerifiedFields()) {
+      // Auto-trigger credential verification for forms with VC fields
+      fetch('/api/proofs/init', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ formId: formConfig.id })
+      })
+        .then(r => r.json())
+        .then(result => {
+          if (result.reqId && result.qr) {
+            setVcModal(result);
+            // Start polling for verification status
+            pollForVerification(result.reqId);
+          }
         })
-          .then(r => r.json())
-          .then(setVcModal);
-      }
+        .catch(console.error);
     }
-  }, [formConfig, vcModal]);
+  }, [formConfig]);
 
-  const handleVerificationSuccess = (attributes: Record<string, any>) => {
-    setVerifiedFields(attributes);
-    
-    // Auto-populate form fields with verified attributes
-    const newFormData = { ...formData };
-    const config = formConfig as any;
-    const metadata = config?.metadata as any;
-    
-    Object.entries(metadata?.fields || {}).forEach(([fieldKey, fieldMeta]: [string, any]) => {
-      if (fieldMeta.type === 'verified' && fieldMeta.vcMapping) {
-        const attributeName = fieldMeta.vcMapping.attributeName;
-        if (attributes[attributeName]) {
-          newFormData[fieldKey] = attributes[attributeName];
-        }
-      }
-    });
-    
-    setFormData(newFormData);
-  };
-
-  const handleInputChange = (fieldKey: string, value: any) => {
-    // Don't allow editing verified fields
-    if (verifiedFields[fieldKey] !== undefined) return;
-    
-    setFormData(prev => ({
-      ...prev,
-      [fieldKey]: value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    const config = formConfig as any;
-    const metadata = config?.metadata as any;
-    const components = config?.formSchema?.components || [];
-    
-    for (const component of components) {
-      if (component.validate?.required && !formData[component.key] && verifiedFields[component.key] === undefined) {
-        toast({
-          title: "Validation Error",
-          description: `${component.label} is required`,
-          variant: "destructive"
-        });
-        return;
-      }
-    }
-
-    submitFormMutation.mutate({
-      submissionData: formData,
-      verifiedFields
-    });
+  // Poll for verification status
+  const pollForVerification = (reqId: string) => {
+    const poll = () => {
+      fetch(`/api/proofs/${reqId}`)
+        .then(r => r.json())
+        .then(data => {
+          if (data.status === 'presentation_verified') {
+            setVerifiedFields(data.attributes || {});
+            setVcModal(null);
+            toast({
+              title: 'Credentials verified',
+              description: 'Your form has been auto-filled with verified data.',
+            });
+          } else {
+            setTimeout(poll, 3000); // Poll every 3 seconds
+          }
+        })
+        .catch(console.error);
+    };
+    poll();
   };
 
   const hasVerifiedFields = () => {
     const config = formConfig as any;
     const metadata = config?.metadata as any;
-    return Object.values(metadata?.fields || {}).some((field: any) => field.type === 'verified');
+    if (!metadata?.fields) return false;
+    
+    return Object.values(metadata.fields).some((field: any) => field.type === 'verified');
   };
 
-  const isFieldVerified = (fieldKey: string) => {
-    const config = formConfig as any;
-    const metadata = config?.metadata as any;
-    const fieldMeta = metadata?.fields?.[fieldKey];
-    
-    if (fieldMeta?.type === 'verified' && fieldMeta.vcMapping) {
-      const attributeName = fieldMeta.vcMapping.attributeName;
-      return verifiedFields[attributeName] !== undefined;
-    }
-    
-    return false;
+  const isFieldVerified = (key: string) => {
+    return key in verifiedFields;
   };
 
-  const getFieldValue = (fieldKey: string) => {
-    const config = formConfig as any;
-    const metadata = config?.metadata as any;
-    const fieldMeta = metadata?.fields?.[fieldKey];
-    
-    if (fieldMeta?.type === 'verified' && fieldMeta.vcMapping) {
-      const attributeName = fieldMeta.vcMapping.attributeName;
-      return verifiedFields[attributeName] || formData[fieldKey] || '';
-    }
-    
-    return formData[fieldKey] || '';
+  const getFieldValue = (key: string) => {
+    return verifiedFields[key] || formData[key] || '';
   };
 
-  // Auto-launch VCModal when form contains VC fields
-  useEffect(() => {
-    if (formConfig && !vcModal) {
-      const config = formConfig as any;
-      const formContainsVC = config?.formSchema?.components?.some((c: any) => 
-        c.properties?.dataSource === 'verified'
-      );
-      
-      if (formContainsVC) {
-        fetch('/api/proofs/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId: config.id })
-        })
-          .then(r => r.json())
-          .then(setVcModal)
-          .catch(console.error);
-      }
+  const handleInputChange = (key: string, value: any) => {
+    if (!isFieldVerified(key)) {
+      setFormData(prev => ({ ...prev, [key]: value }));
     }
-  }, [formConfig, vcModal]);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const finalData = { ...formData, ...verifiedFields };
+    submitFormMutation.mutate(finalData);
+  };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">Loading form...</p>
         </div>
       </div>
     );
   }
 
-  if (error || !formConfig) {
+  if (!formConfig) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <Card className="p-8 max-w-md">
           <div className="text-center">
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Form Not Found</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Form not found</h2>
             <p className="text-gray-600 mb-4">The form you're looking for doesn't exist or has been removed.</p>
-            <Button variant="outline" onClick={() => window.history.back()}>
+            <Button onClick={() => navigate('/')}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Go Back
+              Go back
             </Button>
           </div>
         </Card>
@@ -208,7 +156,7 @@ export default function PreviewPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               {(formConfig as any)?.logoUrl && (
@@ -251,7 +199,7 @@ export default function PreviewPage() {
 
       {/* Hero Section */}
       <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border-b border-gray-200">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center">
             {(formConfig as any)?.logoUrl && (
               <div className="mb-6">
@@ -279,130 +227,137 @@ export default function PreviewPage() {
       </div>
 
       {/* Form Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="p-8">
-          {/* Form Fields */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {(formConfig as any)?.formSchema?.components?.map((component: any) => {
-              const config = formConfig as any;
-              const metadata = config?.metadata as any;
-              const fieldMeta = metadata?.fields?.[component.key] || { type: 'freetext' };
-              const isVerified = isFieldVerified(component.key);
-              const fieldValue = getFieldValue(component.key);
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form Column */}
+          <div className="lg:col-span-2">
+            <Card className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {(formConfig as any)?.formSchema?.components?.map((component: any) => {
+                  const config = formConfig as any;
+                  const metadata = config?.metadata as any;
+                  const fieldMeta = metadata?.fields?.[component.key] || { type: 'freetext' };
+                  const isVerified = isFieldVerified(component.key);
+                  const fieldValue = getFieldValue(component.key);
 
-              return (
-                <div key={component.key} className={`${isVerified ? 'p-4 bg-green-50 border border-green-200 rounded-lg' : ''}`}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {component.label}
-                    {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
-                    {isVerified && <VerifiedBadge className="ml-2" />}
-                  </label>
-
-                  {/* Render appropriate input based on component type */}
-                  {component.type === 'select' || fieldMeta.type === 'picklist' ? (
-                    <Select 
-                      value={fieldValue} 
-                      onValueChange={(value) => handleInputChange(component.key, value)}
-                      disabled={isVerified}
-                    >
-                      <SelectTrigger className={isVerified ? 'border-green-300 bg-white' : ''}>
-                        <SelectValue placeholder="Select an option..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {(fieldMeta.options || ['Option 1', 'Option 2', 'Option 3']).map((option: string) => (
-                          <SelectItem key={option} value={option}>
-                            {option}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : component.type === 'textarea' ? (
-                    <Textarea
-                      value={fieldValue}
-                      onChange={(e) => handleInputChange(component.key, e.target.value)}
-                      placeholder={`Enter ${component.label.toLowerCase()}`}
-                      rows={3}
-                      disabled={isVerified}
-                      className={isVerified ? 'border-green-300 bg-white' : ''}
-                    />
-                  ) : component.type === 'checkbox' ? (
-                    <div className="flex items-center space-x-2">
-                      <Checkbox
-                        checked={fieldValue === true || fieldValue === 'true'}
-                        onCheckedChange={(checked) => handleInputChange(component.key, checked)}
-                        disabled={isVerified}
-                      />
-                      <label className="text-sm text-gray-700">
+                  return (
+                    <div key={component.key} className={`${isVerified ? 'p-4 bg-green-50 border border-green-200 rounded-lg' : ''}`}>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
                         {component.label}
+                        {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+                        {isVerified && <VerifiedBadge className="ml-2" />}
                       </label>
-                    </div>
-                  ) : (
-                    <Input
-                      type={component.type === 'email' ? 'email' : component.type === 'number' ? 'number' : 'text'}
-                      value={fieldValue}
-                      onChange={(e) => handleInputChange(component.key, e.target.value)}
-                      placeholder={`Enter ${component.label.toLowerCase()}`}
-                      disabled={isVerified}
-                      className={isVerified ? 'border-green-300 bg-white' : ''}
-                    />
-                  )}
 
-                  {/* Field source indicator */}
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-gray-500">
-                      Data Source: {
-                        isVerified ? `Verified Attribute (${fieldMeta.vcMapping?.credentialType})` :
-                        fieldMeta.type === 'picklist' ? 'Pick List' :
-                        fieldMeta.type === 'verified' ? 'Verified Attribute' :
-                        'Free Text'
-                      }
-                    </span>
+                      {/* Render appropriate input based on component type */}
+                      {component.type === 'select' || fieldMeta.type === 'picklist' ? (
+                        <Select 
+                          value={fieldValue} 
+                          onValueChange={(value) => handleInputChange(component.key, value)}
+                          disabled={isVerified}
+                        >
+                          <SelectTrigger className={isVerified ? 'border-green-300 bg-white' : ''}>
+                            <SelectValue placeholder="Select an option..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(fieldMeta.options || ['Option 1', 'Option 2', 'Option 3']).map((option: string) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : component.type === 'textarea' ? (
+                        <Textarea
+                          value={fieldValue}
+                          onChange={(e) => handleInputChange(component.key, e.target.value)}
+                          placeholder={component.placeholder}
+                          disabled={isVerified}
+                          className={isVerified ? 'border-green-300 bg-white' : ''}
+                        />
+                      ) : (
+                        <Input
+                          type={component.type === 'email' ? 'email' : component.type === 'number' ? 'number' : 'text'}
+                          value={fieldValue}
+                          onChange={(e) => handleInputChange(component.key, e.target.value)}
+                          placeholder={component.placeholder}
+                          disabled={isVerified}
+                          className={isVerified ? 'border-green-300 bg-white' : ''}
+                        />
+                      )}
+
+                      {/* Field source indicator */}
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-500">
+                          Data Source: {
+                            isVerified ? `Verified Attribute (${fieldMeta.vcMapping?.credentialType})` :
+                            fieldMeta.type === 'picklist' ? 'Pick List' :
+                            fieldMeta.type === 'verified' ? 'Verified Attribute' :
+                            'Free Text'
+                          }
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Form Actions */}
+                <div className="pt-6 border-t border-gray-200">
+                  <div className="flex justify-between">
+                    <Button type="button" variant="outline" onClick={() => window.history.back()}>
+                      <ArrowLeft className="w-4 h-4 mr-2" />
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      disabled={submitFormMutation.isPending}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      {submitFormMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-4 h-4 mr-2" />
+                          Submit Form
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-              );
-            })}
+              </form>
+            </Card>
+          </div>
 
-            {/* Form Actions */}
-            <div className="pt-6 border-t border-gray-200">
-              <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => window.history.back()}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={submitFormMutation.isPending}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  {submitFormMutation.isPending ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Submit Form
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-          </form>
-        </Card>
+          {/* QR Code Column */}
+          <div className="lg:col-span-1">
+            {vcModal && (
+              <Card className="p-6 sticky top-4">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Scan to Verify Credentials</h3>
+                  <p className="text-sm text-gray-600 mb-6">
+                    Use your digital wallet to scan this QR code and verify your credentials to auto-fill the form.
+                  </p>
+                  
+                  {/* QR Code Display */}
+                  <div className="flex justify-center mb-4">
+                    <img 
+                      src={`data:image/png;base64,${vcModal.qr}`} 
+                      className="w-64 h-64 border border-gray-200 rounded-lg"
+                      alt="Verification QR Code"
+                    />
+                  </div>
+                  
+                  <p className="text-xs text-gray-500">
+                    Don't have the required credentials? You can still fill the form manually.
+                  </p>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
       </div>
-
-      {/* VC Verification Modal */}
-      {vcModal && (
-        <VCModal
-          reqId={(vcModal as any).reqId || (vcModal as any).txId}
-          qr={vcModal.qr}
-          onVerified={(attributes) => {
-            setVerifiedFields(attributes);
-            setVcModal(null);
-          }}
-        />
-      )}
     </div>
   );
 }
