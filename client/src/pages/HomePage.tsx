@@ -203,9 +203,15 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => setOpen(true)}
-              className="bg-red-500 text-white px-4 py-2 rounded"
+              className="ml-auto inline-flex items-center gap-1 rounded border px-3 py-1 text-sm hover:bg-gray-50"
             >
-              TEST FILTER BUTTON
+              <Filter className="w-4 h-4" />
+              Filter&nbsp;Forms
+              {filterIds.length > 0 && (
+                <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
+                  {filterIds.length}
+                </span>
+              )}
             </button>
           </div>
 
@@ -386,12 +392,12 @@ export default function HomePage() {
                   <label key={c.id} className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={filterIds.includes(c.id)}
+                      checked={filterIds.includes(c.id.toString())}
                       onChange={e =>
                         setFilterIds(prev =>
                           e.target.checked
-                            ? [...prev, c.id]
-                            : prev.filter(id => id !== c.id)
+                            ? [...prev, c.id.toString()]
+                            : prev.filter(id => id !== c.id.toString())
                         )
                       }
                     />
