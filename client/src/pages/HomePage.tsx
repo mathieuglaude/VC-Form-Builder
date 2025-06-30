@@ -171,9 +171,8 @@ export default function HomePage() {
             <Card 
               className="border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
               onClick={(e) => {
-                console.log('Create New Form card clicked, navigating to /builder/new');
-                console.log('Current location before navigation:', window.location.pathname);
-                setLocation('/builder/new');
+                e.preventDefault();
+                window.location.href = '/builder/new';
               }}
             >
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-48">
@@ -183,10 +182,9 @@ export default function HomePage() {
                 <h3 className="font-semibold text-gray-900 mb-2">Create New Form</h3>
                 <p className="text-sm text-gray-600 mb-4">Build a new form with VC integration</p>
                 <Button onClick={(e) => { 
-                  console.log('Get Started button clicked, navigating to /builder/new');
-                  console.log('Current location before navigation:', window.location.pathname);
                   e.stopPropagation(); 
-                  setLocation('/builder/new');
+                  e.preventDefault();
+                  window.location.href = '/builder/new';
                 }}>Get Started</Button>
               </CardContent>
             </Card>
