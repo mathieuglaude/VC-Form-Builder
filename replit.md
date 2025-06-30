@@ -271,6 +271,13 @@ Changelog:
   - Fixed form launch functionality to use correct route (/form/:id instead of /f/:slug)
   - Fixed "Create New Form" card click functionality with proper event handling
   - Streamlined user experience with one-click access to form creation
+- June 30, 2025. Fixed responsive design for credential library cards
+  - Replaced fixed pixel widths (420px) with responsive max-width and aspect-ratio
+  - Updated BannerBottomCard and DefaultCard components to use CSS aspect-ratio for proper scaling
+  - Improved grid layout with better responsive breakpoints (sm:grid-cols-2 lg:grid-cols-3)
+  - Fixed card overlapping issues on smaller screens by using percentage-based heights
+  - Added proper padding and spacing to prevent cards from collapsing on mobile devices
+  - Updated loading skeleton placeholders to match new responsive card dimensions
 ```
 
 ## User Preferences

@@ -4,30 +4,23 @@ interface BannerBottomCardProps {
   credential: CredentialTemplate;
 }
 
-const CARD_W   = 420;   // 420 × 236 ≈ 16:9
-const BANNER_H = 236 * 0.62; // ~146 px banner (62%)
-
 export default function BannerBottomCard({ credential }: BannerBottomCardProps) {
   const { label } = credential;
   const { logoUrl, backgroundImage, primaryColor = '#00698c' } = credential.branding || {};
   const issuer = credential.metaOverlay?.issuer || 'Law Society of British Columbia (LSBC)';
 
   return (
-    <div
-      className="relative rounded-lg shadow-md overflow-hidden"
-      style={{ width: CARD_W, height: 236 }}   // 🔒 FIXES CROPPING
-    >
+    <div className="relative rounded-lg shadow-md overflow-hidden w-full max-w-[420px] aspect-[420/236]">
       {/* Banner */}
       <img
         src={backgroundImage}
         alt=""
-        style={{ height: BANNER_H }}
-        className="absolute top-0 w-full h-[146px] object-cover"
+        className="absolute top-0 w-full h-[62%] object-cover"
       />
       {/* Teal strip */}
       <div
-        style={{ top: BANNER_H, backgroundColor: primaryColor }}
-        className="absolute inset-x-0 h-[90px] px-4 py-3"
+        style={{ backgroundColor: primaryColor }}
+        className="absolute bottom-0 inset-x-0 h-[38%] px-4 py-3"
       >
         {/* Layout container */}
         <div className="flex h-full">

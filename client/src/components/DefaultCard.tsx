@@ -8,10 +8,7 @@ interface DefaultCardProps {
 
 export default function DefaultCard({ credential }: DefaultCardProps) {
   return (
-    <div 
-      className="relative rounded-lg shadow-md overflow-hidden bg-white border"
-      style={{ width: 420, height: 236 }}
-    >
+    <div className="relative rounded-lg shadow-md overflow-hidden bg-white border w-full max-w-[420px] aspect-[420/236]">
       {/* Header */}
       <div className="p-4 pb-3 border-b bg-gray-50">
         <div className="flex items-center justify-between">
