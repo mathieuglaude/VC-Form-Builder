@@ -270,7 +270,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if form has credential issuance action configured
       const formConfig = await storage.getFormConfig(formConfigId);
-      const issuanceActions = formConfig?.metadata?.issuanceActions;
+      const metadata = formConfig?.metadata as any;
+      const issuanceActions = metadata?.issuanceActions;
       
       if (issuanceActions && issuanceActions.length > 0) {
         // Process each issuance action

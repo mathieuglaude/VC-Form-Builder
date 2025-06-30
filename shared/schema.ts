@@ -15,22 +15,22 @@ export const users = pgTable("users", {
 
 export const formConfigs = pgTable("form_configs", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(), // Form name (required, unique)
-  slug: text("slug").notNull().unique(), // URL-safe slug
-  purpose: text("purpose").notNull(), // Short description
-  logoUrl: text("logo_url"), // Logo file path or URL
-  title: text("title").notNull(), // Kept for backward compatibility
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  purpose: text("purpose").notNull(),
+  logoUrl: text("logo_url"),
+  title: text("title").notNull(),
   description: text("description"),
-  formSchema: jsonb("form_schema").notNull(), // Form.io JSON schema
-  metadata: jsonb("metadata").notNull(), // Extended metadata for VC integration
-  proofDef: jsonb("proof_def").$type<Record<string, string[]>>(), // { templateId -> [attr, attr] }
-  proofRequests: jsonb("proof_requests").default([]), // VC proof requirements
-  revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}), // Revocation acceptance policies per credential type
-  isPublic: boolean("is_public").notNull().default(false), // Whether form is published to community
-  authorId: text("author_id").notNull().default("demo"), // User ID of form creator
-  authorName: text("author_name").notNull().default("Demo User"), // Display name of form creator
-  authorOrg: text("author_org"), // Optional organization name
-  clonedFrom: integer("cloned_from").references(() => formConfigs.id), // Original form if this is a clone
+  formSchema: jsonb("form_schema").notNull(),
+  metadata: jsonb("metadata").notNull(),
+  proofDef: jsonb("proof_def").$type<Record<string, string[]>>(),
+  proofRequests: jsonb("proof_requests").default([]),
+  revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}),
+  isPublic: boolean("is_public").notNull().default(false),
+  authorId: text("author_id").notNull().default("demo"),
+  authorName: text("author_name").notNull().default("Demo User"),
+  authorOrg: text("author_org"),
+  clonedFrom: integer("cloned_from"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

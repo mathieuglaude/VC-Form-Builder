@@ -17,13 +17,34 @@ r.post('/init', async (req, res) => {
     res.json({ txId, qr });
   } catch (error) {
     console.error('Failed to create proof request:', error);
-    res.status(500).json({ error: 'Failed to create proof request' });
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Orbit API credentials not configured')) {
+      res.status(500).json({ 
+        error: 'Credential verification service not configured',
+        details: 'Please configure Orbit API credentials to enable credential verification'
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to create proof request' });
+    }
   }
 });
 
 r.get('/:txId', async (req, res) => {
-  const rec = await getProofStatus(req.params.txId);
-  res.json({ state: rec.state });
+  try {
+    const rec = await getProofStatus(req.params.txId);
+    res.json({ state: rec.state });
+  } catch (error) {
+    console.error('Failed to get proof status:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('Orbit API credentials not configured')) {
+      res.status(500).json({ 
+        error: 'Credential verification service not configured',
+        details: 'Please configure Orbit API credentials to enable credential verification'
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to get proof status' });
+    }
+  }
 });
 
 export default r;

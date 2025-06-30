@@ -6,7 +6,15 @@ type ProofReqPayload = {
   requested_attributes: Record<string, any>;
 };
 
+function validateEnvironment() {
+  if (!BASE || !KEY) {
+    throw new Error('Orbit API credentials not configured. Please set ORBIT_BASE and ORBIT_API_KEY environment variables.');
+  }
+}
+
 export async function createProofRequest(payload: ProofReqPayload) {
+  validateEnvironment();
+  
   const res = await fetch(`${BASE}/api/present-proof/aip2/send-proposal`, {
     method: 'POST',
     headers: {
@@ -20,6 +28,12 @@ export async function createProofRequest(payload: ProofReqPayload) {
 }
 
 export async function getProofStatus(txId: string) {
+  validateEnvironment();
+  
+  if (!txId) {
+    throw new Error('Transaction ID is required');
+  }
+  
   const res = await fetch(`${BASE}/api/present-proof/aip2/records/${txId}`, {
     headers: { 'x-api-key': KEY! }
   });
