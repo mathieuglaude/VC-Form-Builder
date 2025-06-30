@@ -295,11 +295,7 @@ export default function BuilderPage() {
     enabled: Boolean(isEditing)
   });
 
-  // Fetch all forms for listing
-  const { data: forms = [] } = useQuery({
-    queryKey: ['/api/forms'],
-    enabled: !id
-  });
+  // Note: Form listing removed - users redirected to homepage for form management
 
   // Create form mutation
   const createFormMutation = useMutation({
@@ -421,56 +417,10 @@ export default function BuilderPage() {
     );
   }
 
-  // Show form list if no specific form ID
+  // Redirect to homepage if no specific form ID (eliminate duplicate form listing)
   if (!id && !isPreviewMode) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Content */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Forms</h2>
-            <p className="text-gray-600">Create and manage forms with verifiable credential integration</p>
-          </div>
-
-          {/* Forms Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Create New Form Card */}
-            <Card className="border-2 border-dashed border-gray-300 hover:border-blue-300 cursor-pointer transition-colors" onClick={() => setLocation('/builder/new')}>
-              <CardContent className="flex flex-col items-center justify-center h-48 text-center">
-                <Plus className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Create New Form</h3>
-                <p className="text-sm text-gray-500">Start building a new form with VC integration</p>
-              </CardContent>
-            </Card>
-
-            {/* Existing Forms */}
-            {(forms as any[])?.map((form: any) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => setLocation(`/builder/${form.id}`)}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
-                    <FileText className="w-8 h-8 text-blue-600" />
-                    <div className="flex space-x-2">
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setLocation(`/form/${form.id}`); }}>
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={(e) => { e.stopPropagation(); setLocation(`/builder/${form.id}`); }}>
-                        <Settings className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">{form.title}</h3>
-                  <p className="text-sm text-gray-500 mb-4 line-clamp-2">{form.description || "No description"}</p>
-                  <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                    <span>{form.formSchema?.components?.length || 0} fields</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    setLocation('/');
+    return null;
   }
 
   // Show preview mode with consistent layout

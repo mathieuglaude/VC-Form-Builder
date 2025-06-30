@@ -40,7 +40,7 @@ export default function Navigation() {
   };
 
   const navItems = [
-    { path: "/builder", label: "Form Builder", icon: FileText },
+    { path: "/", label: "Form Builder", icon: FileText },
     { path: "/community", label: "Community Forms", icon: Users },
     { path: "/credentials", label: "Credential Library", icon: Database },
     { path: "/wallets", label: "Wallet Library", icon: Wallet },

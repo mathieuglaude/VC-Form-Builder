@@ -224,7 +224,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Create New Form</h3>
                 <p className="text-sm text-gray-600 mb-4">Build a new form with VC integration</p>
-                <Button onClick={() => setLocation('/builder')}>Get Started</Button>
+                <Button onClick={() => setLocation('/builder/new')}>Get Started</Button>
               </CardContent>
             </Card>
 
@@ -287,7 +287,7 @@ export default function HomePage() {
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
               <p className="text-gray-500 mb-6">Create your first form to get started with VC integration</p>
-              <Button onClick={() => setLocation('/builder')}>
+              <Button onClick={() => setLocation('/builder/new')}>
                 <Plus className="w-4 h-4 mr-2" />
                 Create Your First Form
               </Button>
@@ -306,7 +306,7 @@ export default function HomePage() {
                 <Button variant="outline" onClick={() => setFilterIds([])}>
                   Clear Filters
                 </Button>
-                <Button onClick={() => setLocation('/builder')}>
+                <Button onClick={() => setLocation('/builder/new')}>
                   Create New Form
                 </Button>
               </div>
