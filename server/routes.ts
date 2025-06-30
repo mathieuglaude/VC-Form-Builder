@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
-import { createProofRequest, sendProofRequest, getProofStatus, verifyProofCallback } from "./services/orbit";
+import { createProofRequest, sendProofRequest, getProofStatus, verifyProofCallback, createSchema, createCredentialDefinition, issueCredential, getIssuanceStatus, verifyIssuanceCallback } from "./services/orbit";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -256,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Form submission routes
+  // Form submission routes with credential issuance action
   app.post('/api/forms/:id/submit', async (req, res) => {
     try {
       const formConfigId = parseInt(req.params.id);
@@ -267,11 +267,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       const submission = await storage.createFormSubmission(validatedData);
+      
+      // Check if form has credential issuance action configured
+      const formConfig = await storage.getFormConfig(formConfigId);
+      const issuanceActions = formConfig?.metadata?.issuanceActions;
+      
+      if (issuanceActions && issuanceActions.length > 0) {
+        // Process each issuance action
+        for (const action of issuanceActions) {
+          await processIssuanceAction(action, submission, req.body.holderDid);
+        }
+      }
+      
       res.json(submission);
-    } catch (error) {
-      res.status(400).json({ error: 'Invalid submission data', details: error });
+    } catch (error: any) {
+      console.error('Form submission error:', error);
+      res.status(400).json({ error: 'Invalid submission data', details: error.message });
     }
   });
+
+  // Helper function to process credential issuance actions
+  async function processIssuanceAction(action: any, submission: any, holderDid?: string) {
+    try {
+      if (!holderDid) {
+        console.warn('No holder DID provided for credential issuance');
+        return;
+      }
+
+      const { credDefId, attributeMapping } = action;
+      
+      // Map form submission data to credential attributes
+      const attributes: Record<string, any> = {};
+      for (const [credAttr, formField] of Object.entries(attributeMapping)) {
+        const value = submission.submissionData[formField as string];
+        if (value !== undefined && value !== null) {
+          attributes[credAttr] = value;
+        }
+      }
+
+      // Issue credential via Orbit Enterprise
+      const result = await issueCredential(credDefId, holderDid, attributes);
+      
+      console.log(`Credential issuance initiated for submission ${submission.id}:`, result);
+      
+      // Store operation ID for status tracking
+      // In production, you might want to store this in the database
+      
+    } catch (error) {
+      console.error('Credential issuance action failed:', error);
+    }
+  }
 
   app.get('/api/forms/:id/submissions', async (req, res) => {
     try {
@@ -423,26 +468,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Orbit webhook endpoint
   app.post('/webhook/orbit', async (req, res) => {
     try {
-      const proofResult = await verifyProofCallback(req.body);
+      const webhookType = req.body.type || 'proof';
       
-      if (proofResult.verified) {
-        // Extract client and form info from webhook payload
-        const { formId, clientId } = req.body;
+      if (webhookType === 'proof') {
+        const proofResult = await verifyProofCallback(req.body);
         
-        // Notify client via WebSocket
-        notifyClient(clientId, {
-          type: 'proof_verified',
-          attributes: proofResult.attributes,
-          formId,
-          timestamp: proofResult.timestamp,
-          transactionId: proofResult.transactionId
-        });
+        if (proofResult.verified) {
+          const { formId, clientId } = req.body;
+          
+          notifyClient(clientId, {
+            type: 'proof_verified',
+            attributes: proofResult.attributes,
+            formId,
+            timestamp: proofResult.timestamp,
+            transactionId: proofResult.transactionId
+          });
+        }
+      } else if (webhookType === 'issuance') {
+        const issuanceResult = await verifyIssuanceCallback(req.body);
+        
+        if (issuanceResult.issued) {
+          const { submissionId, clientId } = req.body;
+          
+          if (clientId) {
+            notifyClient(clientId, {
+              type: 'credential_issued',
+              credentialId: issuanceResult.credentialId,
+              submissionId,
+              timestamp: issuanceResult.timestamp
+            });
+          }
+        }
       }
 
       res.json({ status: 'processed' });
     } catch (error: any) {
       console.error('Orbit webhook error:', error);
       res.status(500).json({ error: 'Failed to process webhook', details: error.message });
+    }
+  });
+
+  // Credential Issuance routes
+  app.post('/api/credentials/schema', async (req, res) => {
+    try {
+      const { schemaName, version, attributes } = req.body;
+      const result = await createSchema(schemaName, version, attributes);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Schema creation error:', error);
+      res.status(500).json({ error: 'Failed to create schema', details: error.message });
+    }
+  });
+
+  app.post('/api/credentials/definition', async (req, res) => {
+    try {
+      const { schemaId, tag } = req.body;
+      const result = await createCredentialDefinition(schemaId, tag);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Credential definition creation error:', error);
+      res.status(500).json({ error: 'Failed to create credential definition', details: error.message });
+    }
+  });
+
+  app.post('/api/credentials/issue', async (req, res) => {
+    try {
+      const { credDefId, holderDid, attributes } = req.body;
+      const result = await issueCredential(credDefId, holderDid, attributes);
+      res.json(result);
+    } catch (error: any) {
+      console.error('Credential issuance error:', error);
+      res.status(500).json({ error: 'Failed to issue credential', details: error.message });
+    }
+  });
+
+  app.get('/api/credentials/issuance/:operationId', async (req, res) => {
+    try {
+      const { operationId } = req.params;
+      const status = await getIssuanceStatus(operationId);
+      res.json(status);
+    } catch (error: any) {
+      console.error('Issuance status error:', error);
+      res.status(500).json({ error: 'Failed to get issuance status', details: error.message });
     }
   });
 

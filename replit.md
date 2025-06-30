@@ -248,6 +248,13 @@ Changelog:
   - Updated VCModal component to display QR codes and deep links from Orbit Enterprise
   - Integrated WebSocket notifications for real-time proof verification status updates
   - Form fields now auto-populate from verified credential attributes upon successful verification
+- June 30, 2025. Implemented Orbit Credential Issuance API with form submission pipeline
+  - Added credential issuance API wrappers: createSchema, createCredentialDefinition, issueCredential, getIssuanceStatus
+  - Implemented issuance action pipeline in form submission routes with automatic credential issuance
+  - Created IssuanceActionModal component for configuring credential issuance actions in form builder
+  - Integrated form field to credential attribute mapping interface for administrators
+  - Added webhook handling for credential issuance status updates and WebSocket notifications
+  - Form submissions now automatically trigger credential issuance based on configured actions
 ```
 
 ## User Preferences

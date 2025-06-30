@@ -155,3 +155,56 @@ export async function verifyProofCallback(payload: any): Promise<any> {
     timestamp: new Date().toISOString()
   };
 }
+
+// Credential Issuance API wrappers
+
+export async function createSchema(schemaName: string, version: string, attributes: string[]): Promise<any> {
+  const payload = {
+    schemaName,
+    version,
+    attributes
+  };
+
+  return await orbitRequest('/api/schemas/create', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function createCredentialDefinition(schemaId: string, tag?: string): Promise<any> {
+  const payload = {
+    schemaId,
+    tag: tag || 'default'
+  };
+
+  return await orbitRequest('/api/credential-definitions/create', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function issueCredential(credDefId: string, holderDid: string, attributes: Record<string, any>): Promise<any> {
+  const payload = {
+    credentialDefinitionId: credDefId,
+    holderDid,
+    attributes
+  };
+
+  return await orbitRequest('/api/issue/credential', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function getIssuanceStatus(operationId: string): Promise<any> {
+  return await orbitRequest(`/api/issue/status/${operationId}`);
+}
+
+export async function verifyIssuanceCallback(payload: any): Promise<any> {
+  return {
+    issued: payload.issued || false,
+    credentialId: payload.credentialId,
+    operationId: payload.operationId,
+    timestamp: new Date().toISOString()
+  };
+}

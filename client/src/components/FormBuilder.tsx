@@ -7,6 +7,7 @@ import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import FieldConfigModal from "./FieldConfigModal";
 import WalletSelector from "./WalletSelector";
+import IssuanceActionModal from "./IssuanceActionModal";
 import { useQuery } from "@tanstack/react-query";
 
 interface FormBuilderProps {
@@ -24,6 +25,8 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
   const [revocationPolicies, setRevocationPolicies] = useState<Record<string, boolean>>(initialForm?.revocationPolicies || {});
   const [isPublic, setIsPublic] = useState<boolean>(initialForm?.isPublic || false);
+  const [issuanceActions, setIssuanceActions] = useState<any[]>(initialForm?.metadata?.issuanceActions || []);
+  const [isIssuanceModalOpen, setIsIssuanceModalOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch credential templates for wallet compatibility
@@ -158,10 +161,13 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
 
   // Extract metadata for VC integration
   const extractMetadata = () => {
-    const metadata: any = {};
+    const metadata: any = {
+      fields: {},
+      issuanceActions
+    };
     components.forEach(comp => {
       if (comp.properties?.dataSource) {
-        metadata[comp.key] = {
+        metadata.fields[comp.key] = {
           type: comp.properties.dataSource,
           ...(comp.properties.vcMapping && { vcMapping: comp.properties.vcMapping }),
           ...(comp.properties.options && { options: comp.properties.options }),
@@ -444,6 +450,48 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         </div>
       )}
 
+      {/* Credential Issuance Actions */}
+      <div className="mt-6 p-4 border border-gray-200 rounded-lg">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-medium text-gray-900">Credential Issuance Actions</h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsIssuanceModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <span>⚡</span>
+            Configure Issuance
+          </Button>
+        </div>
+        <p className="text-sm text-gray-600 mb-4">
+          Automatically issue credentials when forms are submitted. Configure which credentials to issue and how form data maps to credential attributes.
+        </p>
+        
+        {issuanceActions.length > 0 ? (
+          <div className="space-y-2">
+            {issuanceActions.map((action: any, index: number) => (
+              <div key={action.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900">{action.name}</h4>
+                  <p className="text-xs text-gray-500">
+                    Will issue credential on form submission
+                  </p>
+                </div>
+                <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  ⚡ Active
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-500">No issuance actions configured</p>
+            <p className="text-xs text-gray-400 mt-1">Click "Configure Issuance" to set up automatic credential issuance</p>
+          </div>
+        )}
+      </div>
+
       {/* Field Configuration Modal */}
       <FieldConfigModal
         isOpen={isConfigModalOpen}
@@ -453,6 +501,19 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
         }}
         onSave={saveComponentConfig}
         initialConfig={selectedComponent}
+      />
+
+      {/* Issuance Action Modal */}
+      <IssuanceActionModal
+        isOpen={isIssuanceModalOpen}
+        onClose={() => setIsIssuanceModalOpen(false)}
+        onSave={setIssuanceActions}
+        initialActions={issuanceActions}
+        formFields={components.map(comp => ({
+          key: comp.key,
+          label: comp.label || comp.key,
+          type: comp.type
+        }))}
       />
     </div>
   );
