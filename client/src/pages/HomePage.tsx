@@ -249,7 +249,7 @@ export default function HomePage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setLocation(`/builder/${form.slug}`)}
+                          onClick={() => setLocation(`/builder/${form.id}`)}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
