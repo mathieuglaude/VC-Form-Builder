@@ -26,24 +26,7 @@ export default function PreviewPage() {
     enabled: !!slug,
   });
 
-  // Auto-trigger VC modal if form requires verification
-  useEffect(() => {
-    if (formConfig && !vcModal) {
-      const config = formConfig as any;
-      const needsVc = hasVerifiedFields();
-      
-      if (needsVc) {
-        fetch('/api/proofs/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId: config.id })
-        })
-          .then(r => r.json())
-          .then(setVcModal)
-          .catch(console.error);
-      }
-    }
-  }, [formConfig, vcModal]);
+  // No auto-trigger - user must click "Start Verification" button
 
   // Submit form mutation
   const submitFormMutation = useMutation({

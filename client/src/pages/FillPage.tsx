@@ -49,24 +49,7 @@ export default function FillPage() {
     }
   });
 
-  // Auto-trigger VC modal if form requires verification
-  useEffect(() => {
-    if (formConfig && !vcModal) {
-      const config = formConfig as any;
-      const needsVc = config?.formSchema?.components?.some((c: any) => c.properties?.dataSource === 'verified');
-      
-      if (needsVc) {
-        fetch('/api/proofs/init', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ formId: id })
-        })
-          .then(r => r.json())
-          .then(setVcModal)
-          .catch(console.error);
-      }
-    }
-  }, [formConfig, vcModal, id]);
+  // No auto-trigger - user must click "Start Verification" button
 
   const handleVerificationSuccess = (attributes: Record<string, any>) => {
     setVerifiedFields(attributes);
