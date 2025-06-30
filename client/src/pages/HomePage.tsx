@@ -1,16 +1,24 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp } from 'lucide-react';
+import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp, Filter, X } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
+  const [filterIds, setFilterIds] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data: formsData = [], isLoading } = useQuery({
     queryKey: ['/api/forms'],
+  });
+
+  const { data: credentials = [] } = useQuery({
+    queryKey: ['/api/cred-lib'],
   });
 
   // Re-validate every minute so "Updated last" moves cards to show recent changes
@@ -22,10 +30,48 @@ export default function HomePage() {
     return () => clearInterval(intervalId);
   }, [queryClient]);
 
+  // Load saved filter preferences
+  useEffect(() => {
+    const saved = localStorage.getItem('formFilters');
+    if (saved) {
+      try {
+        setFilterIds(JSON.parse(saved));
+      } catch (e) {
+        // Ignore malformed data
+      }
+    }
+  }, []);
+
+  // Save filter preferences
+  useEffect(() => {
+    localStorage.setItem('formFilters', JSON.stringify(filterIds));
+  }, [filterIds]);
+
   const forms = Array.isArray(formsData) ? formsData : [];
+
+  // Filter logic - forms must require ALL selected credentials
+  const filteredForms = useMemo(() => {
+    if (!filterIds.length) return forms;
+    
+    return forms.filter((form: any) => {
+      // Extract credential template IDs from form's proof requests
+      const formCredentialIds = new Set();
+      
+      if (form.proofRequests && Array.isArray(form.proofRequests)) {
+        form.proofRequests.forEach((request: any) => {
+          if (request.credentialTemplateId) {
+            formCredentialIds.add(request.credentialTemplateId.toString());
+          }
+        });
+      }
+      
+      // Check if form requires ALL selected credentials
+      return filterIds.every(id => formCredentialIds.has(id));
+    });
+  }, [forms, filterIds]);
   
   // Your personal forms (created by you), sorted by most recently updated
-  const personalForms = forms
+  const personalForms = filteredForms
     .filter((form: any) => form.authorId === "demo" || form.id <= 100)
     .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   
@@ -182,8 +228,18 @@ export default function HomePage() {
             <p className="text-gray-600 mt-1">Forms you've created and can edit</p>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm">
-              Filter
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowFilters(true)}
+            >
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+              {filterIds.length > 0 && (
+                <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                  {filterIds.length}
+                </span>
+              )}
             </Button>
             <Button variant="outline" size="sm">
               Sort
@@ -280,7 +336,7 @@ export default function HomePage() {
         </div>
 
         {/* Empty State */}
-        {forms.length === 0 && (
+        {personalForms.length === 0 && filterIds.length === 0 && (
           <div className="text-center py-12">
             <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
@@ -288,6 +344,21 @@ export default function HomePage() {
             <Button onClick={() => setLocation('/builder/new')}>
               <Plus className="w-4 h-4 mr-2" />
               Create Your First Form
+            </Button>
+          </div>
+        )}
+
+        {/* Filtered Empty State */}
+        {personalForms.length === 0 && filterIds.length > 0 && (
+          <div className="text-center py-12">
+            <Filter className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No forms match your filters</h3>
+            <p className="text-gray-500 mb-6">
+              Try selecting different credential templates or clear your filters to see all forms
+            </p>
+            <Button variant="outline" onClick={() => setFilterIds([])}>
+              <X className="w-4 h-4 mr-2" />
+              Clear Filters
             </Button>
           </div>
         )}
@@ -399,6 +470,81 @@ export default function HomePage() {
           </div>
         )}
       </div>
+
+      {/* Filters Dialog */}
+      <Dialog open={showFilters} onOpenChange={setShowFilters}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Filter by Credential Templates
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Show only forms that require ALL selected credential templates:
+            </p>
+            
+            <div className="space-y-3 max-h-64 overflow-y-auto">
+              {Array.isArray(credentials) && credentials.map((credential: any) => (
+                <div key={credential.id} className="flex items-center space-x-3">
+                  <Checkbox
+                    id={`cred-${credential.id}`}
+                    checked={filterIds.includes(credential.id.toString())}
+                    onCheckedChange={(checked) => {
+                      setFilterIds(prev =>
+                        checked
+                          ? [...prev, credential.id.toString()]
+                          : prev.filter(id => id !== credential.id.toString())
+                      );
+                    }}
+                  />
+                  <label 
+                    htmlFor={`cred-${credential.id}`}
+                    className="flex items-center gap-2 text-sm font-medium cursor-pointer flex-1"
+                  >
+                    {credential.branding?.logoUrl && (
+                      <img 
+                        src={credential.branding.logoUrl} 
+                        alt={credential.label}
+                        className="w-4 h-4 object-contain"
+                      />
+                    )}
+                    <span>{credential.label}</span>
+                    {credential.ecosystem && (
+                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
+                        {credential.ecosystem}
+                      </span>
+                    )}
+                  </label>
+                </div>
+              ))}
+            </div>
+            
+            {filterIds.length > 0 && (
+              <div className="flex items-center justify-between pt-2 border-t">
+                <span className="text-sm text-gray-600">
+                  {filterIds.length} credential{filterIds.length === 1 ? '' : 's'} selected
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilterIds([])}
+                >
+                  Clear all
+                </Button>
+              </div>
+            )}
+            
+            {personalForms.length === 0 && filterIds.length > 0 && (
+              <div className="text-center py-4 text-sm text-gray-500">
+                No forms match the selected credentials.
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
