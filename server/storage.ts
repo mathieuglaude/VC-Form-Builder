@@ -17,7 +17,7 @@ import {
   type AttributeDef
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -537,7 +537,10 @@ export class DatabaseStorage implements IStorage {
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
     const [updated] = await db
       .update(formConfigs)
-      .set(formConfig)
+      .set({
+        ...formConfig,
+        updatedAt: new Date()
+      })
       .where(eq(formConfigs.id, id))
       .returning();
     return updated || undefined;
@@ -586,7 +589,7 @@ export class DatabaseStorage implements IStorage {
 
   async listFormConfigs(): Promise<FormConfig[]> {
     try {
-      const results = await db.select().from(formConfigs);
+      const results = await db.select().from(formConfigs).orderBy(desc(formConfigs.updatedAt));
       return results;
     } catch (error) {
       console.error('Database error in listFormConfigs:', error);
