@@ -42,6 +42,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-gray-50">
         <div className="test-tailwind-loaded fixed top-2 right-2" />
+        <div className="hidden grid rounded-lg bg-slate-50 p-4 border shadow-md"></div>
         <Navigation />
         <main className="pt-4">
           <Router />

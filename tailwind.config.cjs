@@ -1,9 +1,14 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
-    "../../packages/**/*.{js,ts,jsx,tsx}"   // shared + external packages
+    "./apps/web/index.html",
+    "./apps/web/src/**/*.{js,ts,jsx,tsx}",
+    "./packages/**/*.{js,ts,jsx,tsx}"
+  ],
+  safelist: [
+    'grid', 'rounded-lg', 'bg-slate-50', 'p-4', 'border', 'shadow-md', 
+    'hidden', 'fixed', 'top-2', 'right-2', 'text-green-600', 'font-bold',
+    'min-h-screen', 'bg-gray-50', 'pt-4'
   ],
   theme: { 
     extend: {
