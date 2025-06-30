@@ -10,7 +10,10 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
   const issuer = credential.metaOverlay?.issuer || 'Law Society of British Columbia (LSBC)';
 
   return (
-    <div className="relative rounded-lg shadow-md overflow-hidden w-full max-w-[420px] aspect-[420/236]">
+    <div 
+      className="relative rounded-lg shadow-md overflow-hidden" 
+      style={{ width: '100%', maxWidth: '420px', height: '236px' }}
+    >
       {/* Banner */}
       <img
         src={backgroundImage}

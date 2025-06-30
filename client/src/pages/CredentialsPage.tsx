@@ -68,9 +68,9 @@ export default function CredentialsPage() {
       <div className="container mx-auto py-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-items-center max-w-7xl mx-auto px-4">
+          <div className="flex flex-wrap gap-8 justify-center max-w-7xl mx-auto px-4">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="w-full max-w-[420px] aspect-[420/236] bg-gray-200 rounded"></div>
+              <div key={i} style={{ width: '100%', maxWidth: '420px', height: '236px' }} className="bg-gray-200 rounded"></div>
             ))}
           </div>
         </div>
@@ -181,7 +181,7 @@ export default function CredentialsPage() {
         </Card>
       )}
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 justify-items-center max-w-7xl mx-auto px-4">
+      <div className="flex flex-wrap gap-8 justify-center max-w-7xl mx-auto px-4">
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
             <div className="group hover:scale-105 transition-transform cursor-pointer">

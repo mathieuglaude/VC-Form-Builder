@@ -271,13 +271,15 @@ Changelog:
   - Fixed form launch functionality to use correct route (/form/:id instead of /f/:slug)
   - Fixed "Create New Form" card click functionality with proper event handling
   - Streamlined user experience with one-click access to form creation
-- June 30, 2025. Fixed responsive design for credential library cards
-  - Replaced fixed pixel widths (420px) with responsive max-width and aspect-ratio
-  - Updated BannerBottomCard and DefaultCard components to use CSS aspect-ratio for proper scaling
-  - Improved grid layout with better responsive breakpoints (sm:grid-cols-2 lg:grid-cols-3)
-  - Fixed card overlapping issues on smaller screens by using percentage-based heights
-  - Added proper padding and spacing to prevent cards from collapsing on mobile devices
-  - Updated loading skeleton placeholders to match new responsive card dimensions
+- June 30, 2025. Fixed responsive design and restored BC Lawyer Credential visibility
+  - Implemented robust credential seeding system to safeguard BC Lawyer Credential from disappearing
+  - Added automatic credential restoration on server startup with console confirmation
+  - Enhanced API endpoint with proper sorting and error handling for consistent credential ordering
+  - Fixed card display issues by reverting problematic CSS aspect-ratio to reliable fixed dimensions
+  - Replaced rigid grid layout with flexible flexbox for better responsive behavior without overlap
+  - Maintained optimal 420px card width while ensuring proper spacing on all screen sizes
+  - Added health check endpoint (/api/admin/credentials/health) for manual credential restoration
+  - BC Lawyer Credential with full LSBC branding now consistently visible in credential library
 ```
 
 ## User Preferences
