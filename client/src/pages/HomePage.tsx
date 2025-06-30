@@ -203,15 +203,9 @@ export default function HomePage() {
             </div>
             <button
               onClick={() => setOpen(true)}
-              className="ml-auto inline-flex items-center gap-1 rounded border px-3 py-1 text-sm"
+              className="bg-red-500 text-white px-4 py-2 rounded"
             >
-              <Filter className="w-4 h-4" />
-              Filter&nbsp;Forms
-              {filterIds.length > 0 && (
-                <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
-                  {filterIds.length}
-                </span>
-              )}
+              TEST FILTER BUTTON
             </button>
           </div>
 
