@@ -4,6 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
+import adminCredentialsRouter from "./routes/adminCredentials";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
@@ -49,8 +50,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     bio: "Passionate about building digital identity solutions and streamlining verification processes.",
     profileImage: null,
     location: "Vancouver, BC",
-    timezone: "America/Vancouver"
+    timezone: "America/Vancouver",
+    role: "admin" as const
   };
+
+  // Simple auth middleware for demo
+  app.use((req, res, next) => {
+    req.user = { id: currentUserProfile.id, role: currentUserProfile.role };
+    next();
+  });
 
   // User profile routes
   app.get('/api/auth/user', async (req, res) => {
@@ -497,6 +505,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Register proofs router
   app.use('/api/proofs', proofsRouter);
+  
+  // Register admin credential management routes
+  app.use('/api/admin/credentials', adminCredentialsRouter);
 
   // Orbit webhook endpoint
   app.post('/webhook/orbit', async (req, res) => {

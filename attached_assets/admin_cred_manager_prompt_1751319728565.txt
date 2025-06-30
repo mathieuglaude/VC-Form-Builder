@@ -1,0 +1,192 @@
+**Prompt – Browser-based Credential Library Manager**
+
+----------------------------------------------------------------
+## 0 · Auth check
+
+* Assumption: you already store `role:'admin' | 'user'` on the JWT payload.
+* Add middleware:
+
+```ts
+// server/middleware/isAdmin.ts
+export default function isAdmin(req,res,next){
+  if (req.user?.role !== 'admin') return res.sendStatus(403);
+  next();
+}
+1 · Back-end API
+routes/adminCredentials.ts
+ts
+Copy
+Edit
+import { Router } from 'express';
+import isAdmin from '../middleware/isAdmin';
+import CredentialTemplate from '../models/CredentialTemplate';
+
+const r = Router();
+r.use(isAdmin);
+
+r.get('/', async (_,res) => {
+  const list = await CredentialTemplate.find({}).sort({ updatedAt:-1 });
+  res.json(list);
+});
+
+r.post('/', async (req,res) => {
+  const doc = await CredentialTemplate.create(req.body);
+  res.status(201).json(doc);
+});
+
+r.put('/:id', async (req,res) => {
+  const doc = await CredentialTemplate.findByIdAndUpdate(req.params.id, req.body, { new:true });
+  res.json(doc);
+});
+
+r.delete('/:id', async (req,res) => {
+  await CredentialTemplate.findByIdAndDelete(req.params.id);
+  res.sendStatus(204);
+});
+
+export default r;
+Add to server/index.ts:
+
+ts
+Copy
+Edit
+import adminCredsRouter from './routes/adminCredentials';
+app.use('/api/admin/credentials', adminCredsRouter);
+2 · Front-end routing
+Add to React Router tree:
+
+tsx
+Copy
+Edit
+{ path:'/settings/credentials', element:<CredentialsAdminPage /> }
+Hook it from the Account-Settings dropdown:
+
+tsx
+Copy
+Edit
+<Menu.Item>
+  <Link to="/settings/credentials">Credential Templates</Link>
+</Menu.Item>
+3 · Page scaffold (frontend/src/pages/CredentialsAdminPage.tsx)
+tsx
+Copy
+Edit
+import useSWR from 'swr';
+import { useState } from 'react';
+import CredFormDialog from '../components/CredFormDialog';
+
+export default function CredentialsAdminPage() {
+  const { data, mutate } = useSWR('/api/admin/credentials');
+  const [editing, setEditing] = useState(null);
+
+  return (
+    <div className="max-w-4xl mx-auto p-8">
+      <div className="flex items-center mb-6">
+        <h1 className="text-2xl font-semibold flex-1">Credential Templates</h1>
+        <button
+          className="rounded bg-blue-600 px-4 py-1 text-white"
+          onClick={() => setEditing({})}
+        >
+          + New
+        </button>
+      </div>
+
+      <table className="w-full text-sm">
+        <thead className="text-left text-gray-500">
+          <tr><th>Name</th><th>Issuer</th><th>Version</th><th/></tr>
+        </thead>
+        <tbody>
+          {data?.map((c:any) => (
+            <tr key={c._id} className="border-t">
+              <td className="py-2">{c.label}</td>
+              <td>{c.metaOverlay?.issuer ?? '—'}</td>
+              <td>{c.version}</td>
+              <td className="text-right">
+                <button onClick={()=>setEditing(c)} className="text-blue-600 mr-3">Edit</button>
+                <button
+                  onClick={async ()=>{
+                    await fetch(`/api/admin/credentials/${c._id}`,{method:'DELETE'});
+                    mutate();
+                  }}
+                  className="text-red-500"
+                >
+                  Delete
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      {editing && (
+        <CredFormDialog
+          initial={editing}
+          onClose={()=>setEditing(null)}
+          onSaved={()=>{ setEditing(null); mutate(); }}
+        />
+      )}
+    </div>
+  );
+}
+4 · Modal form component (components/CredFormDialog.tsx)
+Simplified—fields match your schema.
+
+tsx
+Copy
+Edit
+export default function CredFormDialog({initial,onClose,onSaved}) {
+  const [form,setForm]=useState(initial);
+  const save = async() => {
+    const method = form._id?'PUT':'POST';
+    const url = form._id?`/api/admin/credentials/${form._id}`:'/api/admin/credentials';
+    await fetch(url,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
+    onSaved();
+  };
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
+      <div className="bg-white w-96 p-6 rounded space-y-4">
+        <h2 className="text-lg font-medium">{form._id?'Edit':'New'} Credential</h2>
+        <input placeholder="Label"   className="input" value={form.label||''}   onChange={e=>setForm({...form,label:e.target.value})}/>
+        <input placeholder="Version" className="input" value={form.version||''} onChange={e=>setForm({...form,version:e.target.value})}/>
+        <input placeholder="Schema ID" className="input" value={form.schemaId||''} onChange={e=>setForm({...form,schemaId:e.target.value})}/>
+        <input placeholder="Cred Def ID" className="input" value={form.credDefId||''} onChange={e=>setForm({...form,credDefId:e.target.value})}/>
+        <textarea placeholder="Attributes (comma-sep)" className="input"
+          value={(form.attributes||[]).join(',')}
+          onChange={e=>setForm({...form,attributes:e.target.value.split(',').map(s=>s.trim())})}/>
+        <div className="flex justify-end gap-3 pt-4">
+          <button onClick={onClose} className="rounded px-3 py-1 border">Cancel</button>
+          <button onClick={save} className="rounded bg-blue-600 px-4 py-1 text-white">Save</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+Add a tiny Tailwind helper:
+
+css
+Copy
+Edit
+.input { @apply w-full border rounded px-2 py-1 text-sm; }
+5 · Credential Library live refresh
+In CredentialLibrary page use SWR; after admin saves a template, mutate('/api/cred-lib') will auto-update the public catalogue.
+
+Ghostwriter instructions
+• Add middleware, API routes, page, dialog exactly as above.
+• Pages compile under TypeScript strict mode.
+• Only admins see “Credential Templates” in Account-Settings dropdown.
+• Credential Library auto-reflects changes without server restart.
+
+pgsql
+Copy
+Edit
+
+---
+
+### After Ghostwriter runs
+
+* Log in as admin → Account Settings → **Credential Templates**  
+* Click **+ New** → fill Label, Schema ID, attributes → **Save**  
+* Return to **Credential Library**—new template appears immediately.  
+* Non-admin users see nothing new.
+
+You now have a full CRUD UI for credentials with zero manual DB edits.

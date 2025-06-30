@@ -121,6 +121,17 @@ export default function Navigation() {
                   Account Settings
                 </button>
                 
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                  onClick={() => {
+                    setLocation('/admin/credentials');
+                    setShowDropdown(false);
+                  }}
+                >
+                  <Database className="mr-2 h-4 w-4" />
+                  Credential Templates
+                </button>
+                
                 <div className="border-t my-1"></div>
                 
                 <button

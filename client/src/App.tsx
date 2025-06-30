@@ -12,6 +12,7 @@ import CredentialDetailPage from "@/pages/CredentialDetailPage";
 import WalletLibraryPage from "@/pages/WalletLibraryPage";
 import CommunityPage from "@/pages/CommunityPage";
 import AccountPage from "@/pages/AccountPage";
+import CredentialsAdminPage from "@/pages/CredentialsAdminPage";
 
 function Router() {
   return (
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/credentials/:id" component={CredentialDetailPage} />
       <Route path="/wallets" component={WalletLibraryPage} />
       <Route path="/account" component={AccountPage} />
+      <Route path="/admin/credentials" component={CredentialsAdminPage} />
       <Route component={NotFound} />
     </Switch>
   );
