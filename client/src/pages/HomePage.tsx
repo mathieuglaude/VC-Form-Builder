@@ -382,7 +382,7 @@ export default function HomePage() {
             <div className="w-80 rounded bg-white p-6 shadow">
               <h3 className="mb-4 text-lg font-semibold">Filter by Credential</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {creds?.map((c: any) => (
+                {Array.isArray(creds) && creds.map((c: any) => (
                   <label key={c.id} className="flex items-center gap-2">
                     <input
                       type="checkbox"
