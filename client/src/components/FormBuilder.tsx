@@ -8,15 +8,18 @@ import { useToast } from "@/hooks/use-toast";
 import FieldConfigModal from "./FieldConfigModal";
 import WalletSelector from "./WalletSelector";
 import IssuanceActionModal from "./IssuanceActionModal";
-import { useQuery } from "@tanstack/react-query";
+import DeleteFormModal from "./DeleteFormModal";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Trash2 } from "lucide-react";
 
 interface FormBuilderProps {
   initialForm?: any;
   onSave: (formData: any) => void;
   onPreview: (formData: any) => void;
+  onDelete?: () => void;
 }
 
-export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuilderProps) {
+export default function FormBuilder({ initialForm, onSave, onPreview, onDelete }: FormBuilderProps) {
   const [formTitle, setFormTitle] = useState(initialForm?.name || "");
   const [formDescription, setFormDescription] = useState(initialForm?.description || "");
   const [components, setComponents] = useState<any[]>(initialForm?.formSchema?.components || []);
@@ -27,7 +30,38 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
   const [isPublic, setIsPublic] = useState<boolean>(initialForm?.isPublic || false);
   const [issuanceActions, setIssuanceActions] = useState<any[]>(initialForm?.metadata?.issuanceActions || []);
   const [isIssuanceModalOpen, setIsIssuanceModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Delete form mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      if (!initialForm?.id) throw new Error('No form ID');
+      const response = await fetch(`/api/forms/${initialForm.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete form');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/forms'] });
+      toast({
+        title: "Form deleted",
+        description: "Your form has been permanently deleted.",
+      });
+      if (onDelete) {
+        onDelete();
+      }
+    },
+    onError: (error) => {
+      toast({
+        title: "Delete failed",
+        description: "Failed to delete the form. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Fetch credential templates for wallet compatibility
   const { data: credentialTemplates = [] } = useQuery({
@@ -268,6 +302,16 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
             <Button onClick={handleSave}>
               Save Form
             </Button>
+            {initialForm?.id && (
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -540,6 +584,19 @@ export default function FormBuilder({ initialForm, onSave, onPreview }: FormBuil
           label: comp.label || comp.key,
           type: comp.type
         }))}
+      />
+
+      {/* Delete Form Modal */}
+      <DeleteFormModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={() => {
+          deleteMutation.mutate();
+          setIsDeleteModalOpen(false);
+        }}
+        formName={formTitle || 'Untitled Form'}
+        isPublic={isPublic}
+        isDeleting={deleteMutation.isPending}
       />
     </div>
   );

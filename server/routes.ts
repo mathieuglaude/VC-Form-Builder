@@ -126,6 +126,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete('/api/forms/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const formConfig = await storage.getFormConfig(id);
+      
+      if (!formConfig) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      
+      const deleted = await storage.deleteFormConfig(id);
+      
+      if (deleted) {
+        res.json({ success: true, message: 'Form deleted successfully' });
+      } else {
+        res.status(500).json({ error: 'Failed to delete form' });
+      }
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to delete form' });
+    }
+  });
+
   // Get public forms for community section
   app.get('/api/forms/public', async (req, res) => {
     // Return sample community forms that are distinct from user's personal forms

@@ -255,6 +255,7 @@ export default function BuilderPage() {
           initialForm={formConfig}
           onSave={handleSave}
           onPreview={handlePreview}
+          onDelete={() => setLocation('/builder')}
         />
       </div>
     </div>

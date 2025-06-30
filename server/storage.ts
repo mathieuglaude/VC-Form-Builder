@@ -30,6 +30,7 @@ export interface IStorage {
   getFormConfig(id: number): Promise<FormConfig | undefined>;
   getFormConfigBySlug(slug: string): Promise<FormConfig | undefined>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
+  deleteFormConfig(id: number): Promise<boolean>;
   listFormConfigs(): Promise<FormConfig[]>;
   listPublicFormConfigs(): Promise<FormConfig[]>;
   cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig>;
@@ -199,6 +200,22 @@ export class MemStorage implements IStorage {
 
   async listPublicFormConfigs(): Promise<FormConfig[]> {
     return Array.from(this.formConfigs.values()).filter(form => form.isPublic);
+  }
+
+  async deleteFormConfig(id: number): Promise<boolean> {
+    const exists = this.formConfigs.has(id);
+    if (exists) {
+      this.formConfigs.delete(id);
+      // Also delete related form submissions
+      const submissionsToDelete = Array.from(this.formSubmissions.entries())
+        .filter(([_, submission]) => submission.formConfigId === id)
+        .map(([submissionId, _]) => submissionId);
+      
+      submissionsToDelete.forEach(submissionId => {
+        this.formSubmissions.delete(submissionId);
+      });
+    }
+    return exists;
   }
 
   async cloneFormConfig(id: number, authorId: string, authorName: string): Promise<FormConfig> {
@@ -459,6 +476,20 @@ export class DatabaseStorage implements IStorage {
       .where(eq(formConfigs.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deleteFormConfig(id: number): Promise<boolean> {
+    try {
+      // First delete related form submissions
+      await db.delete(formSubmissions).where(eq(formSubmissions.formConfigId, id));
+      
+      // Then delete the form config
+      const result = await db.delete(formConfigs).where(eq(formConfigs.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error('Database error in deleteFormConfig:', error);
+      return false;
+    }
   }
 
   async listFormConfigs(): Promise<FormConfig[]> {
