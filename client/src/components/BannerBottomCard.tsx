@@ -20,14 +20,24 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
 
   return (
     <div 
-      className="relative rounded-lg shadow-md overflow-hidden" 
-      style={{ width: '100%', maxWidth: '420px', height: '236px' }}
+      className="relative rounded-lg shadow-md overflow-hidden bg-white border" 
+      style={{ 
+        width: '100%', 
+        maxWidth: '420px', 
+        height: '236px',
+        minHeight: '236px' // Ensure minimum height
+      }}
     >
       {/* Banner */}
       <img
         src={backgroundImage}
         alt=""
         className="absolute top-0 w-full h-[62%] object-cover"
+        onError={(e) => {
+          console.error('Failed to load background image:', backgroundImage);
+          e.currentTarget.style.display = 'none';
+        }}
+        onLoad={() => console.log('Background image loaded successfully:', backgroundImage)}
       />
       {/* Teal strip */}
       <div
