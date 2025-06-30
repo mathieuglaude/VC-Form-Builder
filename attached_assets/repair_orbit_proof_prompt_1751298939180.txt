@@ -1,0 +1,197 @@
+
+markdown
+Copy
+Edit
+**Prompt – Repair Orbit Proof Flow (compile-first approach)**
+
+Goal: ship ONE green build that does three things only:
+1. POST `/api/proofs/init` → Orbit → returns `{ qr, txId }`.
+2. VCModal shows the QR.
+3. Poll `/api/proofs/:txId` every 3 s until `status=="verified"`; then emit `proof_verified`.
+
+No socket.io, no auto-patching Form.io data yet. After this compiles we’ll iterate.
+
+----------------------------------------------------------------
+## 0 · CI guardrail
+
+Add to root `tsconfig.json`:
+```json
+"skipLibCheck": true,
+"noEmitOnError": true
+so Ghostwriter must produce a type-clean build.
+
+1 · Orbit service (rewrite)
+ts
+Copy
+Edit
+// server/services/orbit.ts
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const BASE = process.env.ORBIT_BASE;
+const KEY  = process.env.ORBIT_API_KEY;
+
+type ProofReqPayload = {
+  name: string;
+  requested_attributes: Record<string, any>;
+};
+
+export async function createProofRequest(payload: ProofReqPayload) {
+  const res = await fetch(`${BASE}/api/present-proof/aip2/send-proposal`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': KEY!
+    },
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // { presentationExchangeId, qrCode }
+}
+
+export async function getProofStatus(txId: string) {
+  const res = await fetch(`${BASE}/api/present-proof/aip2/records/${txId}`, {
+    headers: { 'x-api-key': KEY! }
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // { state: 'verified' | ... }
+}
+2 · Proofs router (minimal)
+ts
+Copy
+Edit
+// server/routes/proofs.ts
+import { Router } from 'express';
+import { createProofRequest, getProofStatus } from '../services/orbit';
+
+const r = Router();
+
+r.post('/init', async (req, res) => {
+  const { formId } = req.body;
+  // TEMP payload: request ANY credential with "given_name"
+  const { presentationExchangeId, qrCode } = await createProofRequest({
+    name: formId,
+    requested_attributes: {
+      attr1_referent: { name: 'given_name' }
+    }
+  });
+  res.json({ txId: presentationExchangeId, qr: qrCode });
+});
+
+r.get('/:txId', async (req, res) => {
+  const rec = await getProofStatus(req.params.txId);
+  res.json({ state: rec.state });
+});
+
+export default r;
+Mount in server/index.ts:
+
+ts
+Copy
+Edit
+import proofsRouter from './routes/proofs';
+app.use('/api/proofs', proofsRouter);
+3 · Front-end glue (no sockets yet)
+VCModal.tsx (compile-safe stub)
+tsx
+Copy
+Edit
+import { useEffect, useState } from 'react';
+
+export default function VCModal({
+  txId,
+  qr,
+  onVerified
+}: {
+  txId: string;
+  qr: string;
+  onVerified: () => void;
+}) {
+  const [state, setState] = useState('pending');
+
+  useEffect(() => {
+    const iv = setInterval(async () => {
+      const r = await fetch(`/api/proofs/${txId}`).then(r => r.json());
+      setState(r.state);
+      if (r.state === 'verified') {
+        clearInterval(iv);
+        onVerified();
+      }
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [txId, onVerified]);
+
+  return (
+    <div className="fixed inset-0 grid place-items-center bg-black/50">
+      <div className="bg-white p-6 rounded">
+        {state === 'pending' && (
+          <>
+            <p className="mb-4">Scan with your wallet:</p>
+            <img src={qr} alt="proof QR" className="w-48 h-48" />
+          </>
+        )}
+        {state === 'verified' && <p className="text-green-600">Verified ✔</p>}
+      </div>
+    </div>
+  );
+}
+PreviewPage.tsx (inject modal)
+tsx
+Copy
+Edit
+const [vcModal, setVcModal] = useState<null | { txId: string; qr: string }>(null);
+
+useEffect(() => {
+  if (needsVc && !vcModal) {
+    fetch('/api/proofs/init', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ formId: id })
+    })
+      .then(r => r.json())
+      .then(setVcModal);
+  }
+}, [needsVc, vcModal, id]);
+
+return (
+  <>
+    {vcModal && (
+      <VCModal
+        {...vcModal}
+        onVerified={() => {
+          setVcModal(null);
+          // TODO: patch Form.io fields in next iteration
+        }}
+      />
+    )}
+    {/* existing Form.io renderer */}
+  </>
+);
+needsVc can be formJson.components.some(c => c.dataSource==='vc').
+
+4 · Compile & lint
+bash
+Copy
+Edit
+npm run lint
+npm run dev        # must start with ZERO TS errors
+5 · README patch
+Add “Proof flow v0.1: polling every 3 s; next iteration will switch to sockets + auto-fill.”
+
+Ghostwriter, replace the existing looping code with the pared-down versions above, ensuring a clean compile. Don’t touch socket.io or the previous modal—just comment them out. Goal: the dev server starts, /api/proofs/init responds, VCModal shows a QR, and after wallet proof, polling flips to Verified.
+
+yaml
+Copy
+Edit
+
+---
+
+After Ghostwriter finishes:
+
+1. **Restart Replit** (`npm run dev`).  
+2. Open a form with a VC field → QR shows.  
+3. Scan with a wallet that has any credential containing `given_name`.  
+4. When Orbit marks it `verified`, the modal turns green.
+
+Once this compiles, we can safely re-enable sockets and auto-patch fields in a follow-up. Let me know when you have a green build and we’ll move to the next increment!

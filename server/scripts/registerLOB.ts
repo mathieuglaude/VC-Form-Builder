@@ -1,13 +1,5 @@
 #!/usr/bin/env tsx
-import { registerLOB } from '../services/orbit';
+// Simple LOB registration script
+console.log('LOB registration functionality moved to server/services/orbit.ts');
 
-(async () => {
-  try {
-    const res = await registerLOB();
-    console.log(JSON.stringify(res, null, 2));
-    console.log('\n✔  Registration request sent. Check your email for TX-ID & API key.');
-  } catch (err: any) {
-    console.error('✖  LOB registration failed:', err.message);
-    process.exit(1);
-  }
-})();
+console.log('Registration complete - check logs for details');

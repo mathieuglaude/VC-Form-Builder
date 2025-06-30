@@ -18,7 +18,7 @@ export default function PreviewPage() {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
-  const [isVCModalOpen, setIsVCModalOpen] = useState(false);
+  const [vcModal, setVcModal] = useState<null | { txId: string; qr: string }>(null);
 
 
   // Fetch form configuration by slug
@@ -50,20 +50,23 @@ export default function PreviewPage() {
     }
   });
 
-  // Check if form requires VC verification and trigger modal
+  // Check if form requires VC verification and trigger modal  
   useEffect(() => {
-    if (formConfig) {
+    if (formConfig && !vcModal) {
       const config = formConfig as any;
-      const metadata = config?.metadata as any;
-      const hasVCFields = Object.values(metadata?.fields || {}).some((fieldMeta: any) => 
-        fieldMeta.type === 'verified'
-      );
+      const needsVc = config?.formSchema?.components?.some((c: any) => c.properties?.dataSource === 'verified');
       
-      if (hasVCFields && Object.keys(verifiedFields).length === 0) {
-        setIsVCModalOpen(true);
+      if (needsVc) {
+        fetch('/api/proofs/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formId: config.id })
+        })
+          .then(r => r.json())
+          .then(setVcModal);
       }
     }
-  }, [formConfig, verifiedFields]);
+  }, [formConfig, vcModal]);
 
   const handleVerificationSuccess = (attributes: Record<string, any>) => {
     setVerifiedFields(attributes);
@@ -152,16 +155,7 @@ export default function PreviewPage() {
     return formData[fieldKey] || '';
   };
 
-  useEffect(() => {
-    // Check if form requires VC verification and prompt user
-    if (formConfig && hasVerifiedFields() && Object.keys(verifiedFields).length === 0) {
-      const timer = setTimeout(() => {
-        setIsVCModalOpen(true);
-      }, 1000); // Delay to let the page load
-
-      return () => clearTimeout(timer);
-    }
-  }, [formConfig, verifiedFields]);
+  // Removed old VC modal trigger - now handled by auto-detection above
 
   if (isLoading) {
     return (
@@ -215,7 +209,17 @@ export default function PreviewPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsVCModalOpen(true)}
+                  onClick={() => {
+                    // Re-trigger proof request
+                    const config = formConfig as any;
+                    fetch('/api/proofs/init', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ formId: config.id })
+                    })
+                      .then(r => r.json())
+                      .then(setVcModal);
+                  }}
                 >
                   <Shield className="w-4 h-4 mr-2" />
                   Verify Credentials
@@ -370,12 +374,15 @@ export default function PreviewPage() {
       </div>
 
       {/* VC Verification Modal */}
-      <VCModal
-        isOpen={isVCModalOpen}
-        onClose={() => setIsVCModalOpen(false)}
-        formId={(formConfig as any)?.id}
-        onVerificationSuccess={handleVerificationSuccess}
-      />
+      {vcModal && (
+        <VCModal
+          {...vcModal}
+          onVerified={() => {
+            setVcModal(null);
+            // TODO: patch Form.io fields in next iteration
+          }}
+        />
+      )}
     </div>
   );
 }

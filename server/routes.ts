@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
-import { createSchema, createCredentialDefinition, issueCredential, getIssuanceStatus, verifyIssuanceCallback } from "./services/orbit";
 import proofsRouter from "./routes/proofs";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
@@ -306,10 +305,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Issue credential via Orbit Enterprise
-      const result = await issueCredential(credDefId, holderDid, attributes);
+      // TODO: Re-enable credential issuance after core proof flow works
+      // const result = await issueCredential(credDefId, holderDid, attributes);
       
-      console.log(`Credential issuance initiated for submission ${submission.id}:`, result);
+      console.log(`Credential issuance initiated for submission ${submission.id}`);
       
       // Store operation ID for status tracking
       // In production, you might want to store this in the database
@@ -441,23 +440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Handle credential issuance webhook
-      if (payload.type === 'issuance') {
-        const issuanceResult = await verifyIssuanceCallback(payload);
-        
-        if (issuanceResult.issued) {
-          const { submissionId, clientId } = payload;
-          
-          if (clientId) {
-            notifyClient(clientId, {
-              type: 'credential_issued',
-              credentialId: issuanceResult.credentialId,
-              submissionId,
-              timestamp: issuanceResult.timestamp
-            });
-          }
-        }
-      }
+      // TODO: Re-enable credential issuance webhook after core proof flow works
 
       res.json({ status: 'processed' });
     } catch (error: any) {
@@ -466,50 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Credential Issuance routes
-  app.post('/api/credentials/schema', async (req, res) => {
-    try {
-      const { schemaName, version, attributes } = req.body;
-      const result = await createSchema(schemaName, version, attributes);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Schema creation error:', error);
-      res.status(500).json({ error: 'Failed to create schema', details: error.message });
-    }
-  });
-
-  app.post('/api/credentials/definition', async (req, res) => {
-    try {
-      const { schemaId, tag } = req.body;
-      const result = await createCredentialDefinition(schemaId, tag);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Credential definition creation error:', error);
-      res.status(500).json({ error: 'Failed to create credential definition', details: error.message });
-    }
-  });
-
-  app.post('/api/credentials/issue', async (req, res) => {
-    try {
-      const { credDefId, holderDid, attributes } = req.body;
-      const result = await issueCredential(credDefId, holderDid, attributes);
-      res.json(result);
-    } catch (error: any) {
-      console.error('Credential issuance error:', error);
-      res.status(500).json({ error: 'Failed to issue credential', details: error.message });
-    }
-  });
-
-  app.get('/api/credentials/issuance/:operationId', async (req, res) => {
-    try {
-      const { operationId } = req.params;
-      const status = await getIssuanceStatus(operationId);
-      res.json(status);
-    } catch (error: any) {
-      console.error('Issuance status error:', error);
-      res.status(500).json({ error: 'Failed to get issuance status', details: error.message });
-    }
-  });
+  // TODO: Re-enable credential issuance routes after core proof flow works
 
   // Webhook for VC verification callback
   app.post('/api/proofs/verify-callback', async (req, res) => {

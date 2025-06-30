@@ -13,25 +13,27 @@ A professional form builder with Verifiable Credentials (VC) integration using O
 
 ## How Proof Verification Works
 
-The application implements a complete proof verification lifecycle using Orbit Enterprise's AIP2 present-proof endpoints:
+**Proof flow v0.1: polling every 3 seconds; next iteration will switch to sockets + auto-fill.**
+
+The application implements a minimal proof verification flow using Orbit Enterprise's AIP2 present-proof endpoints:
 
 ### 1. Proof Request Initialization
 When a user accesses a form with verified credential fields:
-- System detects VC requirements from form metadata
-- Creates proof request via `POST /api/present-proof/aip2/create`
-- Generates QR code and deep links for wallet interaction
+- System detects VC requirements from form components
+- Creates proof request via `POST /api/present-proof/aip2/send-proposal`
+- Generates QR code for wallet interaction
 
-### 2. Real-time Verification Flow
+### 2. Polling Verification Flow
 ```
 User scans QR → Wallet presents credentials → Orbit Enterprise validates proof → 
-WebSocket notification → Form fields auto-populate → Fields marked read-only
+Frontend polls every 3 seconds → State changes to 'verified' → Modal shows success
 ```
 
-### 3. WebSocket Integration
-- Frontend establishes WebSocket connection on form load
-- Backend receives Orbit webhook notifications
-- Real-time broadcast of verification results to connected clients
-- Automatic form field population upon successful verification
+### 3. Current Implementation
+- Frontend automatically triggers proof request for forms requiring VC fields
+- VCModal displays QR code and polls verification status every 3 seconds
+- Simple polling approach for initial implementation
+- Next iteration will add WebSocket real-time updates and form field auto-population
 
 ### 4. API Endpoints
 
