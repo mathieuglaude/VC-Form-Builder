@@ -307,54 +307,114 @@ export default function FillPage() {
       </header>
 
       {/* Form Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="p-6">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {config?.title || "Form"}
-            </h2>
-            {config?.description && (
-              <p className="text-gray-600">{config.description}</p>
-            )}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form Section */}
+          <div className="lg:col-span-2">
+            <Card className="p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {config?.title || "Form"}
+                </h2>
+                {config?.description && (
+                  <p className="text-gray-600">{config.description}</p>
+                )}
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {formSchema?.components?.map((component: any) => renderField(component))}
+                
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <Button 
+                    type="submit" 
+                    disabled={submitFormMutation.isPending}
+                    className="px-8"
+                  >
+                    {submitFormMutation.isPending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Submit Form
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Card>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {formSchema?.components?.map((component: any) => renderField(component))}
-            
-            <div className="flex justify-end pt-6 border-t border-gray-200">
-              <Button 
-                type="submit" 
-                disabled={submitFormMutation.isPending}
-                className="px-8"
-              >
-                {submitFormMutation.isPending ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Submit Form
-                  </>
-                )}
-              </Button>
+          {/* QR Code Section */}
+          {vcModal && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Scan with BC Wallet
+                  </h3>
+                  <div className="mb-4 flex justify-center">
+                    <img 
+                      src={vcModal.qr} 
+                      alt="QR Code for credential verification"
+                      className="w-48 h-48 border border-gray-200 rounded-lg"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Use your BC Wallet app to scan this QR code and present your credentials.
+                  </p>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVcModal(null)}
+                      className="w-full"
+                    >
+                      Cancel Verification
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             </div>
-          </form>
-        </Card>
+          )}
+
+          {/* Help Section when no QR */}
+          {!vcModal && hasVerifiedFields() && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
+                <div className="text-center">
+                  <Shield className="w-12 h-12 mx-auto text-blue-600 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Credential Verification
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    This form requires verified credentials. Click below to start the verification process.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      fetch('/api/proofs/init', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ formId: id })
+                      })
+                        .then(r => r.json())
+                        .then(setVcModal)
+                        .catch(console.error);
+                    }}
+                    className="w-full"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Start Verification
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* VC Verification Modal */}
-      {vcModal && (
-        <VCModal
-          reqId={(vcModal as any).reqId || (vcModal as any).txId}
-          qr={vcModal.qr}
-          onVerified={(attributes) => {
-            console.log('Verified attributes:', attributes);
-            setVcModal(null);
-          }}
-        />
-      )}
     </div>
   );
 }
