@@ -1,20 +1,19 @@
-const VERIFIER_BASE = process.env.VERIFIER_BASE || 'https://testapi-verifier.nborbit.ca';
-const VERIFIER_API_KEY = process.env.VERIFIER_API_KEY || 'demo-key';
+import { env } from '../src/config';
 
 const headers = { 
   'Content-Type': 'application/json', 
-  'x-api-key': VERIFIER_API_KEY
+  'x-api-key': env.VERIFIER_API_KEY
 };
 
 // Debug logging for environment variables
 console.log('Verifier API Config:', {
-  base: VERIFIER_BASE,
-  hasKey: VERIFIER_API_KEY ? 'yes' : 'no'
+  base: env.VERIFIER_BASE,
+  hasKey: env.VERIFIER_API_KEY ? 'yes' : 'no'
 });
 
 export async function defineProof(defName: string, attrsByCred: Record<string, string[]>) {
   // Check if we have valid API credentials
-  if (!VERIFIER_API_KEY || VERIFIER_API_KEY === 'demo-key' || VERIFIER_API_KEY === 'your_verifier_api_key_here') {
+  if (!env.VERIFIER_API_KEY || env.VERIFIER_API_KEY === 'demo-key' || env.VERIFIER_API_KEY === 'your_verifier_api_key_here') {
     console.log('No valid Verifier API key - using mock proof definition');
     // Return a mock proof definition ID for demo purposes
     return `mock-proof-def-${Date.now()}`;
@@ -34,7 +33,7 @@ export async function defineProof(defName: string, attrsByCred: Record<string, s
     requested_attributes 
   };
   
-  const response = await fetch(`${VERIFIER_BASE}/api/proof-definition`, { 
+  const response = await fetch(`${env.VERIFIER_BASE}/api/proof-definition`, { 
     method: 'POST', 
     headers, 
     body: JSON.stringify(body) 
@@ -50,7 +49,7 @@ export async function defineProof(defName: string, attrsByCred: Record<string, s
 
 export async function prepareProofURL(defId: string) {
   // Check if we have valid API credentials
-  if (!VERIFIER_API_KEY || VERIFIER_API_KEY === 'demo-key' || VERIFIER_API_KEY === 'your_verifier_api_key_here') {
+  if (!env.VERIFIER_API_KEY || env.VERIFIER_API_KEY === 'demo-key' || env.VERIFIER_API_KEY === 'your_verifier_api_key_here') {
     console.log('No valid Verifier API key - generating mock QR code');
     
     // Generate a mock QR code with a sample BC Wallet deep link
@@ -96,7 +95,7 @@ export async function prepareProofURL(defId: string) {
     };
   }
 
-  const response = await fetch(`${VERIFIER_BASE}/api/proof-request/prepare-url/${defId}`, { 
+  const response = await fetch(`${env.VERIFIER_BASE}/api/proof-request/prepare-url/${defId}`, { 
     method: 'POST', 
     headers 
   });
@@ -109,7 +108,7 @@ export async function prepareProofURL(defId: string) {
 }
 
 export async function getProofStatus(reqId: string) {
-  const response = await fetch(`${VERIFIER_BASE}/api/proof-request/${reqId}`, { 
+  const response = await fetch(`${env.VERIFIER_BASE}/api/proof-request/${reqId}`, { 
     headers 
   });
   
