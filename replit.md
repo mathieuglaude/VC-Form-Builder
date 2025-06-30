@@ -110,9 +110,15 @@ This is a full-stack TypeScript application that provides a professional form bu
 
 ### Infrastructure Requirements
 - **Database**: PostgreSQL instance (Neon serverless recommended)
-- **Environment Variables**: DATABASE_URL, VC_API_KEY, VC_API_BASE_URL
+- **Environment Variables**: DATABASE_URL, VC_API_KEY, VC_API_BASE_URL, ORBIT_API_KEY
 - **WebSocket Support**: Server must support WebSocket connections
 - **File Storage**: Optional logo upload functionality
+
+### Orbit Enterprise Integration
+- **LOB Registration**: One-time setup for credential issuance capabilities
+- **Service**: `server/services/orbit.ts` for Orbit Enterprise API integration
+- **Script**: `server/scripts/registerLOB.ts` for organization registration
+- **Configuration**: Environment variables for organization details and API credentials
 
 ## Changelog
 
@@ -230,6 +236,12 @@ Changelog:
   - Cleaned up grid layout with proper spacing to prevent card overlapping
   - Finalized LSBC card layout with larger 80px logo and proper text positioning
   - "Law Society of BC" appears to the right of logo, "Lawyer Credential" below logo on left
+- June 30, 2025. Added Orbit Enterprise integration for credential issuance capabilities
+  - Implemented LOB (Line of Business) registration service for connecting to Northern Block's Orbit Enterprise
+  - Created reusable Orbit service using native fetch API to avoid dependency conflicts
+  - Added executable registration script for one-time organization setup
+  - Added comprehensive environment configuration with organization details and API credentials
+  - Updated deployment documentation with Orbit Enterprise integration requirements
 ```
 
 ## User Preferences

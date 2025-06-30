@@ -1,0 +1,137 @@
+**Prompt – Add “Register LOB” integration (Orbit Enterprise Credential Exchange)**
+
+We already have an Express/TS backend.  
+Add a one-time script + reusable service to call:
+
+POST https://<ORBIT_BASE>/api/lob/register
+Content-Type: application/json
+
+lua
+Copy
+Edit
+
+per docs ⇒ https://northern-block.gitbook.io/orbit-enterprise-api-documentation/api-modules/lob-api/register-lob
+
+----------------------------------------------------------------
+## 1 · Install dependency
+
+```bash
+npm --prefix backend i axios
+2 · Env Vars (.env)
+makefile
+Copy
+Edit
+ORBIT_BASE=https://api.nborbit.io          # prod or test
+LOB_DISPLAY_NAME=Form Builder Dev
+LOB_EMAIL=admin@mycompany.com
+LOB_ORG_NAME=My Company Inc.
+LOB_ROLE=ISSUER                            # comma-sep enums
+LOB_TENANCY=SINGLE
+LOB_DID_METHOD=did:sov
+LOB_PROTOCOL=AIP2_0
+WRITE_LEDGER_ID=1                          # BCovrin
+CRED_FORMAT=ANONCREDS
+# optional:
+LOB_TRUST_URL=
+LOB_TRUST_API_KEY=
+LOB_EXTERNAL_ENDORSER=false
+ENDORSER_DID=
+ENDORSER_NAME=
+3 · Service wrapper (backend/src/services/orbit.ts)
+ts
+Copy
+Edit
+import axios from 'axios';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const orbit = axios.create({
+  baseURL: process.env.ORBIT_BASE,
+  headers: { 'Content-Type': 'application/json' },
+  timeout: 15_000
+});
+
+export async function registerLOB() {
+  const payload: any = {
+    lobDisplayName: process.env.LOB_DISPLAY_NAME,
+    lobEmail:       process.env.LOB_EMAIL,
+    lobOrganizationName: process.env.LOB_ORG_NAME,
+    lobRole:  process.env.LOB_ROLE.split(','),
+    lobTenancy: process.env.LOB_TENANCY,
+    didMethod: process.env.LOB_DID_METHOD,
+    lobProtocol: process.env.LOB_PROTOCOL,
+    writeLedgerId: Number(process.env.WRITE_LEDGER_ID),
+    credentialFormat: process.env.CRED_FORMAT
+  };
+
+  if (process.env.LOB_TRUST_URL)  payload.lobTrustUrl  = process.env.LOB_TRUST_URL;
+  if (process.env.LOB_TRUST_API_KEY) payload.lobTrustAPIKey = process.env.LOB_TRUST_API_KEY;
+
+  if (process.env.LOB_EXTERNAL_ENDORSER === 'true') {
+    payload.lobExternalEndorser = true;
+    payload.endorserDetails = {
+      endorserDid:  process.env.ENDORSER_DID,
+      endorserName: process.env.ENDORSER_NAME
+    };
+  }
+
+  const { data } = await orbit.post('/api/lob/register', payload);
+  return data;
+}
+4 · CLI / seed script (backend/scripts/registerLOB.ts)
+ts
+Copy
+Edit
+#!/usr/bin/env ts-node
+import { registerLOB } from '../src/services/orbit';
+
+(async () => {
+  try {
+    const res = await registerLOB();
+    console.log(JSON.stringify(res, null, 2));
+    console.log('\n✔  Registration request sent. Check your email for TX-ID & API key.');
+  } catch (err: any) {
+    console.error('✖  LOB registration failed:', err.response?.data || err.message);
+    process.exit(1);
+  }
+})();
+Mark executable:
+
+bash
+Copy
+Edit
+chmod +x backend/scripts/registerLOB.ts
+5 · Root package.json shortcut
+json
+Copy
+Edit
+"scripts": {
+  "register:lob": "tsx backend/scripts/registerLOB.ts"
+}
+6 · README snippet
+Add under Deployment → Orbit Integration
+
+Populate .env with your org details.
+
+Run npm run register:lob.
+
+A Northern Block admin will approve; you’ll receive your API Key by email.
+
+Add ORBIT_API_KEY= to .env for all subsequent API calls.
+
+Ghostwriter, implement every file / change above.
+Leave TODOs where users should replace placeholder env values.
+Do not commit the .env file. Run npm run lint + prettier on touched files.
+
+yaml
+Copy
+Edit
+
+---
+
+After Ghostwriter finishes:
+
+```bash
+# fill in .env, then
+npm run register:lob
+You’ll see the JSON “LOB registered successfully” response and will receive the Transaction ID + API key via email once approved. Ready for the next API module!
