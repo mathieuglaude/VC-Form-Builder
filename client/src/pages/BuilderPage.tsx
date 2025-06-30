@@ -5,8 +5,273 @@ import FormBuilder from "@/components/FormBuilder";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, FileText, Eye, Settings } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, FileText, Eye, Settings, Shield, Send, Loader2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+import VerifiedBadge from "@/components/VerifiedBadge";
+
+// FormPreviewMode component that mimics FillPage layout exactly
+function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => void }) {
+  const [formValues, setFormValues] = useState<Record<string, any>>({});
+  const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
+  const [vcModal, setVcModal] = useState<{ reqId: string; qr: string } | null>(null);
+
+  const hasVerifiedFields = () => {
+    const metadata = formData?.metadata;
+    return Object.values(metadata?.fields || {}).some((field: any) => field?.type === 'verified');
+  };
+
+  const handleFieldChange = (fieldKey: string, value: any) => {
+    setFormValues(prev => ({
+      ...prev,
+      [fieldKey]: value
+    }));
+  };
+
+  const getFieldValue = (fieldKey: string) => {
+    return formValues[fieldKey] || '';
+  };
+
+  const renderField = (component: any) => {
+    const fieldKey = component.key;
+    const isVerified = verifiedFields[fieldKey];
+    const fieldValue = getFieldValue(fieldKey);
+
+    switch (component.type) {
+      case 'textfield':
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {component.label}
+                {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {isVerified && <VerifiedBadge />}
+            </div>
+            <Input
+              type="text"
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              placeholder={component.placeholder}
+              required={component.validate?.required}
+              readOnly={isVerified}
+              className={isVerified ? "bg-green-50 border-green-200" : ""}
+            />
+          </div>
+        );
+
+      case 'email':
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {component.label}
+                {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {isVerified && <VerifiedBadge />}
+            </div>
+            <Input
+              type="email"
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              placeholder={component.placeholder}
+              required={component.validate?.required}
+              readOnly={isVerified}
+              className={isVerified ? "bg-green-50 border-green-200" : ""}
+            />
+          </div>
+        );
+
+      case 'textarea':
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {component.label}
+                {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {isVerified && <VerifiedBadge />}
+            </div>
+            <Textarea
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              placeholder={component.placeholder}
+              required={component.validate?.required}
+              readOnly={isVerified}
+              className={isVerified ? "bg-green-50 border-green-200" : ""}
+            />
+          </div>
+        );
+
+      case 'select':
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {component.label}
+                {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {isVerified && <VerifiedBadge />}
+            </div>
+            <Select 
+              value={fieldValue} 
+              onValueChange={(value) => handleFieldChange(fieldKey, value)}
+              disabled={isVerified}
+            >
+              <SelectTrigger className={isVerified ? "bg-green-50 border-green-200" : ""}>
+                <SelectValue placeholder="Select an option..." />
+              </SelectTrigger>
+              <SelectContent>
+                {(component.properties?.options || ['Option 1', 'Option 2', 'Option 3']).map((option: string) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        );
+
+      default:
+        return (
+          <div key={fieldKey} className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {component.label}
+                {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              {isVerified && <VerifiedBadge />}
+            </div>
+            <Input
+              type="text"
+              value={fieldValue}
+              onChange={(e) => handleFieldChange(fieldKey, e.target.value)}
+              placeholder={component.placeholder}
+              required={component.validate?.required}
+              readOnly={isVerified}
+              className={isVerified ? "bg-green-50 border-green-200" : ""}
+            />
+          </div>
+        );
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-xl font-medium text-gray-900">
+              {formData?.title || "Form Preview"}
+            </h1>
+            <Button variant="outline" onClick={onBack}>
+              Back to Builder
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      {/* Form Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Form Section */}
+          <div className="lg:col-span-2">
+            <Card className="p-6">
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  {formData?.title || "Form"}
+                </h2>
+                {formData?.description && (
+                  <p className="text-gray-600">{formData.description}</p>
+                )}
+              </div>
+
+              <form className="space-y-6">
+                {formData?.formSchema?.components?.map((component: any) => renderField(component))}
+                
+                <div className="flex justify-end pt-6 border-t border-gray-200">
+                  <Button 
+                    type="button"
+                    className="px-8"
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Submit Form (Preview)
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </div>
+
+          {/* QR Code Section */}
+          {vcModal && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Scan with BC Wallet
+                  </h3>
+                  <div className="mb-4 flex justify-center">
+                    <img 
+                      src={vcModal.qr} 
+                      alt="QR Code for credential verification"
+                      className="w-48 h-48 border border-gray-200 rounded-lg"
+                    />
+                  </div>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Use your BC Wallet app to scan this QR code and present your credentials.
+                  </p>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVcModal(null)}
+                      className="w-full"
+                    >
+                      Cancel Verification
+                    </Button>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Help Section when no QR */}
+          {!vcModal && hasVerifiedFields() && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
+                <div className="text-center">
+                  <Shield className="w-12 h-12 mx-auto text-blue-600 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Credential Verification
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    This form requires verified credentials. Click below to start the verification process.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      // Mock QR for preview mode
+                      setVcModal({
+                        reqId: 'preview-mode',
+                        qr: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgICAgPHJlY3Qgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiIGZpbGw9IndoaXRlIi8+CiAgICAgIDxyZWN0IHg9IjEwIiB5PSIxMCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSJibGFjayIvPgogICAgICA8cmVjdCB4PSI1MCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iYmxhY2siLz4KICAgICAgPHJlY3QgeD0iOTAiIHk9IjEwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9ImJsYWNrIi8+CiAgICAgIDxyZWN0IHg9IjEzMCIgeT0iMTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iYmxhY2siLz4KICAgICAgPHJlY3QgeD0iMTcwIiB5PSIxMCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSJibGFjayIvPgogICAgICA8cmVjdCB4PSIxMCIgeT0iNTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iYmxhY2siLz4KICAgICAgPHJlY3QgeD0iNTAiIHk9IjUwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9ImJsYWNrIi8+CiAgICAgIDxyZWN0IHg9IjkwIiB5PSI1MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSJibGFjayIvPgogICAgICA8cmVjdCB4PSIxMzAiIHk9IjUwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9ImJsYWNrIi8+CiAgICAgIDxyZWN0IHg9IjE3MCIgeT0iNTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iYmxhY2siLz4KICAgICAgPHJlY3QgeD0iMTAiIHk9IjkwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9ImJsYWNrIi8+CiAgICAgIDxyZWN0IHg9IjUwIiB5PSI5MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSJibGFjayIvPgogICAgICA8cmVjdCB4PSI5MCIgeT0iOTAiIHdpZHRoPSIyMCIgaGVpZ2h0PSIyMCIgZmlsbD0iYmxhY2siLz4KICAgICAgPHJlY3QgeD0iMTMwIiB5PSI5MCIgd2lkdGg9IjIwIiBoZWlnaHQ9IjIwIiBmaWxsPSJibGFjayIvPgogICAgICA8cmVjdCB4PSIxNzAiIHk9IjkwIiB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIGZpbGw9ImJsYWNrIi8+CiAgICAgIDx0ZXh0IHg9IjEwMCIgeT0iMTAwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iOCIgZmlsbD0id2hpdGUiPlBSRVZJRVc8L3RleHQ+CiAgICA8L3N2Zz4='
+                      });
+                    }}
+                    className="w-full"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Start Verification (Preview)
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function BuilderPage() {
   const { id } = useParams();
@@ -180,58 +445,9 @@ export default function BuilderPage() {
     );
   }
 
-  // Show preview mode
+  // Show preview mode with consistent layout
   if (isPreviewMode && previewData) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <h1 className="text-xl font-medium text-gray-900">Form Preview</h1>
-              <Button variant="outline" onClick={() => setIsPreviewMode(false)}>
-                Back to Builder
-              </Button>
-            </div>
-          </div>
-        </header>
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-4">{previewData.title}</h2>
-            {previewData.description && <p className="text-gray-600 mb-8">{previewData.description}</p>}
-            <div className="space-y-6">
-              {previewData.formSchema?.components?.map((component: any) => (
-                <div key={component.key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {component.label}
-                    {component.validate?.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                  {component.type === 'select' ? (
-                    <select className="w-full px-3 py-2 border border-gray-300 rounded-md">
-                      <option>Select an option...</option>
-                      {component.properties?.options?.map((option: string, idx: number) => (
-                        <option key={idx} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  ) : component.type === 'textarea' ? (
-                    <textarea 
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md" 
-                      rows={3}
-                      placeholder={`Enter ${component.label.toLowerCase()}`}
-                    />
-                  ) : (
-                    <input
-                      type={component.type === 'email' ? 'email' : component.type === 'number' ? 'number' : 'text'}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder={`Enter ${component.label.toLowerCase()}`}
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </div>
-    );
+    return <FormPreviewMode formData={previewData} onBack={() => setIsPreviewMode(false)} />;
   }
 
   // Show form builder
