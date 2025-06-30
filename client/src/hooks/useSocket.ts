@@ -20,8 +20,10 @@ export function useSocket(options: UseSocketOptions = {}) {
 
   useEffect(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/ws${clientId ? `?clientId=${clientId}` : ''}`;
+    const host = window.location.host || 'localhost:5000';
+    const wsUrl = `${protocol}//${host}/ws${clientId ? `?clientId=${clientId}` : ''}`;
     
+    console.log('WebSocket connecting to:', wsUrl);
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 

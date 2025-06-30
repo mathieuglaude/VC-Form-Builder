@@ -15,17 +15,16 @@ import AccountPage from "@/pages/AccountPage";
 import CredentialsAdminPage from "@/pages/CredentialsAdminPage";
 
 function Router() {
+  // Fix URL encoding issues by redirecting malformed paths to root
+  if (window.location.pathname === '/%22' || window.location.pathname.includes('%')) {
+    window.history.replaceState({}, '', '/');
+  }
+
   return (
     <Switch>
-      <Route path="/" component={() => {
-        console.log('Router: Matched homepage route');
-        return <HomePage />;
-      }} />
+      <Route path="/" component={HomePage} />
       <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/builder/new" component={() => {
-        console.log('Router: Matched builder/new route');
-        return <BuilderPage />;
-      }} />
+      <Route path="/builder/new" component={BuilderPage} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
       <Route path="/community" component={CommunityPage} />
@@ -34,11 +33,7 @@ function Router() {
       <Route path="/wallets" component={WalletLibraryPage} />
       <Route path="/account" component={AccountPage} />
       <Route path="/admin/credentials" component={CredentialsAdminPage} />
-      <Route component={() => {
-        console.log('Router: No route matched, showing 404');
-        console.log('Current location:', window.location.pathname);
-        return <NotFound />;
-      }} />
+      <Route component={NotFound} />
     </Switch>
   );
 }
