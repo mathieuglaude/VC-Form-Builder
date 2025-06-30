@@ -1,6 +1,20 @@
 // Using fetch instead of axios to avoid dependency conflicts
 const ORBIT_BASE = process.env.ORBIT_BASE;
+const ORBIT_API_KEY = process.env.ORBIT_API_KEY;
 const REQUEST_TIMEOUT = 15000;
+
+// Helper function to create headers with optional API key
+function createHeaders(includeApiKey = true): HeadersInit {
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json'
+  };
+  
+  if (includeApiKey && ORBIT_API_KEY) {
+    headers['x-api-key'] = ORBIT_API_KEY;
+  }
+  
+  return headers;
+}
 
 export async function registerLOB() {
   if (!ORBIT_BASE) {
@@ -37,9 +51,7 @@ export async function registerLOB() {
   try {
     const response = await fetch(`${ORBIT_BASE}/api/lob/register`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: createHeaders(false), // Registration doesn't need API key
       body: JSON.stringify(payload),
       signal: controller.signal
     });
@@ -53,6 +65,46 @@ export async function registerLOB() {
 
     const data = await response.json();
     return data;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Request timeout after 15 seconds');
+    }
+    throw error;
+  }
+}
+
+// General Orbit API service function for authenticated requests
+export async function orbitRequest(endpoint: string, options: RequestInit = {}): Promise<any> {
+  if (!ORBIT_BASE) {
+    throw new Error('ORBIT_BASE environment variable is required');
+  }
+  
+  if (!ORBIT_API_KEY) {
+    throw new Error('ORBIT_API_KEY environment variable is required. Complete LOB registration first.');
+  }
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(`${ORBIT_BASE}${endpoint}`, {
+      ...options,
+      headers: {
+        ...createHeaders(true),
+        ...options.headers
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+      throw new Error(`HTTP ${response.status}: ${JSON.stringify(errorData)}`);
+    }
+
+    return await response.json();
   } catch (error) {
     clearTimeout(timeoutId);
     if (error instanceof Error && error.name === 'AbortError') {
