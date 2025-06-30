@@ -292,8 +292,16 @@ export default function BuilderPage() {
   // Fetch existing form if editing
   const { data: formConfig, isLoading } = useQuery({
     queryKey: [`/api/forms/${id}`],
-    enabled: Boolean(isEditing)
+    enabled: Boolean(isEditing),
+    retry: false
   });
+
+  // Handle case where form doesn't exist - redirect to homepage
+  if (isEditing && !isLoading && !formConfig) {
+    console.log('Form not found, redirecting to homepage');
+    setLocation('/');
+    return null;
+  }
 
   // Note: Form listing removed - users redirected to homepage for form management
 
@@ -419,9 +427,12 @@ export default function BuilderPage() {
 
   // Redirect to homepage if no specific form ID (eliminate duplicate form listing)
   if (!id && !isPreviewMode) {
+    console.log('No form ID provided, redirecting to homepage');
     setLocation('/');
     return null;
   }
+
+  console.log('BuilderPage rendering with id:', id, 'isEditing:', isEditing);
 
   // Show preview mode with consistent layout
   if (isPreviewMode && previewData) {
