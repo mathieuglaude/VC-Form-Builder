@@ -17,9 +17,15 @@ import CredentialsAdminPage from "@/pages/CredentialsAdminPage";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
+      <Route path="/" component={() => {
+        console.log('Router: Matched homepage route');
+        return <HomePage />;
+      }} />
       <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/builder/new" component={BuilderPage} />
+      <Route path="/builder/new" component={() => {
+        console.log('Router: Matched builder/new route');
+        return <BuilderPage />;
+      }} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
       <Route path="/community" component={CommunityPage} />
@@ -28,7 +34,11 @@ function Router() {
       <Route path="/wallets" component={WalletLibraryPage} />
       <Route path="/account" component={AccountPage} />
       <Route path="/admin/credentials" component={CredentialsAdminPage} />
-      <Route component={NotFound} />
+      <Route component={() => {
+        console.log('Router: No route matched, showing 404');
+        console.log('Current location:', window.location.pathname);
+        return <NotFound />;
+      }} />
     </Switch>
   );
 }
