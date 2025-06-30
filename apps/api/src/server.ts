@@ -1,7 +1,11 @@
 import { buildApp, setupAppRoutes } from './app';
 import './boot/ensureLawyerCred';
-import { log } from '../vite';
 import { env } from './config';
+
+function log(message: string) {
+  const timestamp = new Date().toLocaleTimeString();
+  console.log(`${timestamp} [express] ${message}`);
+}
 
 (async () => {
   const app = buildApp();

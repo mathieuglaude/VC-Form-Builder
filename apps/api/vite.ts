@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
-import viteConfig from "../vite.config";
+// viteConfig import removed to avoid top-level await issues in monorepo
 import { nanoid } from "nanoid";
 
 const viteLogger = createLogger();
@@ -27,7 +27,19 @@ export async function setupVite(app: Express, server: Server) {
   };
 
   const vite = await createViteServer({
-    ...viteConfig,
+    root: "../../apps/web",
+    plugins: [],
+    resolve: {
+      alias: {
+        "@": path.resolve(process.cwd(), "../../apps/web/src"),
+        "@shared": path.resolve(process.cwd(), "../../packages/shared"),
+        "@assets": path.resolve(process.cwd(), "../../attached_assets"),
+      },
+    },
+    build: {
+      outDir: path.resolve(process.cwd(), "../../dist/public"),
+      emptyOutDir: true,
+    },
     configFile: false,
     customLogger: {
       ...viteLogger,
@@ -48,7 +60,7 @@ export async function setupVite(app: Express, server: Server) {
       const clientTemplate = path.resolve(
         import.meta.dirname,
         "..",
-        "client",
+        "web",
         "index.html",
       );
 

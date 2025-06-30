@@ -5,7 +5,7 @@ import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
-import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
+import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "../../packages/shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
 

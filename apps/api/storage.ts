@@ -15,7 +15,7 @@ import {
   type CredentialTemplate,
   type InsertCredentialTemplate,
   type AttributeDef
-} from "@shared/schema";
+} from "../../packages/shared/schema";
 import { db } from "./db";
 import { eq, and, desc } from "drizzle-orm";
 

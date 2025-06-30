@@ -1,5 +1,5 @@
 {
-  "include": ["apps/web/src/**/*", "packages/shared/**/*", "apps/api/**/*"],
+  "include": ["src/**/*", "../../packages/shared/**/*"],
   "exclude": ["node_modules", "build", "dist", "**/*.test.ts"],
   "compilerOptions": {
     "incremental": true,
@@ -9,7 +9,7 @@
     "strict": true,
     "noEmitOnError": true,
     "lib": ["esnext", "dom", "dom.iterable"],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
@@ -17,8 +17,8 @@
     "baseUrl": ".",
     "types": ["node", "vite/client"],
     "paths": {
-      "@/*": ["./apps/web/src/*"],
-      "@shared/*": ["./packages/shared/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../../packages/shared/*"]
     }
   }
 }

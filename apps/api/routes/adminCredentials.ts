@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { isAdmin } from '../middleware/isAdmin.js';
 import { storage } from '../storage.js';
-import { insertCredentialTemplateSchema } from '@shared/schema';
+import { insertCredentialTemplateSchema } from '../../../packages/shared/schema';
 
 const router = Router();
 router.use(isAdmin);
