@@ -26,6 +26,25 @@ export default function PreviewPage() {
     enabled: !!slug,
   });
 
+  // Auto-trigger VC modal if form requires verification
+  useEffect(() => {
+    if (formConfig && !vcModal) {
+      const config = formConfig as any;
+      const needsVc = hasVerifiedFields();
+      
+      if (needsVc) {
+        fetch('/api/proofs/init', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ formId: config.id })
+        })
+          .then(r => r.json())
+          .then(setVcModal)
+          .catch(console.error);
+      }
+    }
+  }, [formConfig, vcModal]);
+
   // Submit form mutation
   const submitFormMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -227,11 +246,11 @@ export default function PreviewPage() {
       </div>
 
       {/* Form Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Form Column */}
+          {/* Form Section */}
           <div className="lg:col-span-2">
-            <Card className="p-8">
+            <Card className="p-6">
               <form onSubmit={handleSubmit} className="space-y-6">
                 {(formConfig as any)?.formSchema?.components?.map((component: any) => {
                   const config = formConfig as any;
@@ -330,32 +349,72 @@ export default function PreviewPage() {
             </Card>
           </div>
 
-          {/* QR Code Column */}
-          <div className="lg:col-span-1">
-            {vcModal && (
-              <Card className="p-6 sticky top-4">
+          {/* QR Code Section */}
+          {vcModal && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Scan to Verify Credentials</h3>
-                  <p className="text-sm text-gray-600 mb-6">
-                    Use your digital wallet to scan this QR code and verify your credentials to auto-fill the form.
-                  </p>
-                  
-                  {/* QR Code Display */}
-                  <div className="flex justify-center mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Scan with BC Wallet
+                  </h3>
+                  <div className="mb-4 flex justify-center">
                     <img 
-                      src={`data:image/png;base64,${vcModal.qr}`} 
-                      className="w-64 h-64 border border-gray-200 rounded-lg"
-                      alt="Verification QR Code"
+                      src={vcModal.qr} 
+                      alt="QR Code for credential verification"
+                      className="w-48 h-48 border border-gray-200 rounded-lg"
                     />
                   </div>
-                  
-                  <p className="text-xs text-gray-500">
-                    Don't have the required credentials? You can still fill the form manually.
+                  <p className="text-sm text-gray-600 mb-4">
+                    Use your BC Wallet app to scan this QR code and present your credentials.
                   </p>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setVcModal(null)}
+                      className="w-full"
+                    >
+                      Cancel Verification
+                    </Button>
+                  </div>
                 </div>
               </Card>
-            )}
-          </div>
+            </div>
+          )}
+
+          {/* Help Section when no QR */}
+          {!vcModal && hasVerifiedFields() && (
+            <div className="lg:col-span-1">
+              <Card className="p-6 sticky top-8">
+                <div className="text-center">
+                  <Shield className="w-12 h-12 mx-auto text-blue-600 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Credential Verification
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    This form requires verified credentials. Click below to start the verification process.
+                  </p>
+                  <Button
+                    onClick={() => {
+                      const config = formConfig as any;
+                      fetch('/api/proofs/init', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ formId: config.id })
+                      })
+                        .then(r => r.json())
+                        .then(setVcModal)
+                        .catch(console.error);
+                    }}
+                    className="w-full"
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Start Verification
+                  </Button>
+                </div>
+              </Card>
+            </div>
+          )}
         </div>
       </div>
     </div>
