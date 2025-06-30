@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node ../../tools/tw-check.cjs && vite",
     "build": "vite build",
     "preview": "vite preview"
   },

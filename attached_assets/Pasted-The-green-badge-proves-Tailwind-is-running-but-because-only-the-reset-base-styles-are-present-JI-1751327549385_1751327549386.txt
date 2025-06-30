@@ -1,0 +1,94 @@
+The green badge proves Tailwind is running, but because only the reset + base styles are present, JIT still cannot “see” your JSX/TSX files. That means content globs are wrong (Tailwind thinks there is zero source code).
+Let’s make the globs bullet-proof and confirm they pick up at least one known file before Tailwind starts.
+
+Below is a two-step approach that never fails in monorepos.
+(You can do it manually or give the block to Ghostwriter as a single prompt.)
+
+Step 1 — replace the content array with a glob that we test
+At the repo root keep a single config tailwind.config.cjs:
+
+js
+Copy
+Edit
+const path = require('path');
+
+/* absolute path helper so we can log it later */
+const r = p => path.resolve(__dirname, p);
+
+module.exports = {
+  /** 1️⃣  LIST every location where JSX/TSX lives */
+  content: [
+    r('apps/web/index.html'),
+    r('apps/web/src/**/*.{js,jsx,ts,tsx}'),
+    r('packages/**/src/**/*.{js,jsx,ts,tsx}')
+  ],
+
+  theme: { extend: {} },
+  plugins: []
+};
+Right under that array add one console log so you can see paths:
+
+js
+Copy
+Edit
+console.log('[Tailwind] looking at', module.exports.content);
+(Tailwind prints this the first time Vite starts.)
+
+Step 2 — watch a file count before Tailwind starts
+Add a tiny script that Tailwind will call before compiling:
+
+bash
+Copy
+Edit
+# tools/tw-check.cjs
+const fg = require('fast-glob');
+const cfg = require('../tailwind.config.cjs');
+
+(async () => {
+  const files = await fg(cfg.content);
+  console.log(`[Tailwind] matched ${files.length} source files`);
+  if (!files.length) {
+    console.error(
+      '\n❌  content glob found **zero** files. Tailwind will emit only base styles.\n'
+    );
+    process.exit(1);
+  }
+})();
+Then change the npm script that Vite runs:
+
+json
+Copy
+Edit
+"dev": "node tools/tw-check.cjs && vite"
+Now:
+
+If the count is 0, the dev server never starts → fix the glob path until
+you see a positive number (usually 50-300).
+
+Once there is at least 1 file, Tailwind generates utilities again and the
+dashboard will show boxes / grids immediately.
+
+Quick sanity check
+bash
+Copy
+Edit
+pnpm -r exec rimraf node_modules/.vite
+pnpm --filter web dev
+Console should print:
+
+swift
+Copy
+Edit
+[Tailwind] looking at [
+  '/absolute/path/apps/web/index.html',
+  '/abs/.../apps/web/src/**/*.{js,jsx,ts,tsx}',
+  '/abs/.../packages/**/src/**/*.{js,jsx,ts,tsx}'
+]
+[Tailwind] matched 123 source files
+Open the browser — cards are back.
+
+If you still don’t get a positive file count, adjust the globs until you do
+(e.g. packages/**/*.{js,jsx,ts,tsx} if some packages don’t have /src).
+
+Once the UI renders, delete the green badge and remove the console log if you
+like.

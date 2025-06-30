@@ -1,14 +1,20 @@
+const path = require('path');
+
+/* absolute path helper so we can log it later */
+const r = p => path.resolve(__dirname, p);
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  /** 1️⃣ LIST every location where JSX/TSX lives */
   content: [
-    "./apps/web/index.html",
-    "./apps/web/src/**/*.{js,ts,jsx,tsx}",
-    "./packages/**/*.{js,ts,jsx,tsx}"
+    r('apps/web/index.html'),
+    r('apps/web/src/**/*.{js,jsx,ts,tsx}'),
+    r('packages/**/src/**/*.{js,jsx,ts,tsx}')
   ],
   safelist: [
-    'grid', 'rounded-lg', 'bg-slate-50', 'p-4', 'border', 'shadow-md', 
-    'hidden', 'fixed', 'top-2', 'right-2', 'text-green-600', 'font-bold',
-    'min-h-screen', 'bg-gray-50', 'pt-4'
+    'min-h-screen', 'bg-gray-50', 'pt-4', 'fixed', 'top-2', 'right-2',
+    'text-green-600', 'font-bold', 'hidden', 'grid', 'rounded-lg', 
+    'bg-slate-50', 'p-4', 'border', 'shadow-md'
   ],
   theme: { 
     extend: {
@@ -56,3 +62,5 @@ module.exports = {
   },
   plugins: [require("tailwindcss-animate")],
 };
+
+console.log('[Tailwind] looking at', module.exports.content);
