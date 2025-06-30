@@ -1,15 +1,26 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
+import { useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp } from 'lucide-react';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
 
   const { data: formsData = [], isLoading } = useQuery({
     queryKey: ['/api/forms'],
   });
+
+  // Re-validate every minute so "Updated last" moves cards to show recent changes
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ['/api/forms'] });
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(intervalId);
+  }, [queryClient]);
 
   const forms = Array.isArray(formsData) ? formsData : [];
   
@@ -243,7 +254,7 @@ export default function HomePage() {
 
                   {/* Stats */}
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>Updated last {new Date(form.updatedAt).toLocaleDateString()} at {new Date(form.updatedAt).toLocaleTimeString()}</span>
+                    <span>Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     <span>0 submissions</span>
                   </div>
 
@@ -347,7 +358,7 @@ export default function HomePage() {
 
                     {/* Updated info */}
                     <div className="mb-3">
-                      <span className="text-xs text-gray-500">Updated last {new Date(form.updatedAt).toLocaleDateString()} at {new Date(form.updatedAt).toLocaleTimeString()}</span>
+                      <span className="text-xs text-gray-500">Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     </div>
 
                     {/* Quick Actions */}

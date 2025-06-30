@@ -461,7 +461,7 @@ export default function BuilderPage() {
                   <h3 className="text-lg font-medium text-gray-900 mb-2">{form.title}</h3>
                   <p className="text-sm text-gray-500 mb-4 line-clamp-2">{form.description || "No description"}</p>
                   <div className="flex items-center justify-between text-xs text-gray-400">
-                    <span>Created {new Date(form.createdAt).toLocaleDateString()}</span>
+                    <span>Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
                     <span>{form.formSchema?.components?.length || 0} fields</span>
                   </div>
                 </CardContent>

@@ -1,0 +1,119 @@
+**Prompt – Reliable “Updated last” timestamp + sorting**
+
+----------------------------------------------------------------
+## 0 · DB patch – backfill & trigger auto-update
+
+### 0.1 Mongo (Mongoose) users
+```ts
+FormConfigSchema.set('timestamps', true);   // adds createdAt + updatedAt
+0.2 PostgreSQL / Prisma users
+prisma
+Copy
+Edit
+updatedAt DateTime @updatedAt
+Run the migration + script:
+
+ts
+Copy
+Edit
+// scripts/backfillUpdated.ts
+import FormConfig from '../src/models/FormConfig';
+await FormConfig.updateMany(
+  { updatedAt: { $exists: false } },
+  [{ $set: { updatedAt: '$createdAt' } }]
+);
+console.log('✨ backfilled'); process.exit(0);
+Add "backfill:updated": "tsx scripts/backfillUpdated.ts" to package.json and run once.
+
+1 · ALWAYS touch updatedAt on save
+ts
+Copy
+Edit
+// backend/controllers/forms.ts
+export async function saveForm(req, res) {
+  const doc = await FormConfig.findByIdAndUpdate(
+    req.params.id,
+    { ...req.body, updatedAt: new Date() },
+    { new: true }
+  );
+  res.json(doc);
+}
+(For inserts, timestamps plugin handles it.)
+
+2 · API → sorted result
+ts
+Copy
+Edit
+// routes/forms.ts
+router.get('/', async (_,res) => {
+  const forms = await FormConfig.find({})
+    .sort({ updatedAt: -1 })
+    .select('meta updatedAt proofTransport isPublished');
+  res.json(forms);
+});
+3 · Front-end card component
+tsx
+Copy
+Edit
+import { format } from 'date-fns';
+
+const local = (iso: string) =>
+  format(new Date(iso), 'PP p');   // e.g. Jun 30 2025 11:58 AM
+
+<Card>
+  <h3>{form.meta.name}</h3>
+  <p className="text-xs text-gray-500">
+    Updated&nbsp;last&nbsp;{local(form.updatedAt)}
+  </p>
+  {/* status pills */}
+</Card>
+No conversion library? use:
+
+ts
+Copy
+Edit
+new Date(iso).toLocaleString(undefined,
+  { dateStyle:'medium', timeStyle:'short' })
+4 · SWR / React-Query cache bust
+In HomePage.tsx
+
+tsx
+Copy
+Edit
+const { data, mutate } = useSWR('/api/forms');
+
+useEffect(() => {
+  // re-validate every minute so “Updated last” moves cards
+  const id = setInterval(() => mutate(), 60_000);
+  return () => clearInterval(id);
+}, [mutate]);
+5 · CSS tweak for pill alignment
+html
+Copy
+Edit
+<span class="inline-block rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium">
+  Draft
+</span>
+(“Published · O-O-B” pills already exist.)
+
+Ghostwriter instructions
+• Back-fill updatedAt (run the script).
+• Ensure every write to FormConfig sets updatedAt = now.
+• Make /api/forms sort by updatedAt DESC.
+• Update Card JSX to show localized “Updated last …”.
+• Remove leftover “Created …” strings.
+• Run Prettier, commit.
+
+yaml
+Copy
+Edit
+
+---
+
+### What you’ll see after Ghostwriter runs
+
+* Dashboard cards now read: **“Updated last · Jun 30 2025 11:58 AM”**  
+* The most recently edited form always appears first.  
+* Editing any form → press **Save Template / Save Draft** → card jumps to the top after refresh.
+
+That’s it—no more “Created” dates and no more wrong order. Let me know if you want relative text (“3 minutes ago”) 
