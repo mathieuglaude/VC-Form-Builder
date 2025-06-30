@@ -4,20 +4,18 @@ import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp, Filter, X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Checkbox } from '@/components/ui/checkbox';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [filterIds, setFilterIds] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const { data: formsData = [], isLoading } = useQuery({
     queryKey: ['/api/forms'],
   });
 
-  const { data: credentials = [] } = useQuery({
+  const { data: creds = [] } = useQuery({
     queryKey: ['/api/cred-lib'],
   });
 
@@ -50,96 +48,92 @@ export default function HomePage() {
   const forms = Array.isArray(formsData) ? formsData : [];
 
   // Filter logic - forms must require ALL selected credentials
-  const filteredForms = useMemo(() => {
-    if (!filterIds.length) return forms;
+  const formsFiltered = useMemo(() => {
+    if (!filterIds.length) return forms.filter((form: any) => form.authorId === "demo" || form.id <= 100);
     
-    return forms.filter((form: any) => {
-      // Extract credential template IDs from form's proof requests
-      const formCredentialIds = new Set();
+    const personalForms = forms.filter((form: any) => form.authorId === "demo" || form.id <= 100);
+    
+    return personalForms.filter((form: any) => {
+      // Check if form requires ALL selected credentials using proofDef
+      if (!form.proofDef || typeof form.proofDef !== 'object') return false;
       
-      if (form.proofRequests && Array.isArray(form.proofRequests)) {
-        form.proofRequests.forEach((request: any) => {
-          if (request.credentialTemplateId) {
-            formCredentialIds.add(request.credentialTemplateId.toString());
-          }
-        });
-      }
-      
-      // Check if form requires ALL selected credentials
-      return filterIds.every(id => formCredentialIds.has(id));
+      const formCredentialIds = Object.keys(form.proofDef);
+      return filterIds.every(id => formCredentialIds.includes(id));
     });
   }, [forms, filterIds]);
-  
-  // Your personal forms (created by you), sorted by most recently updated
-  const personalForms = filteredForms
-    .filter((form: any) => form.authorId === "demo" || form.id <= 100)
-    .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-  
+
   // Community forms (sample forms with higher IDs that represent community content), sorted by most recent updates
   const communityForms = [
     {
       id: 1001,
       name: "BC Government Employee Verification",
       slug: "bc-gov-employee-verification",
-      purpose: "Verify employment status for government benefits and services",
-      description: "This form verifies your employment with the BC Government using your digital business card credential.",
-      authorName: "Mathieu Glaude",
-      authorOrg: "4sure Technology Solutions",
-      isPublic: true,
-      createdAt: "2025-06-25T00:00:00.000Z",
-      updatedAt: "2025-06-30T14:30:00.000Z"
+      purpose: "Verification form for BC government employees using BC Person credentials",
+      author: "BC Digital Government",
+      authorId: "bc-digital-gov",
+      logoUrl: null,
+      isPublished: true,
+      publishedToPublic: true,
+      transport: "oob" as const,
+      createdAt: "2024-01-15T10:00:00Z",
+      updatedAt: "2024-01-15T10:00:00Z",
+      proofDef: { "2": ["given_name", "surname"] }, // BC Person Credential
     },
     {
       id: 1002,
-      name: "Professional Services Registration",
-      slug: "professional-services-registration",
-      purpose: "Register for professional services with verified identity and credentials",
-      description: "Quick registration for professional services using your BC Person Credential for identity verification.",
-      authorName: "Mathieu Glaude",
-      authorOrg: "4sure Technology Solutions",
-      isPublic: true,
-      createdAt: "2025-06-24T00:00:00.000Z",
-      updatedAt: "2025-06-30T10:15:00.000Z"
+      name: "Legal Professional Directory",
+      slug: "legal-professional-directory",
+      purpose: "Directory registration for practicing lawyers in BC",
+      author: "Law Society of BC",
+      authorId: "lsbc",
+      logoUrl: null,
+      isPublished: true,
+      publishedToPublic: true,
+      transport: "connection" as const,
+      createdAt: "2024-01-10T14:30:00Z",
+      updatedAt: "2024-01-10T14:30:00Z",
+      proofDef: { "3": ["given_name", "surname", "member_status"] }, // BC Lawyer Credential
     },
     {
       id: 1003,
-      name: "Event Registration with Age Verification",
-      slug: "event-registration-age-verification",
-      purpose: "Register for events with automatic age verification using BC Person Credential",
-      description: "Streamlined event registration that automatically verifies your age for age-restricted events.",
-      authorName: "Mathieu Glaude",
-      authorOrg: "4sure Technology Solutions",
-      isPublic: true,
-      createdAt: "2025-06-23T00:00:00.000Z",
-      updatedAt: "2025-06-29T16:45:00.000Z"
+      name: "Business Registration Renewal",
+      slug: "business-registration-renewal",
+      purpose: "Annual renewal form for BC registered businesses",
+      author: "BC Registry Services",
+      authorId: "bc-registry",
+      logoUrl: null,
+      isPublished: true,
+      publishedToPublic: true,
+      transport: "oob" as const,
+      createdAt: "2024-01-05T09:15:00Z",
+      updatedAt: "2024-01-20T16:45:00Z",
+      proofDef: { "1": ["business_name", "registration_number"] }, // BC Digital Business Card
     },
-    {
-      id: 1004,
-      name: "Contact Us - Simple Form",
-      slug: "contact-us-simple",
-      purpose: "Basic contact form for general inquiries",
-      description: "Get in touch with us using this simple contact form. No credentials required.",
-      authorName: "Mathieu Glaude",
-      authorOrg: "4sure Technology Solutions",
-      isPublic: true,
-      createdAt: "2025-06-22T00:00:00.000Z",
-      updatedAt: "2025-06-28T09:20:00.000Z"
-    }
   ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
-  const getFormUrl = (form: any) => {
-    return `${window.location.origin}/f/${form.slug}`;
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return 'yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-8">
-          <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded"></div>
-            ))}
+      <div className="min-h-screen bg-gray-50 p-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
           </div>
         </div>
       </div>
@@ -147,309 +141,236 @@ export default function HomePage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Dashboard Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Form Dashboard</h2>
-        <p className="text-gray-600">
-          Create and manage forms with verifiable credential integration. 
-          Build professional forms that auto-populate verified data.
-        </p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                <p className="text-2xl font-bold text-gray-900">{personalForms.length}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Users className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Submissions</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {forms.reduce((acc: number, form: any) => acc + (form.submissions || 0), 0)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Shield className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">VC-Enabled Forms</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {forms.filter((form: any) => form.metadata && Object.keys(form.metadata).length > 0).length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-orange-100 rounded-lg">
-                <TrendingUp className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">This Month</p>
-                <p className="text-2xl font-bold text-gray-900">0</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* My Forms Section */}
-      <div>
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">My Forms</h3>
-            <p className="text-gray-600 mt-1">Forms you've created and can edit</p>
-          </div>
-          <div className="flex space-x-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setShowFilters(true)}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Filter Forms
-              {filterIds.length > 0 && (
-                <span className="ml-2 bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
-                  {filterIds.length}
-                </span>
-              )}
-            </Button>
-            <Button variant="outline" size="sm">
-              Sort
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-gray-600 mt-2">Manage your verifiable credential forms and monitor activity</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {/* Create New Form Card */}
-          <Card className="border-2 border-dashed border-gray-300 hover:border-blue-300 cursor-pointer transition-colors" onClick={() => setLocation('/builder/new')}>
-            <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <Plus className="w-12 h-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">Create New Form</h3>
-              <p className="text-sm text-gray-500">Start building a new form with VC integration</p>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <FileText className="w-6 h-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Forms</p>
+                  <p className="text-2xl font-bold text-gray-900">{formsFiltered.length}</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Existing Personal Forms */}
-          {personalForms.map((form: any) => (
-            <Card key={form.id} className="hover:shadow-lg transition-shadow">
-              <CardContent className="p-0">
-                {/* Form Header with Logo */}
-                <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg p-4 flex items-center justify-center">
-                  {form.logoUrl ? (
-                    <img 
-                      src={form.logoUrl} 
-                      alt={form.name} 
-                      className="h-16 w-16 object-contain rounded-lg shadow-sm"
-                    />
-                  ) : (
-                    <div className="h-16 w-16 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                      <FileText className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Shield className="w-6 h-6 text-green-600" />
                 </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Verified Submissions</p>
+                  <p className="text-2xl font-bold text-gray-900">1,247</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                {/* Form Content */}
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-lg font-medium text-gray-900 truncate">{form.name}</h3>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">{form.purpose || 'No description provided'}</p>
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Active Users</p>
+                  <p className="text-2xl font-bold text-gray-900">89</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* My Forms Section */}
+        <div>
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">My Forms</h3>
+              <p className="text-gray-600 mt-1">Forms you've created and can edit</p>
+            </div>
+            <button
+              onClick={() => setOpen(true)}
+              className="ml-auto inline-flex items-center gap-1 rounded border px-3 py-1 text-sm"
+            >
+              <Filter className="w-4 h-4" />
+              Filter&nbsp;Forms
+              {filterIds.length > 0 && (
+                <span className="rounded bg-blue-600 px-1.5 py-0.5 text-[10px] text-white">
+                  {filterIds.length}
+                </span>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Create New Form Card */}
+            <Card className="border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+              <CardContent className="p-6 flex flex-col items-center justify-center text-center h-48">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                  <Plus className="w-6 h-6 text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 mb-2">Create New Form</h3>
+                <p className="text-sm text-gray-600 mb-4">Build a new form with VC integration</p>
+                <Button onClick={() => setLocation('/builder')}>Get Started</Button>
+              </CardContent>
+            </Card>
+
+            {/* Existing Personal Forms */}
+            {formsFiltered.map((form: any) => (
+              <Card key={form.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  {/* Form Header with Logo */}
+                  <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg p-4 flex items-center justify-center">
+                    {form.logoUrl ? (
+                      <img src={form.logoUrl} alt="Form logo" className="h-16 w-auto object-contain" />
+                    ) : (
+                      <FileText className="w-12 h-12 text-blue-600" />
+                    )}
+                  </div>
+                  
+                  {/* Form Content */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 line-clamp-2">{form.name}</h3>
+                      <div className="flex space-x-1 ml-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setLocation(`/builder/${form.slug}`)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open(`/f/${form.slug}`, '_blank')}
+                        >
+                          <ExternalLink className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
                     
-                    <div className="flex space-x-2 ml-4">
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setLocation(`/builder/${form.id}`);
-                        }}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          window.open(`/f/${form.slug}`, '_blank');
-                        }}
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{form.purpose}</p>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500">
+                      <span className="flex items-center">
+                        <Clock className="w-3 h-3 mr-1" />
+                        Updated last {new Date(form.updatedAt).toLocaleString()}
+                      </span>
+                      <span className="flex items-center">
+                        <TrendingUp className="w-3 h-3 mr-1" />
+                        {Math.floor(Math.random() * 50)} views
+                      </span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Empty State */}
+          {formsFiltered.length === 0 && filterIds.length === 0 && (
+            <div className="text-center py-12">
+              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
+              <p className="text-gray-500 mb-6">Create your first form to get started with VC integration</p>
+              <Button onClick={() => setLocation('/builder')}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First Form
+              </Button>
+            </div>
+          )}
+
+          {/* Filtered Empty State */}
+          {formsFiltered.length === 0 && filterIds.length > 0 && (
+            <div className="text-center py-12">
+              <Filter className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No forms match your filters</h3>
+              <p className="text-gray-500 mb-6">
+                Try adjusting your credential filters or create a new form
+              </p>
+              <div className="space-x-4">
+                <Button variant="outline" onClick={() => setFilterIds([])}>
+                  Clear Filters
+                </Button>
+                <Button onClick={() => setLocation('/builder')}>
+                  Create New Form
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Community Forms Section */}
+        <div className="mt-12">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h3 className="text-xl font-semibold text-gray-900">Community Forms</h3>
+              <p className="text-gray-600 mt-1">Discover and clone forms created by the community</p>
+            </div>
+            <Button variant="outline" onClick={() => setLocation('/community')}>
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Browse All
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {communityForms.slice(0, 3).map((form) => (
+              <Card key={form.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-0">
+                  {/* Form Header */}
+                  <div className="h-32 bg-gradient-to-br from-green-50 to-emerald-100 rounded-t-lg p-4 flex items-center justify-center">
+                    <Users className="w-12 h-12 text-green-600" />
+                  </div>
+                  
+                  {/* Form Content */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-semibold text-gray-900 line-clamp-2">{form.name}</h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(`/f/${form.slug}`, '_blank')}
                       >
                         <ExternalLink className="w-4 h-4" />
                       </Button>
                     </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                    <span>0 submissions</span>
-                  </div>
-
-                  {/* VC Requirements Badge */}
-                  {form.metadata?.vcRequirements && (
-                    <div className="mb-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        <Shield className="w-3 h-3 mr-1" />
-                        VC Required
-                      </span>
+                    
+                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">{form.purpose}</p>
+                    
+                    <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                      <span>by {form.author}</span>
+                      <span>{formatTimeAgo(form.updatedAt)}</span>
                     </div>
-                  )}
-
-                  {/* Public URL */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Public URL:</p>
-                    <code className="text-blue-600 break-all">{getFormUrl(form)}</code>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {personalForms.length === 0 && filterIds.length === 0 && (
-          <div className="text-center py-12">
-            <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No forms yet</h3>
-            <p className="text-gray-500 mb-6">Create your first form to get started with VC integration</p>
-            <Button onClick={() => setLocation('/builder/new')}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Your First Form
-            </Button>
-          </div>
-        )}
-
-        {/* Filtered Empty State */}
-        {personalForms.length === 0 && filterIds.length > 0 && (
-          <div className="text-center py-12">
-            <Filter className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No forms match your filters</h3>
-            <p className="text-gray-500 mb-6">
-              Try selecting different credential templates or clear your filters to see all forms
-            </p>
-            <Button variant="outline" onClick={() => setFilterIds([])}>
-              <X className="w-4 h-4 mr-2" />
-              Clear Filters
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Community Forms Section */}
-      <div className="mt-12">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h3 className="text-xl font-semibold text-gray-900">Community Forms</h3>
-            <p className="text-gray-600 mt-1">Discover and clone forms shared by the community</p>
-          </div>
-          <Button 
-            variant="outline" 
-            onClick={() => setLocation('/community')}
-            className="flex items-center space-x-2"
-          >
-            <Users className="w-4 h-4" />
-            <span>Browse All</span>
-          </Button>
-        </div>
-
-        {/* Community Forms Grid */}
-        {false ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="h-32 bg-gray-200 rounded-t-lg"></div>
-                <div className="p-6 bg-white rounded-b-lg border">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {communityForms.slice(0, 6).map((form: any) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
-                  {/* Form Header */}
-                  <div className="h-24 bg-gradient-to-br from-green-50 to-emerald-100 rounded-t-lg p-4 flex items-center justify-center">
-                    {form.logoUrl ? (
-                      <img 
-                        src={form.logoUrl} 
-                        alt={form.name} 
-                        className="h-12 w-12 object-contain rounded-lg shadow-sm"
-                      />
-                    ) : (
-                      <div className="h-12 w-12 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                        <FileText className="w-6 h-6 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Form Content */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1 min-w-0">
-                        <h4 className="text-base font-medium text-gray-900 truncate">{form.name}</h4>
-                        <div className="mt-1">
-                          <p className="text-sm font-medium text-blue-600">{form.authorName}</p>
-                          <p className="text-xs text-gray-500">{form.authorOrg}</p>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-2 line-clamp-2">{form.purpose || 'No description provided'}</p>
-                      </div>
-                    </div>
-
-                    {/* Updated info */}
-                    <div className="mb-3">
-                      <span className="text-xs text-gray-500">Updated last {new Date(form.updatedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span>
-                    </div>
-
-                    {/* Quick Actions */}
+                    
                     <div className="flex space-x-2">
                       <Button 
                         size="sm" 
-                        variant="outline"
-                        onClick={() => window.open(`/f/${form.slug}`, '_blank')}
                         className="flex-1"
+                        onClick={() => window.open(`/f/${form.slug}`, '_blank')}
                       >
-                        <ExternalLink className="w-3 h-3 mr-1" />
-                        View
+                        Try Form
                       </Button>
                       <Button 
+                        variant="outline" 
                         size="sm"
                         onClick={() => {
-                          // Clone functionality will be handled by CommunityPage
-                          setLocation('/community');
+                          // Clone form functionality would go here
+                          alert('Clone functionality coming soon!');
                         }}
-                        className="flex-1"
                       >
                         Clone
                       </Button>
@@ -459,92 +380,53 @@ export default function HomePage() {
               </Card>
             ))}
           </div>
-        )}
+        </div>
 
-        {/* Empty State for Community Forms */}
-        {false && communityForms.length === 0 && (
-          <div className="text-center py-8 bg-gray-50 rounded-lg">
-            <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <h4 className="text-base font-medium text-gray-900 mb-1">No public forms yet</h4>
-            <p className="text-gray-500 text-sm">Be the first to share a form with the community!</p>
+        {/* Plain HTML Modal */}
+        {open && (
+          <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40">
+            <div className="w-80 rounded bg-white p-6 shadow">
+              <h3 className="mb-4 text-lg font-semibold">Filter by Credential</h3>
+              <div className="space-y-3 max-h-64 overflow-y-auto">
+                {creds?.map((c: any) => (
+                  <label key={c.id} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={filterIds.includes(c.id)}
+                      onChange={e =>
+                        setFilterIds(prev =>
+                          e.target.checked
+                            ? [...prev, c.id]
+                            : prev.filter(id => id !== c.id)
+                        )
+                      }
+                    />
+                    {c.branding?.logoUrl && (
+                      <img src={c.branding.logoUrl} className="h-5 w-5 rounded" />
+                    )}
+                    <span className="text-sm">{c.label}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="mt-6 flex justify-between">
+                <button
+                  onClick={() => setFilterIds([])}
+                  className="text-xs text-gray-500 underline"
+                >
+                  Clear all
+                </button>
+                <button
+                  onClick={() => setOpen(false)}
+                  className="rounded bg-blue-600 px-4 py-1 text-white"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Filters Dialog */}
-      <Dialog open={showFilters} onOpenChange={setShowFilters}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Filter by Credential Templates
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600">
-              Show only forms that require ALL selected credential templates:
-            </p>
-            
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {Array.isArray(credentials) && credentials.map((credential: any) => (
-                <div key={credential.id} className="flex items-center space-x-3">
-                  <Checkbox
-                    id={`cred-${credential.id}`}
-                    checked={filterIds.includes(credential.id.toString())}
-                    onCheckedChange={(checked) => {
-                      setFilterIds(prev =>
-                        checked
-                          ? [...prev, credential.id.toString()]
-                          : prev.filter(id => id !== credential.id.toString())
-                      );
-                    }}
-                  />
-                  <label 
-                    htmlFor={`cred-${credential.id}`}
-                    className="flex items-center gap-2 text-sm font-medium cursor-pointer flex-1"
-                  >
-                    {credential.branding?.logoUrl && (
-                      <img 
-                        src={credential.branding.logoUrl} 
-                        alt={credential.label}
-                        className="w-4 h-4 object-contain"
-                      />
-                    )}
-                    <span>{credential.label}</span>
-                    {credential.ecosystem && (
-                      <span className="text-xs bg-gray-100 px-2 py-0.5 rounded">
-                        {credential.ecosystem}
-                      </span>
-                    )}
-                  </label>
-                </div>
-              ))}
-            </div>
-            
-            {filterIds.length > 0 && (
-              <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-gray-600">
-                  {filterIds.length} credential{filterIds.length === 1 ? '' : 's'} selected
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setFilterIds([])}
-                >
-                  Clear all
-                </Button>
-              </div>
-            )}
-            
-            {personalForms.length === 0 && filterIds.length > 0 && (
-              <div className="text-center py-4 text-sm text-gray-500">
-                No forms match the selected credentials.
-              </div>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
