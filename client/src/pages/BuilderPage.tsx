@@ -12,6 +12,7 @@ import { Plus, FileText, Eye, Settings, Shield, Send, Loader2, Share2 } from "lu
 import { apiRequest } from "@/lib/queryClient";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import PublishModal from "@/components/PublishModal";
+import Navigation from "@/components/Navigation";
 
 // FormPreviewMode component that mimics FillPage layout exactly
 function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => void }) {
@@ -161,6 +162,8 @@ function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => vo
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
       {/* Header */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
