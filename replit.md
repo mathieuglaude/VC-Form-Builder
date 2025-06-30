@@ -255,6 +255,14 @@ Changelog:
   - Integrated form field to credential attribute mapping interface for administrators
   - Added webhook handling for credential issuance status updates and WebSocket notifications
   - Form submissions now automatically trigger credential issuance based on configured actions
+- June 30, 2025. Completed credential-based filtering system for Your Forms section
+  - Fixed routing issue: HomePage component wasn't being used due to incorrect App.tsx routing configuration
+  - Implemented working filter button in My Forms section with modal interface for credential selection
+  - Added persistent localStorage-based filter preferences that survive page refreshes
+  - Created filtering logic that shows forms requiring ALL selected credentials (AND logic)
+  - Fixed form navigation to use numeric IDs instead of slugs for proper form editing access
+  - Updated timestamps to display "Updated last" with localized formatting throughout dashboard
+  - Added automatic cache refresh every 60 seconds to keep form listings current with latest changes
 ```
 
 ## User Preferences
