@@ -1,0 +1,129 @@
+**Prompt – switch to Orbit Verifier API (QR works)**
+
+Docs / Swagger:  
+DEV Base = https://testapi-verifier.nborbit.ca  
+Endpoints we use:
+
+1. POST  `/api/proof-definition`                     → define proof  
+2. POST  `/api/proof-request/prepare-url/{defId}`   → returns `{ qrCodePng, proofRequestId }`  
+3. GET   `/api/proof-request/{proofRequestId}`      → returns `{ status, revealedAttrs }`
+
+----------------------------------------------------------------
+## 0 · Env vars (`.env`)
+
+VERIFIER_BASE=https://testapi-verifier.nborbit.ca
+VERIFIER_API_KEY= # add once your LOB is approved
+
+pgsql
+Copy
+Edit
+
+----------------------------------------------------------------
+## 1 · Service wrapper (`server/services/verifier.ts`)
+
+```ts
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
+
+const hdr = { 'Content-Type': 'application/json', 'x-api-key': process.env.VERIFIER_API_KEY! };
+
+export async function defineProof(defName: string, attrsByCred: Record<string,string[]>) {
+  const requested_attributes: any[] = [];
+  Object.entries(attrsByCred).forEach(([credDefId, attrs]) =>
+    attrs.forEach(a => requested_attributes.push({ name: a, restrictions: [{ cred_def_id: credDefId }] }))
+  );
+  const body = { name: defName, version: '1.0', requested_attributes };
+  const r = await fetch(`${process.env.VERIFIER_BASE}/api/proof-definition`, { method:'POST', headers: hdr, body:JSON.stringify(body) });
+  if (!r.ok) throw new Error(await r.text());
+  return (await r.json()).proofDefinitionId as string;
+}
+
+export async function prepareProofURL(defId: string) {
+  const r = await fetch(`${process.env.VERIFIER_BASE}/api/proof-request/prepare-url/${defId}`, { method:'POST', headers: hdr });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json(); // { proofRequestId, qrCodePng }
+}
+
+export async function getProofStatus(reqId: string) {
+  const r = await fetch(`${process.env.VERIFIER_BASE}/api/proof-request/${reqId}`, { headers: hdr });
+  if (!r.ok) throw new Error(await r.text());
+  return r.json(); // { status: 'presentation_verified', attributes }
+}
+2 · Schema bump
+ts
+Copy
+Edit
+proofDefId?: string;         // cached Orbit definition
+3 · Boot-time “ensure definition” helper
+ts
+Copy
+Edit
+import FormConfig from '../models/FormConfig';
+import { defineProof } from '../services/verifier';
+
+export async function ensureProofDef(form: FormConfigDoc) {
+  if (form.proofDefId) return form.proofDefId;
+  const defId = await defineProof(form.meta.name, form.proofDef);
+  form.proofDefId = defId;
+  await form.save();
+  return defId;
+}
+4 · Proofs router overhaul
+ts
+Copy
+Edit
+r.post('/init', async (req,res) => {
+  const { formId } = req.body;
+  const form = await FormConfig.findById(formId);
+  if (!form?.proofDef) return res.status(400).send('No VC fields');
+
+  const defId = await ensureProofDef(form);
+  const { proofRequestId, qrCodePng } = await prepareProofURL(defId);
+  res.json({ reqId: proofRequestId, qr: qrCodePng });
+});
+
+r.get('/:reqId', async (req,res) => {
+  const data = await getProofStatus(req.params.reqId);
+  res.json(data);               // { status, attributes }
+});
+5 · VCModal – bind PNG src
+tsx
+Copy
+Edit
+<img src={`data:image/png;base64,${qr}`} className="w-56 h-56" alt="proof QR"/>
+(qr field is already base-64 per Orbit.)
+
+6 · PreviewPage tweak
+tsx
+Copy
+Edit
+if (data.status === 'presentation_verified') {
+  onVerified(data.attributes);   // Orbit returns revealed attrs
+}
+Keep polling every 3 s; remove the now-unused socket code.
+
+7 · README patch
+When you add VC fields and save the form the backend calls defineProof once and caches proofDefId. On each form load we call prepare-url, Orbit returns a base-64 PNG that becomes the QR in VCModal.
+
+Ghostwriter, implement exactly as above—replace previous Orbit proof stubs. Ensure a clean TypeScript build and no dangling socket imports. After reboot, loading a form with VC fields must render a scannable PNG QR, and /api/proofs/:reqId must eventually return presentation_verified.
+
+yaml
+Copy
+Edit
+
+---
+
+### After Ghostwriter runs
+
+1. **Restart** the dev server (`npm run dev`).  
+2. Open your test form → QR appears (not broken).  
+3. Scan with BC Wallet that holds the matching credential → modal flips to “Verified ✔”.  
+
+From there we can wire auto-fill & socket push, but this guarantees the basic QR flow is solid. Let me know when the PNG displays correctly!
+
+
+
+
+
+

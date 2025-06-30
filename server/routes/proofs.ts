@@ -1,6 +1,7 @@
 import { Router } from 'express';
-import { createProofQR, getProofStatus } from '../services/orbit';
 import { storage } from '../storage';
+import { prepareProofURL, getProofStatus } from '../services/verifier';
+import { ensureProofDef } from '../services/proofHelper';
 
 const r = Router();
 
@@ -8,41 +9,71 @@ r.post('/init', async (req, res) => {
   try {
     const { formId } = req.body;
     
-    const formConfig = await storage.getFormConfig(parseInt(formId));
-    if (!formConfig?.proofDef) {
-      return res.status(400).json({ error: 'No VC fields configured' });
+    if (!formId) {
+      return res.status(400).json({ error: 'Form ID is required' });
     }
 
-    const { txId, qr } = await createProofQR(formConfig.name, formConfig.proofDef);
-    res.json({ txId, qr });
+    const form = await storage.getFormConfig(parseInt(formId));
+    if (!form) {
+      return res.status(404).json({ error: 'Form not found' });
+    }
+
+    // Check if form has VC requirements
+    if (!form.proofDef || Object.keys(form.proofDef).length === 0) {
+      return res.status(400).json({ error: 'No VC fields' });
+    }
+
+    // Ensure proof definition exists
+    const defId = await ensureProofDef(form);
+    
+    // Prepare proof URL with Verifier API
+    const { proofRequestId, qrCodePng } = await prepareProofURL(defId);
+    
+    res.json({
+      reqId: proofRequestId,
+      qr: qrCodePng
+    });
   } catch (error) {
-    console.error('Failed to create proof request:', error);
+    console.error('Error initializing proof request:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('Orbit API credentials not configured')) {
+    if (errorMessage.includes('VERIFIER_API_KEY') || errorMessage.includes('VERIFIER_BASE')) {
       res.status(500).json({ 
         error: 'Credential verification service not configured',
-        details: 'Please configure Orbit API credentials to enable credential verification'
+        details: 'Please configure Verifier API credentials to enable credential verification'
       });
     } else {
-      res.status(500).json({ error: 'Failed to create proof request' });
+      res.status(500).json({ 
+        error: 'Failed to initialize proof request',
+        details: errorMessage
+      });
     }
   }
 });
 
-r.get('/:txId', async (req, res) => {
+r.get('/:reqId', async (req, res) => {
   try {
-    const rec = await getProofStatus(req.params.txId);
-    res.json({ state: rec.state });
+    const { reqId } = req.params;
+    
+    if (!reqId) {
+      return res.status(400).json({ error: 'Request ID is required' });
+    }
+
+    const result = await getProofStatus(reqId);
+    
+    res.json(result); // { status, attributes }
   } catch (error) {
-    console.error('Failed to get proof status:', error);
+    console.error('Error getting proof status:', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('Orbit API credentials not configured')) {
+    if (errorMessage.includes('VERIFIER_API_KEY') || errorMessage.includes('VERIFIER_BASE')) {
       res.status(500).json({ 
         error: 'Credential verification service not configured',
-        details: 'Please configure Orbit API credentials to enable credential verification'
+        details: 'Please configure Verifier API credentials to enable credential verification'
       });
     } else {
-      res.status(500).json({ error: 'Failed to get proof status' });
+      res.status(500).json({ 
+        error: 'Failed to get proof status',
+        details: errorMessage
+      });
     }
   }
 });

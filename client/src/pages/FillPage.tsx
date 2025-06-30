@@ -347,10 +347,11 @@ export default function FillPage() {
       {/* VC Verification Modal */}
       {vcModal && (
         <VCModal
-          {...vcModal}
-          onVerified={() => {
+          reqId={(vcModal as any).reqId || (vcModal as any).txId}
+          qr={vcModal.qr}
+          onVerified={(attributes) => {
+            console.log('Verified attributes:', attributes);
             setVcModal(null);
-            // TODO: patch Form.io fields in next iteration
           }}
         />
       )}

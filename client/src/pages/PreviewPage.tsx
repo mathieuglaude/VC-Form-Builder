@@ -395,10 +395,11 @@ export default function PreviewPage() {
       {/* VC Verification Modal */}
       {vcModal && (
         <VCModal
-          {...vcModal}
-          onVerified={() => {
+          reqId={(vcModal as any).reqId || (vcModal as any).txId}
+          qr={vcModal.qr}
+          onVerified={(attributes) => {
+            setVerifiedFields(attributes);
             setVcModal(null);
-            // TODO: patch Form.io fields in next iteration
           }}
         />
       )}

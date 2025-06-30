@@ -1,38 +1,42 @@
 import { useEffect, useState } from 'react';
 
 export default function VCModal({
-  txId,
+  reqId,
   qr,
   onVerified
 }: {
-  txId: string;
+  reqId: string;
   qr: string;
-  onVerified: () => void;
+  onVerified: (attributes: any) => void;
 }) {
-  const [state, setState] = useState('pending');
+  const [status, setStatus] = useState('pending');
 
   useEffect(() => {
     const iv = setInterval(async () => {
-      const r = await fetch(`/api/proofs/${txId}`).then(r => r.json());
-      setState(r.state);
-      if (r.state === 'verified') {
-        clearInterval(iv);
-        onVerified();
+      try {
+        const r = await fetch(`/api/proofs/${reqId}`).then(r => r.json());
+        setStatus(r.status);
+        if (r.status === 'presentation_verified') {
+          clearInterval(iv);
+          onVerified(r.attributes);
+        }
+      } catch (error) {
+        console.error('Error polling proof status:', error);
       }
     }, 3000);
     return () => clearInterval(iv);
-  }, [txId, onVerified]);
+  }, [reqId, onVerified]);
 
   return (
     <div className="fixed inset-0 grid place-items-center bg-black/50">
       <div className="bg-white p-6 rounded">
-        {state === 'pending' && (
+        {status === 'pending' && (
           <>
             <p className="mb-4">Scan with your wallet:</p>
-            <img src={qr} alt="proof QR" className="w-48 h-48" />
+            <img src={`data:image/png;base64,${qr}`} className="w-56 h-56" alt="proof QR"/>
           </>
         )}
-        {state === 'verified' && <p className="text-green-600">Verified ✔</p>}
+        {status === 'presentation_verified' && <p className="text-green-600">Verified ✔</p>}
       </div>
     </div>
   );

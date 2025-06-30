@@ -24,6 +24,7 @@ export const formConfigs = pgTable("form_configs", {
   formSchema: jsonb("form_schema").notNull(),
   metadata: jsonb("metadata").notNull(),
   proofDef: jsonb("proof_def").$type<Record<string, string[]>>(),
+  proofDefId: text("proof_def_id"),
   proofRequests: jsonb("proof_requests").default([]),
   revocationPolicies: jsonb("revocation_policies").$type<Record<string, boolean>>().default({}),
   isPublic: boolean("is_public").notNull().default(false),
