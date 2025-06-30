@@ -1,0 +1,110 @@
+**Prompt – Restore & safeguard BC Lawyer Credential**
+
+----------------------------------------------------------------
+## 1 · Boot-time seed guard
+
+```ts
+// server/boot/ensureLawyerCred.ts
+import CredentialTemplate from '../models/CredentialTemplate.js';
+import { cacheAsset } from '../services/ocaAssets.js';
+
+export default async function ensureLawyerCred() {
+  const exists = await CredentialTemplate.findOne({ label:'BC Lawyer Credential v1' });
+  if (exists) return;
+
+  const base = 'https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/overlays/branding';
+  const logo = await cacheAsset(`${base}/logo.png`,   'lsbc-logo.png');
+  const banner = await cacheAsset(`${base}/background_image.png`, 'lsbc-banner.png');
+
+  await CredentialTemplate.create({
+    label: 'BC Lawyer Credential v1',
+    version:'1.0',
+    schemaId:'QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0',
+    credDefId:'QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer',
+    issuerDid:'did:indy:QzLYGuAebsy3MXQ6b1sFiT',
+    branding:{
+      layout:'banner-bottom',
+      logoUrl:logo,
+      backgroundImage:banner,
+      primaryColor:'#00698c'
+    },
+    metaOverlay:{ issuer:'Law Society of BC', description:'A schema used for membership in LSBC' },
+    visible:true
+  });
+  console.log('🔄 Re-seeded BC Lawyer Credential');
+}
+Call it in server/index.ts before the server starts listening.
+
+2 · Schema tweak
+ts
+Copy
+Edit
+visible: { type:Boolean, default:true }
+Admin UI checkbox toggles this instead of deleting rows.
+
+3 · Cred-Lib endpoint: verify assets & sorting
+ts
+Copy
+Edit
+router.get('/cred-lib', async (_,res) => {
+  const list = await CredentialTemplate.find({ visible:true }).lean();
+  // verify asset files exist, re-cache if not
+  for (const c of list) {
+    if (c.branding?.logoUrl && !fs.existsSync('public'+c.branding.logoUrl))
+      c.branding.logoUrl = await cacheAsset(remoteLogoUrl, 'lsbc-logo.png');
+  }
+  list.sort((a,b)=> a.label.localeCompare(b.label));
+  res.json(list);
+});
+4 · Admin “Health Check” button
+In CredentialsAdminPage add:
+
+tsx
+Copy
+Edit
+<button
+  onClick={() => fetch('/api/admin/credentials/health').then(()=>mutate())}
+  className="ml-4 rounded border px-3 py-1 text-xs"
+>
+  Re-validate OCA Assets
+</button>
+and backend route:
+
+ts
+Copy
+Edit
+r.post('/health', async (_,res)=>{
+  await ensureLawyerCred();   // also verifies images
+  res.sendStatus(204);
+});
+5 · Front-end library list
+tsx
+Copy
+Edit
+const { data: creds } = useSWR('/api/cred-lib', fetcher, { refreshInterval:0 });
+Ensure .sort() is removed on client—already sorted server-side.
+
+6 · Compile guard
+npm run dev must start with zero TS errors and console must print:
+
+cpp
+Copy
+Edit
+🔄 Re-seeded BC Lawyer Credential   // only if it was missing
+Library grid shows BC Lawyer Credential v1 every refresh.
+
+Ghostwriter, implement all six points. Remove any old seed file duplicates. Run Prettier and restart.
+
+yaml
+Copy
+Edit
+
+---
+
+**After Ghostwriter runs**
+
+1. Server reboot prints “🔄 Re-seeded …” only if the row was gone.  
+2. Visiting **Credential Library** always shows the LSBC card (alphabetical list).  
+3. Admins can toggle *visible* without deleting; “Health Check” forces a re-cache if images ever get wiped.
+
+No more disappearing credentials. Let me know if you’d like the same guard for Business Card & Person credentials!

@@ -6,6 +6,7 @@ import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
+import { ensureLawyerCred } from "./ensureLawyerCred";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -412,8 +413,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/cred-lib', async (req, res) => {
     try {
       const templates = await storage.listCredentialTemplates();
-      res.json(templates);
+      
+      // Sort alphabetically by label for consistent ordering
+      const sortedTemplates = templates.sort((a, b) => a.label.localeCompare(b.label));
+      
+      res.json(sortedTemplates);
     } catch (error) {
+      console.error('Failed to retrieve credential templates:', error);
       res.status(500).json({ error: 'Failed to retrieve credential templates' });
     }
   });
@@ -475,6 +481,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to delete template' });
+    }
+  });
+
+  // Health check endpoint to restore missing credentials
+  app.post('/api/admin/credentials/health', async (req, res) => {
+    try {
+      await ensureLawyerCred();
+      res.status(204).send();
+    } catch (error) {
+      console.error('Health check failed:', error);
+      res.status(500).json({ error: 'Health check failed' });
     }
   });
 

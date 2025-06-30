@@ -3,6 +3,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ensureLawyerCred } from "./ensureLawyerCred";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -69,6 +70,9 @@ app.use((req, res, next) => {
   } else {
     serveStatic(app);
   }
+
+  // Ensure BC Lawyer Credential exists on startup
+  await ensureLawyerCred();
 
   // ALWAYS serve the app on port 5000
   // this serves both the API and the client.
