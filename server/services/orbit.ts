@@ -113,3 +113,45 @@ export async function orbitRequest(endpoint: string, options: RequestInit = {}):
     throw error;
   }
 }
+// Proof lifecycle API wrappers
+
+export async function createProofRequest(formId: number, attributes: string[]): Promise<any> {
+  const payload = {
+    formId,
+    attributes,
+    requestedAttributes: attributes.map(attr => ({
+      name: attr,
+      restrictions: []
+    }))
+  };
+
+  return await orbitRequest('/api/proofs/create', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function sendProofRequest(proofReqId: string, walletDid?: string): Promise<any> {
+  const payload = {
+    proofRequestId: proofReqId,
+    ...(walletDid && { walletDid })
+  };
+
+  return await orbitRequest('/api/proofs/send', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
+}
+
+export async function getProofStatus(txId: string): Promise<any> {
+  return await orbitRequest(`/api/proofs/status/${txId}`);
+}
+
+export async function verifyProofCallback(payload: any): Promise<any> {
+  return {
+    verified: payload.verified || false,
+    attributes: payload.attributes || {},
+    transactionId: payload.transactionId,
+    timestamp: new Date().toISOString()
+  };
+}

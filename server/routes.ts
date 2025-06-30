@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
+import { createProofRequest, sendProofRequest, getProofStatus, verifyProofCallback } from "./services/orbit";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -231,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const clonedForm = await storage.cloneFormConfig(id, authorId, authorName);
       res.json(clonedForm);
-    } catch (error) {
+    } catch (error: any) {
       if (error.message === 'Form not found') {
         res.status(404).json({ error: 'Form not found' });
       } else {
@@ -370,10 +371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Proof request routes
-  app.post('/api/proofs/request', async (req, res) => {
+  // Orbit Proof API routes
+  app.post('/api/proofs/init', async (req, res) => {
     try {
-      const { formId, clientId } = req.body;
+      const { formId } = req.body;
       
       const formConfig = await storage.getFormConfig(formId);
       if (!formConfig) {
@@ -390,28 +391,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ message: 'No VC verification required for this form' });
       }
 
-      // Create proof request for the first VC type (simplification)
-      const firstVcField = vcFields[0];
-      const proofRequest = {
-        id: `proof_${Date.now()}`,
-        credentialType: firstVcField.credentialType,
-        issuerDid: firstVcField.issuerDid,
-        attributes: vcFields.map((field: any) => field.attributeName),
-        nonce: Math.random().toString(36).substring(7)
-      };
-
-      const result = await vcApiService.sendProofRequest(proofRequest);
+      // Extract required attributes from VC fields
+      const attributes = vcFields.map((field: any) => field.attributeName);
       
-      // Store client ID for later notification
-      req.app.locals.proofRequests = req.app.locals.proofRequests || {};
-      req.app.locals.proofRequests[result.requestId] = { clientId, formId };
-
+      // Create proof request via Orbit Enterprise
+      const result = await createProofRequest(formId, attributes);
+      
       res.json({
-        ...result,
-        proofRequest
+        proofReqId: result.proofRequestId,
+        qr: result.qrCode,
+        deepLink: result.deepLink
       });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to create proof request', details: error });
+    } catch (error: any) {
+      console.error('Proof request creation error:', error);
+      res.status(500).json({ error: 'Failed to create proof request', details: error.message });
+    }
+  });
+
+  // Proof status polling endpoint
+  app.get('/api/proofs/:txId', async (req, res) => {
+    try {
+      const { txId } = req.params;
+      const status = await getProofStatus(txId);
+      res.json(status);
+    } catch (error: any) {
+      console.error('Proof status error:', error);
+      res.status(500).json({ error: 'Failed to get proof status', details: error.message });
+    }
+  });
+
+  // Orbit webhook endpoint
+  app.post('/webhook/orbit', async (req, res) => {
+    try {
+      const proofResult = await verifyProofCallback(req.body);
+      
+      if (proofResult.verified) {
+        // Extract client and form info from webhook payload
+        const { formId, clientId } = req.body;
+        
+        // Notify client via WebSocket
+        notifyClient(clientId, {
+          type: 'proof_verified',
+          attributes: proofResult.attributes,
+          formId,
+          timestamp: proofResult.timestamp,
+          transactionId: proofResult.transactionId
+        });
+      }
+
+      res.json({ status: 'processed' });
+    } catch (error: any) {
+      console.error('Orbit webhook error:', error);
+      res.status(500).json({ error: 'Failed to process webhook', details: error.message });
     }
   });
 

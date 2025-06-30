@@ -36,10 +36,10 @@ export default function VCModal({ isOpen, onClose, formId, clientId, onVerificat
   const requestProof = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/proofs/request', {
+      const response = await fetch('/api/proofs/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId, clientId })
+        body: JSON.stringify({ formId })
       });
 
       if (!response.ok) {
@@ -98,20 +98,41 @@ export default function VCModal({ isOpen, onClose, formId, clientId, onVerificat
             </div>
           ) : (
             <>
-              {/* QR Code Placeholder */}
-              <div className="w-48 h-48 mx-auto mb-4 bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-32 h-32 bg-gray-200 mx-auto mb-2 rounded-lg flex items-center justify-center">
-                    <QrCode className="w-16 h-16 text-gray-400" />
+              {/* QR Code Display */}
+              <div className="w-48 h-48 mx-auto mb-4 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                {proofRequest.qr ? (
+                  <img 
+                    src={proofRequest.qr} 
+                    alt="Verification QR Code"
+                    className="w-full h-full rounded-lg"
+                  />
+                ) : (
+                  <div className="text-center">
+                    <QrCode className="w-16 h-16 text-gray-400 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500">QR Code Loading...</p>
                   </div>
-                  <p className="text-xs text-gray-500">QR Code</p>
-                </div>
+                )}
               </div>
               
               <h4 className="text-lg font-medium text-gray-900 mb-2">Scan with your wallet</h4>
               <p className="text-sm text-gray-600 mb-4">
-                Use your mobile wallet app to scan the QR code and present your employment credentials.
+                Use your mobile wallet app to scan the QR code and present your credentials.
               </p>
+
+              {/* Mobile Deep Link */}
+              {proofRequest.deepLink && (
+                <div className="mb-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(proofRequest.deepLink, '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <Smartphone className="w-4 h-4" />
+                    Open in Wallet App
+                  </Button>
+                </div>
+              )}
               
               {/* Status Indicator */}
               <div className="flex items-center justify-center space-x-2 mb-4">

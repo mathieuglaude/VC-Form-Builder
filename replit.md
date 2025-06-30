@@ -242,6 +242,12 @@ Changelog:
   - Added executable registration script for one-time organization setup
   - Added comprehensive environment configuration with organization details and API credentials
   - Updated deployment documentation with Orbit Enterprise integration requirements
+- June 30, 2025. Implemented Orbit Presentation-Proof API integration for form flow
+  - Added proof lifecycle API wrappers: createProofRequest, sendProofRequest, getProofStatus, verifyProofCallback
+  - Implemented backend routes: POST /api/proofs/init, GET /api/proofs/:txId, POST /webhook/orbit
+  - Updated VCModal component to display QR codes and deep links from Orbit Enterprise
+  - Integrated WebSocket notifications for real-time proof verification status updates
+  - Form fields now auto-populate from verified credential attributes upon successful verification
 ```
 
 ## User Preferences
