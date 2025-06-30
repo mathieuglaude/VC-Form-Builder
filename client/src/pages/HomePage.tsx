@@ -13,10 +13,12 @@ export default function HomePage() {
 
   const forms = Array.isArray(formsData) ? formsData : [];
   
-  // Your personal forms (created by you)
-  const personalForms = forms.filter((form: any) => form.authorId === "demo" || form.id <= 100);
+  // Your personal forms (created by you), sorted by most recently updated
+  const personalForms = forms
+    .filter((form: any) => form.authorId === "demo" || form.id <= 100)
+    .sort((a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   
-  // Community forms (sample forms with higher IDs that represent community content)
+  // Community forms (sample forms with higher IDs that represent community content), sorted by most recent updates
   const communityForms = [
     {
       id: 1001,
@@ -27,7 +29,8 @@ export default function HomePage() {
       authorName: "Mathieu Glaude",
       authorOrg: "4sure Technology Solutions",
       isPublic: true,
-      createdAt: "2025-06-25T00:00:00.000Z"
+      createdAt: "2025-06-25T00:00:00.000Z",
+      updatedAt: "2025-06-30T14:30:00.000Z"
     },
     {
       id: 1002,
@@ -38,7 +41,8 @@ export default function HomePage() {
       authorName: "Mathieu Glaude",
       authorOrg: "4sure Technology Solutions",
       isPublic: true,
-      createdAt: "2025-06-24T00:00:00.000Z"
+      createdAt: "2025-06-24T00:00:00.000Z",
+      updatedAt: "2025-06-30T10:15:00.000Z"
     },
     {
       id: 1003,
@@ -49,7 +53,8 @@ export default function HomePage() {
       authorName: "Mathieu Glaude",
       authorOrg: "4sure Technology Solutions",
       isPublic: true,
-      createdAt: "2025-06-23T00:00:00.000Z"
+      createdAt: "2025-06-23T00:00:00.000Z",
+      updatedAt: "2025-06-29T16:45:00.000Z"
     },
     {
       id: 1004,
@@ -60,9 +65,10 @@ export default function HomePage() {
       authorName: "Mathieu Glaude",
       authorOrg: "4sure Technology Solutions",
       isPublic: true,
-      createdAt: "2025-06-22T00:00:00.000Z"
+      createdAt: "2025-06-22T00:00:00.000Z",
+      updatedAt: "2025-06-28T09:20:00.000Z"
     }
-  ];
+  ].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   const getFormUrl = (form: any) => {
     return `${window.location.origin}/f/${form.slug}`;
@@ -237,7 +243,7 @@ export default function HomePage() {
 
                   {/* Stats */}
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>Created {new Date(form.createdAt).toLocaleDateString()}</span>
+                    <span>Updated last {new Date(form.updatedAt).toLocaleDateString()} at {new Date(form.updatedAt).toLocaleTimeString()}</span>
                     <span>0 submissions</span>
                   </div>
 
@@ -337,6 +343,11 @@ export default function HomePage() {
                         </div>
                         <p className="text-sm text-gray-600 mt-2 line-clamp-2">{form.purpose || 'No description provided'}</p>
                       </div>
+                    </div>
+
+                    {/* Updated info */}
+                    <div className="mb-3">
+                      <span className="text-xs text-gray-500">Updated last {new Date(form.updatedAt).toLocaleDateString()} at {new Date(form.updatedAt).toLocaleTimeString()}</span>
                     </div>
 
                     {/* Quick Actions */}
