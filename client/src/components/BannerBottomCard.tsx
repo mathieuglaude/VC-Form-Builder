@@ -8,6 +8,15 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
   const { label } = credential;
   const { logoUrl, backgroundImage, primaryColor = '#00698c' } = credential.branding || {};
   const issuer = credential.metaOverlay?.issuer || 'Law Society of British Columbia (LSBC)';
+  
+  // Debug log to check props
+  console.log('BannerBottomCard rendering:', { 
+    label, 
+    backgroundImage, 
+    logoUrl, 
+    primaryColor,
+    hasBranding: !!credential.branding 
+  });
 
   return (
     <div 

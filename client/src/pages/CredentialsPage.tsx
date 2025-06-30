@@ -182,17 +182,25 @@ export default function CredentialsPage() {
       )}
 
       <div className="flex flex-wrap gap-8 justify-center max-w-7xl mx-auto px-4">
-        {filteredTemplates.map((template: CredentialTemplate) => (
-          <Link key={template.id} href={`/credentials/${template.id}`}>
-            <div className="group hover:scale-105 transition-transform cursor-pointer">
-              {template.branding?.layout === 'banner-bottom' ? (
-                <BannerBottomCard credential={template} />
-              ) : (
-                <DefaultCard credential={template} />
-              )}
-            </div>
-          </Link>
-        ))}
+        {filteredTemplates.map((template: CredentialTemplate) => {
+          console.log('Rendering template:', { 
+            id: template.id, 
+            label: template.label, 
+            layout: template.branding?.layout,
+            hasBranding: !!template.branding 
+          });
+          return (
+            <Link key={template.id} href={`/credentials/${template.id}`}>
+              <div className="group hover:scale-105 transition-transform cursor-pointer">
+                {template.branding?.layout === 'banner-bottom' ? (
+                  <BannerBottomCard credential={template} />
+                ) : (
+                  <DefaultCard credential={template} />
+                )}
+              </div>
+            </Link>
+          );
+        })}
 
         {filteredTemplates.length === 0 && (
           <div className="col-span-full text-center py-12">
