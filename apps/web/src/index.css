@@ -7,6 +7,11 @@
   @apply bg-blue-500 text-white p-4;
 }
 
+.test-tailwind-loaded::after {
+  content: '🟢 Tailwind OK';
+  @apply text-green-600 font-bold;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);

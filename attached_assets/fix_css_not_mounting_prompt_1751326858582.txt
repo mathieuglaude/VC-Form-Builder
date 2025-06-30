@@ -1,0 +1,80 @@
+**Emergency CSS — Why do Tailwind classes still render as plain text?**
+
+### 1 · Verify import path
+
+1. Open `apps/web/src/main.tsx`  
+   * It must have:  
+     ```ts
+     import './index.css';
+     ```  
+     NOT `@/index.css`, `../../shared`, etc.  Replace if wrong.
+
+### 2 · Rebuild once and inspect output
+
+```bash
+# in apps/web
+pnpm build       # vite build
+After build finishes you must see a file like assets/index-<hash>.css.
+
+If not, Tailwind isn’t running through PostCSS → stop here and fix pipeline.
+
+3 · Fix Vite ↔ PostCSS connection
+Ensure apps/web/postcss.config.cjs exists and reads:
+
+js
+Copy
+Edit
+module.exports = {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {}
+  }
+};
+Vite auto-loads PostCSS config — no plugin needed.
+
+4 · Add a visual test
+At bottom of apps/web/src/index.css add:
+
+css
+Copy
+Edit
+.test-tailwind-loaded::after {
+  content: '🟢 Tailwind OK';
+  @apply text-green-600 font-bold;
+}
+In App.tsx add temporarily:
+
+tsx
+Copy
+Edit
+<div className="test-tailwind-loaded fixed top-2 right-2" />
+5 · Run dev server again
+bash
+Copy
+Edit
+pnpm --filter web dev
+If you see the green badge top-right, Tailwind is loaded.
+
+If badge missing but build CSS exists, the CSS import is still wrong.
+
+6 · Hot-reload check
+Change the text in the .after { content: '...' } line, save — browser should HMR update within 1 s. If not, Vite still isn’t including index.css (likely due to alias).
+
+7 · Remove test badge and commit fix
+After green badge appears, delete the temp div + CSS lines.
+
+Ghostwriter actions
+• Confirm / fix import './index.css' path.
+• Ensure postcss.config.cjs present with correct plugins.
+• Run pnpm build, screenshot the generated CSS file in dist/assets.
+• Add test badge lines, restart dev, verify visually, then remove them.
+• Commit with message “fix: Tailwind CSS pipeline loads in monorepo”.
+
+yaml
+Copy
+Edit
+
+---
+
+Run the prompt.  
+*If the badge never shows up* even after Ghostwriter’s pass, the problem is outside Tailwind (e.g.,
