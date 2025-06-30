@@ -263,6 +263,14 @@ Changelog:
   - Fixed form navigation to use numeric IDs instead of slugs for proper form editing access
   - Updated timestamps to display "Updated last" with localized formatting throughout dashboard
   - Added automatic cache refresh every 60 seconds to keep form listings current with latest changes
+- June 30, 2025. Eliminated duplicate form-list page and streamlined navigation
+  - Removed duplicate BuilderLandingPage - /builder now redirects directly to homepage
+  - Updated navbar "Form Builder" link to point to dashboard (/) instead of /builder
+  - Updated all "Create New Form" buttons to navigate directly to /builder/new
+  - Removed dashboard header and stats cards from homepage for cleaner interface
+  - Fixed form launch functionality to use correct route (/form/:id instead of /f/:slug)
+  - Fixed "Create New Form" card click functionality with proper event handling
+  - Streamlined user experience with one-click access to form creation
 ```
 
 ## User Preferences

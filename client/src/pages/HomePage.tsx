@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, FileText, Edit, ExternalLink, Shield, Users, Clock, TrendingUp, Filter, X } from 'lucide-react';
+import { Plus, FileText, Edit, ExternalLink, Clock, TrendingUp, Filter, X } from 'lucide-react';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
@@ -133,7 +133,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+            <p className="mt-4 text-gray-600">Loading your forms...</p>
           </div>
         </div>
       </div>
@@ -143,56 +143,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Manage your verifiable credential forms and monitor activity</p>
-        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                  <p className="text-2xl font-bold text-gray-900">{formsFiltered.length}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Shield className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Verified Submissions</p>
-                  <p className="text-2xl font-bold text-gray-900">1,247</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Users className="w-6 h-6 text-purple-600" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Active Users</p>
-                  <p className="text-2xl font-bold text-gray-900">89</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* My Forms Section */}
         <div>
@@ -217,14 +168,17 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Create New Form Card */}
-            <Card className="border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer">
+            <Card 
+              className="border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+              onClick={() => setLocation('/builder/new')}
+            >
               <CardContent className="p-6 flex flex-col items-center justify-center text-center h-48">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Plus className="w-6 h-6 text-blue-600" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-2">Create New Form</h3>
                 <p className="text-sm text-gray-600 mb-4">Build a new form with VC integration</p>
-                <Button onClick={() => setLocation('/builder/new')}>Get Started</Button>
+                <Button onClick={(e) => { e.stopPropagation(); setLocation('/builder/new'); }}>Get Started</Button>
               </CardContent>
             </Card>
 
@@ -256,7 +210,7 @@ export default function HomePage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(`/f/${form.slug}`, '_blank')}
+                          onClick={() => window.open(`/form/${form.id}`, '_blank')}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </Button>
@@ -333,7 +287,7 @@ export default function HomePage() {
                 <CardContent className="p-0">
                   {/* Form Header */}
                   <div className="h-32 bg-gradient-to-br from-green-50 to-emerald-100 rounded-t-lg p-4 flex items-center justify-center">
-                    <Users className="w-12 h-12 text-green-600" />
+                    <FileText className="w-12 h-12 text-green-600" />
                   </div>
                   
                   {/* Form Content */}
