@@ -30,12 +30,12 @@ router.post('/proofs/init', async (req, res) => {
 
     // Real Orbit integration - create proof request
     try {
-      const proofResponse = await fetch(`${orbit.baseUrl}/verifier/v1/proof-requests`, {
+      const proofResponse = await fetch(`${orbit.baseUrl}/api/v1/verifier/proof-requests`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${orbit.apiKey}`,
-          'Content-Type': 'application/json',
-          'X-LOB-ID': orbit.lobId
+          'apiKey': orbit.apiKey,
+          'lobId': orbit.lobId,
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           name: `Form ${identifier} Verification`,
@@ -58,7 +58,7 @@ router.post('/proofs/init', async (req, res) => {
       const proofData = await proofResponse.json();
       const orbitProofId = proofData.id || proofData.proofId || proofData.txId;
       
-      console.log('[INIT-DEBUG]', orbitProofId);
+      console.log('[INIT-DEBUG] Orbit proof id', orbitProofId);
       res.status(201).json({ proofId: orbitProofId });
 
     } catch (error: any) {
@@ -97,12 +97,12 @@ router.get('/proofs/:id/qr', async (req, res) => {
     if (orbit.useRealOrbit) {
       // Call Orbit "Prepare URL for Proof Request" API
       try {
-        const prepareResponse = await fetch(`${orbit.baseUrl}/verifier/v1/proof-requests/${id}/prepare-url`, {
+        const prepareResponse = await fetch(`${orbit.baseUrl}/api/v1/verifier/proof-requests/${id}/prepare-url`, {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${orbit.apiKey}`,
-            'Content-Type': 'application/json',
-            'X-LOB-ID': orbit.lobId
+            'apiKey': orbit.apiKey,
+            'lobId': orbit.lobId,
+            'Content-Type': 'application/json'
           }
         });
 
