@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import FormRenderer from '@/components/FormRenderer';
-import VerificationPanel from '@/components/VerificationPanel';
 
 interface FormPageProps {
   form: any;
@@ -71,13 +70,7 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false }:
           )}
         </div>
 
-        {/* Verification Panel - only for launch/public modes */}
-        {mode !== 'preview' && needsVerificationCredentials(form) && (
-          <VerificationPanel 
-            form={form}
-            onVerificationComplete={handleVerificationComplete}
-          />
-        )}
+        {/* Note: Verification Panel is now handled at the page level (FormLaunchPage) */}
 
         {/* Form Content */}
         <Card className="shadow-lg">

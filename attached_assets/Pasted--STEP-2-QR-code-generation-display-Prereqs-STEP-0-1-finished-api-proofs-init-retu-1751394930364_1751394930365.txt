@@ -1,0 +1,42 @@
+🎯 **STEP 2 – QR code generation + display**
+
+Prereqs  
+• STEP 0/1 finished: `/api/proofs/init` returns `{proofId}` and Launch/Public routes render the form.  
+• `config.orbit.useRealOrbit` flag exists (ENV `ORBIT_USE_REAL`, default **false**).
+
+Goal (one commit)  
+1. Backend `GET /api/proofs/:id/qr`  
+   • Params: `id = proofId`  
+   • **If `useRealOrbit=true`** call Orbit “Prepare URL for Proof Request” → returns `{ invitationUrl }`.  
+   • **Else** return `{ invitationUrl: 'https://example.org/mock/'+id }`.  
+   • Generate **SVG QR** with `qrcode` package (already in repo? if not: `pnpm -w add qrcode-svg`) using the invitation URL.  
+   • Respond `200 image/svg+xml`.  
+   • **Cache** in memory (`Map<string,{svg,exp}>`) for 5 min to avoid repeat Orbit calls.
+
+2. Frontend components  
+   **/web/components/VerificationPanel.tsx** (new)  
+   • Props: `{ proofId: string }`.  
+   • `react-query` fetch to `/api/proofs/${proofId}/qr`.  
+   • While loading → show spinner in a 250px square.  
+   • On success → render `<img src={"data:image/svg+xml;utf8,"+encodeURIComponent(svg)} …>` (style 250 × 250, rounded borders).  
+   • Below QR: **Open in Wallet** button (`<a href={invitationUrl} target="_blank">`).  
+   • Provide “Cancel verification” that just hides the panel (no proof cancel yet).
+
+3. Integrate panel  
+   • In **FormLaunchPage.tsx** (and PublicFormPage if you duplicated):  
+     – When form has VC fields AND proofId state exists (created via `/api/proofs/init`) render `<VerificationPanel proofId={proofId} />` to the right of the form (flex row).  
+     – Until proofId fetched, show “Preparing verification…” skeleton.
+
+4. UX polish  
+   • If any fetch errors → show red bordered box “Could not generate verification QR – try again”.
+
+5. Tests  
+   ✅ `curl http://localhost:5000/api/proofs/mock123/qr` returns SVG (starts with `<svg`).  
+   ✅ Launch **KYC TEST** → QR square appears with mock pattern; “Open in Wallet” opens link.  
+   ✅ Refresh page quickly → server uses cached SVG (check backend log once).
+
+6. Changelog (`replit.md`)  
+2025-07-01
+Step 2 – added /api/proofs/:id/qr with 5-min cache
+
+New VerificationPanel displays real QR + wallet link on Launch/Public pages
