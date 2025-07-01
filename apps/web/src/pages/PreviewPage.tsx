@@ -74,6 +74,14 @@ export default function PreviewPage() {
     return null;
   }
 
+  // DEBUG LOGGING: Track preview mode
+  console.log('[PreviewPage]', {
+    mode: 'preview',
+    hasVC: false, // Preview mode should never show verification
+    proofId: null,
+    showPanel: false
+  });
+
   return (
     <FormPage
       form={form}

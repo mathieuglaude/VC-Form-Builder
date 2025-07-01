@@ -141,6 +141,14 @@ export default function PublicFormPage() {
 
   const showPanel = hasVC && proofResponse?.proofId;
 
+  // DEBUG LOGGING: Track verification panel decision
+  console.log('[PublicFormPage]', {
+    mode: 'public',
+    hasVC,
+    proofId: proofResponse?.proofId,
+    showPanel: showPanel
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

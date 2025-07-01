@@ -30,13 +30,12 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "..", "..", "dist/public"),
     emptyOutDir: true,
   },
-
   server: {
+    hmr: false, // Disable Hot Module Reload to fix WebSocket wss://localhost:undefined errors
     fs: {
       strict: true,
       deny: ["**/.*"],
     },
-
     proxy: {
       "/api": "http://localhost:5000",
       "/ws": {
