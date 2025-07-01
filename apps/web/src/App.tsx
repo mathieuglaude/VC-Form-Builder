@@ -4,6 +4,7 @@ import Navigation from "@/components/Navigation";
 import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import BuilderPage from "@/pages/BuilderPage";
+import PreviewPage from "@/pages/PreviewPage";
 import FillPage from "@/pages/FillPage";
 import FormLaunchPage from "@/pages/FormLaunchPage";
 import CredentialsPage from "@/pages/CredentialsPage";
@@ -27,6 +28,7 @@ function Router() {
         {() => { window.location.href = "/"; return null; }}
       </Route>
       <Route path="/builder/:id"><BuilderPage /></Route>
+      <Route path="/builder/:id/preview"><PreviewPage /></Route>
       <Route path="/launch/:id"><FormLaunchPage /></Route>
       <Route path="/form/:id"><FillPage /></Route>
       <Route path="/f/:slug"><PublicFormPage /></Route>

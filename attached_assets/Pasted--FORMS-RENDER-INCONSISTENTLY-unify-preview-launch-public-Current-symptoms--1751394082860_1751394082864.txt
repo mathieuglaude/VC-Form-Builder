@@ -1,0 +1,95 @@
+🚨  **FORMS RENDER INCONSISTENTLY – unify preview / launch / public**
+
+Current symptoms
+────────────────
+• **Preview** in the builder shows form fields but NO verification panel (OK).  
+• **Launch** (/launch/:id) renders only title + “Verify Credentials” button (image-1).  
+• **Public URL** (/f/:slug or /form/:id) renders title + empty “Credential Verification” card (image-2).
+
+Goal
+────
+1. All three routes reuse the *same* <FormPage/> component so fields always appear.  
+2. Verification panel is shown **only if** form.metadata.fields contains at least one vcMapping.  
+3. Panel fetches Orbit proof request; on success shows QR/SSE status exactly once.
+
+Tasks
+─────
+### 1 . Trace which component each route uses
+```txt
+routes in apps/web/src/App.tsx:
+  • /builder/form/:id -> FormBuilderPro
+  • /builder/form/:id/preview -> ??? (FormPreview ?)
+  • /launch/:id          -> FormLaunchPage
+  • /f/:slug             -> PublicFormPage
+Find where each page fetches the form (useQuery keys).
+
+2 . Create single FormPage.tsx
+Props: { form, mode: 'preview' | 'launch' | 'public' }
+Responsibility:
+✓ render fields with <FormRenderer />
+✓ if mode ≠ 'preview' and form needs VC ⇒ render <VerificationPanel form={form} />
+
+3 . Refactor pages
+FormPreviewPage, FormLaunchPage, PublicFormPage should:
+
+fetch the form (correct endpoint)
+
+pass it to <FormPage/>
+
+Ensure:
+
+Preview fetches GET /api/forms/${id} (no slug)
+
+Launch fetches same as preview unless a publicSlug exists → could redirect to /f/:slug.
+
+Public fetches GET /api/pub-forms/${slug}
+
+4 . Backend sanity checks
+/api/pub-forms/:slug must return full formSchema even when isPublic=false but isPublished=true.
+
+/api/forms/:id remains for previews / internal.
+
+5 . VerificationPanel logic
+In apps/web/src/components/VerificationPanel.tsx (create if none):
+
+kotlin
+Copy
+Edit
+if (!needsVC) return null
+const {data: proofId} = useInitProof(form.id)
+const {data: qr}      = useProofQR(proofId)        // calls /api/proofs/:id/qr
+const {data: status}  = useProofStatus(proofId)     // SSE or polling
+render states:
+  • loading  : spinner
+  • ready    : svg qr + open-in-wallet link
+  • verified : green banner + “Continue to Form” button
+6 . Remove duplicate UI
+Delete old QR placeholder markup in FormLaunchPage/PublicFormPage after moving to VerificationPanel.
+
+7 . Test matrix
+Route	Expectation
+/builder/form/12/preview	fields render, no QR
+/launch/12	title + fields + QR panel
+/f/kyc-test	same as /launch/12
+form without VC mapping	fields only, no QR
+
+8 . Add devtools logging
+At mount of FormPage log:
+
+js
+Copy
+Edit
+console.info('[FormPage]', mode, form.id, {needsVC});
+and in VerificationPanel log Orbit calls + errors.
+
+9 . Update replit.md
+bash
+Copy
+Edit
+### 2025-07-01
+* Unified FormPage component across preview/launch/public.
+* VerificationPanel now conditionally attaches Orbit proof flow.
+* Fixed routes: /launch/:id and /f/:slug fetch correct API.
+Deliverable
+───────────
+Reply “✅ Unified form rendering & QR works in all modes” after end-to-end test passes.
