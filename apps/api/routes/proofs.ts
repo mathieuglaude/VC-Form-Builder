@@ -174,4 +174,66 @@ router.get('/:id/qr', async (req, res) => {
   }
 });
 
+// Server-Sent Events endpoint for real-time proof status monitoring
+router.get('/:id/stream', async (req, res) => {
+  console.log(`Setting up SSE stream for proof request: ${req.params.id}`);
+  
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control'
+  });
+
+  const { id } = req.params;
+  let pollInterval: NodeJS.Timeout;
+  
+  const poll = async () => {
+    try {
+      console.log(`Polling status for proof request: ${id}`);
+      const { status, attributes } = await verifier.status(id);
+      
+      if (status === 'presentation_received' && attributes) {
+        console.log(`Proof request ${id} completed with attributes:`, attributes);
+        
+        // Verify the presentation
+        try {
+          const { verified } = await verifier.verify(id);
+          console.log(`Proof request ${id} verification result:`, verified);
+        } catch (verifyError) {
+          console.error('Verification failed:', verifyError);
+        }
+        
+        // Send success event with attributes
+        res.write(`event: done\ndata: ${JSON.stringify(attributes)}\n\n`);
+        clearInterval(pollInterval);
+        res.end();
+      } else {
+        console.log(`Proof request ${id} status: ${status}`);
+        // Send status update
+        res.write(`event: status\ndata: ${JSON.stringify({ status })}\n\n`);
+      }
+    } catch (error: any) {
+      console.error('Status poll error for proof request', id, ':', error);
+      res.write(`event: error\ndata: ${JSON.stringify({ error: 'Status check failed' })}\n\n`);
+      clearInterval(pollInterval);
+      res.end();
+    }
+  };
+
+  // Start polling every 2.5 seconds
+  pollInterval = setInterval(poll, 2500);
+  
+  // Initial poll
+  poll();
+
+  // Clean up on client disconnect
+  req.on('close', () => {
+    console.log(`SSE stream closed for proof request: ${id}`);
+    clearInterval(pollInterval);
+    res.end();
+  });
+});
+
 export default router;

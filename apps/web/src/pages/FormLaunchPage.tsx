@@ -33,6 +33,7 @@ function FormLaunchPage() {
   const [, navigate] = useLocation();
   const [proofRequestId, setProofRequestId] = useState<string | null>(null);
   const [verificationComplete, setVerificationComplete] = useState(false);
+  const [verifiedAttributes, setVerifiedAttributes] = useState<Record<string, string>>({});
 
   // Fetch form configuration
   const { data: form, isLoading: formLoading, error: formError } = useQuery<FormConfig>({
@@ -95,6 +96,45 @@ function FormLaunchPage() {
     }
   }, [form, proofRequestId, initProofMutation]);
 
+  // Listen for proof request status via Server-Sent Events
+  useEffect(() => {
+    if (!proofRequestId || verificationComplete) return;
+
+    console.log(`Setting up SSE for proof request: ${proofRequestId}`);
+    const eventSource = new EventSource(`/api/proofs/${proofRequestId}/stream`);
+
+    eventSource.addEventListener('done', (event) => {
+      try {
+        const attributes = JSON.parse(event.data);
+        console.log('Proof verification completed with attributes:', attributes);
+        setVerifiedAttributes(attributes);
+        setVerificationComplete(true);
+        eventSource.close();
+      } catch (error) {
+        console.error('Failed to parse verified attributes:', error);
+      }
+    });
+
+    eventSource.addEventListener('status', (event) => {
+      try {
+        const { status } = JSON.parse(event.data);
+        console.log(`Proof request status: ${status}`);
+      } catch (error) {
+        console.error('Failed to parse status update:', error);
+      }
+    });
+
+    eventSource.addEventListener('error', (event) => {
+      console.error('SSE error:', event);
+      eventSource.close();
+    });
+
+    return () => {
+      console.log(`Cleaning up SSE for proof request: ${proofRequestId}`);
+      eventSource.close();
+    };
+  }, [proofRequestId, verificationComplete]);
+
   // Loading state
   if (formLoading) {
     return (
@@ -156,8 +196,9 @@ function FormLaunchPage() {
 
   const handleSkipVerification = () => {
     // Skip verification and go directly to form
-    setVerificationComplete(true);
-    navigate(`/form/${form.id}`);
+    navigate(`/form/${form.id}`, { 
+      state: { verifiedAttrs: {} } 
+    });
   };
 
   return (
@@ -214,7 +255,7 @@ function FormLaunchPage() {
                   </Alert>
                 )}
 
-                {proofRequestId && (
+                {proofRequestId && !verificationComplete && (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
                       <Badge variant="secondary" className="bg-blue-100 text-blue-800">
@@ -298,12 +339,32 @@ function FormLaunchPage() {
                 )}
 
                 {verificationComplete && (
-                  <Alert>
-                    <Shield className="h-4 w-4" />
-                    <AlertDescription>
-                      Credential verification completed successfully. Proceeding to form...
-                    </AlertDescription>
-                  </Alert>
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="flex items-center mb-3">
+                      <Shield className="h-5 w-5 text-green-600 mr-2" />
+                      <Badge variant="default" className="bg-green-100 text-green-800">
+                        ✅ Credentials Verified
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-sm text-green-700 mb-3">
+                      Your digital credentials have been successfully verified.
+                      {Object.keys(verifiedAttributes).length > 0 && (
+                        <span className="block mt-1 text-xs">
+                          Verified attributes: {Object.keys(verifiedAttributes).join(', ')}
+                        </span>
+                      )}
+                    </p>
+                    
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={() => navigate(`/form/${form.id}`, { 
+                        state: { verifiedAttrs: verifiedAttributes } 
+                      })}
+                    >
+                      Continue to Form
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardContent>

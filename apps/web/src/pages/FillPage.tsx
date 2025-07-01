@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,37 @@ import { apiRequest } from "@/lib/queryClient";
 
 export default function FillPage() {
   const { id } = useParams();
+  const [location] = useLocation();
   const { toast } = useToast();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
   const [vcModal, setVcModal] = useState<null | { txId: string; qr: string }>(null);
+
+  // Extract verified attributes from navigation state
+  const locationState = (location as any)?.state || {};
+  const verifiedAttrs = locationState?.verifiedAttrs || {};
+
+  // Auto-populate form with verified attributes when form config is loaded
+  useEffect(() => {
+    if (formConfig && Object.keys(verifiedAttrs).length > 0) {
+      console.log('Auto-populating form with verified attributes:', verifiedAttrs);
+      
+      const newFormData = { ...formData };
+      const config = formConfig as any;
+      const formSchema = config?.formSchema || {};
+      const components = formSchema.components || [];
+      
+      // Map verified attributes to form fields
+      components.forEach((component: any) => {
+        if (component.vcMapping?.attributeName && verifiedAttrs[component.vcMapping.attributeName]) {
+          newFormData[component.key] = verifiedAttrs[component.vcMapping.attributeName];
+        }
+      });
+      
+      setFormData(newFormData);
+      setVerifiedFields(verifiedAttrs);
+    }
+  }, [formConfig, verifiedAttrs]);
 
   // Fetch form configuration
   const { data: formConfig, isLoading } = useQuery({
@@ -102,7 +129,9 @@ export default function FillPage() {
 
   const renderField = (component: any) => {
     const fieldKey = component.key;
-    const isVerified = verifiedFields[fieldKey];
+    // Check if this field has a verified value from credential verification
+    const hasVerifiedMapping = component.vcMapping?.attributeName && verifiedFields[component.vcMapping.attributeName];
+    const isVerified = !!hasVerifiedMapping;
     const isReadOnly = isVerified;
 
     switch (component.type) {

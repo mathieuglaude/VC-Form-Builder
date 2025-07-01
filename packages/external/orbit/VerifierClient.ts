@@ -52,6 +52,18 @@ export class VerifierClient {
     
     return this.api.post(`verifier/v1/proof-requests/${id}/prepare-url`).json<{ qrSvg: string; inviteUrl: string }>();
   }
+
+  async status(id: string): Promise<{ status: string; attributes?: Record<string, string> }> {
+    console.log(`VerifierClient: GET ${this.api.prefixUrl}verifier/v1/proof-requests/${id}/status`);
+    
+    return this.api.get(`verifier/v1/proof-requests/${id}/status`).json<{ status: string; attributes?: Record<string, string> }>();
+  }
+
+  async verify(id: string): Promise<{ verified: boolean }> {
+    console.log(`VerifierClient: POST ${this.api.prefixUrl}verifier/v1/proof-requests/${id}/verify`);
+    
+    return this.api.post(`verifier/v1/proof-requests/${id}/verify`).json<{ verified: boolean }>();
+  }
 }
 
 // Create verifier instance lazily to ensure env vars are loaded
@@ -95,6 +107,38 @@ export const verifier = {
     return {
       qrSvg: mockQrSvg,
       inviteUrl: mockInviteUrl
+    };
+  },
+
+  status: async (id: string): Promise<{ status: string; attributes?: Record<string, string> }> => {
+    console.log('Mock Orbit status called for proof request:', id);
+    
+    // Simulate timing - after 10 seconds, return presentation_received with mock attributes
+    const proofAge = Date.now() - parseInt(id.split('_')[2] || '0');
+    
+    if (proofAge > 10000) { // 10 seconds
+      return {
+        status: 'presentation_received',
+        attributes: {
+          given_name: 'John',
+          surname: 'Doe',
+          email: 'john.doe@example.com',
+          phone: '+1-555-0123'
+        }
+      };
+    }
+    
+    return {
+      status: 'waiting'
+    };
+  },
+
+  verify: async (id: string): Promise<{ verified: boolean }> => {
+    console.log('Mock Orbit verify called for proof request:', id);
+    
+    // Mock verification always succeeds
+    return {
+      verified: true
     };
   }
 };

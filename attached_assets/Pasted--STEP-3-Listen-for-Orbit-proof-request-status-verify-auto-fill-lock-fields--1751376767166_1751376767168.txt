@@ -1,0 +1,165 @@
+🟦  STEP 3 — Listen for Orbit proof-request status, verify, auto-fill & lock fields
+===============================================================================
+
+Context so far
+--------------
+Step 1  ➜  POST /api/proofs/init        →  { proofRequestId }
+Step 2  ➜  GET  /api/proofs/:id/qr      →  { qrSvg, inviteUrl }  (5-min cache) + UI
+
+Goal of Step 3
+--------------
+1. **Check proof-request status** until it becomes `"presentation_received"`  
+   Endpoint:  
+GET /verifier/v1/proof-requests/{id}/status
+Headers: lobId, apiKey
+→ { status:"presentation_received" | … , attributes:{ attr:value, … } }
+
+markdown
+Copy
+Edit
+
+2. **Verify** the presentation (optional but recommended)  
+POST /verifier/v1/proof-requests/{id}/verify
+→ { verified:true }
+
+csharp
+Copy
+Edit
+
+3. Push result to the browser in real time and:
+• pre-fill mapped fields with the received attributes  
+• disable (grey-out) those inputs  
+• hide the Scan/QR panel and show “✅ Credential verified”.
+
+Implementation
+==============
+
+🔸 *VerifierClient* — add helpers
+```ts
+// packages/external/orbit/VerifierClient.ts
+async status(id: string) {
+return this.api.get(`verifier/v1/proof-requests/${id}/status`)
+        .json<{ status:string; attributes?:Record<string,string> }>();
+}
+async verify(id: string) {
+return this.api.post(`verifier/v1/proof-requests/${id}/verify`)
+        .json<{ verified:boolean }>();
+}
+🔸 Backend polling broker — Server-Sent Events (simple, no extra deps)
+
+ts
+Copy
+Edit
+// apps/api/routes/proofs.ts   (append)
+router.get('/:id/stream', async (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive'
+  });
+  const { id } = req.params;
+  const tick = setInterval(async () => {
+    try {
+      const { status, attributes } = await verifier.status(id);
+      if (status === 'presentation_received') {
+        await verifier.verify(id);           // ignore result, assume OK
+        res.write(`event: done\ndata:${JSON.stringify(attributes)}\n\n`);
+        clearInterval(tick);
+        res.end();
+      }
+    } catch (e) {
+      console.error('status poll error', e);
+      res.write('event: error\ndata: {}\n\n');
+      clearInterval(tick);
+      res.end();
+    }
+  }, 2500);                     // poll every 2.5 s
+  req.on('close', () => clearInterval(tick));
+});
+🔸 FormLaunchPage — listen & react
+
+tsx
+Copy
+Edit
+// apps/web/src/pages/FormLaunchPage.tsx   (inside component)
+const [attrs,setAttrs] = useState<Record<string,string>>({});
+
+useEffect(() => {
+  if (!proofRequestId) return;
+  const es = new EventSource(`/api/proofs/${proofRequestId}/stream`);
+  es.addEventListener('done', (e:any) => {
+    const data = JSON.parse(e.data);
+    setAttrs(data);
+    es.close();
+  });
+  es.addEventListener('error', () => es.close());
+  return () => es.close();
+}, [proofRequestId]);
+
+// when attrs received -> hide QR panel, show success
+{Object.keys(attrs).length === 0 ? (
+  /* existing QR panel */
+) : (
+  <div className="w-96 p-6 border rounded-lg ml-8 text-center">
+      <p className="text-green-600 text-lg font-semibold">✅ Credentials verified</p>
+      <button
+        className="mt-4 btn-primary"
+        onClick={() => navigate(`/form/${formId}`, { state:{ verifiedAttrs:attrs } })}
+      >
+        Continue to form
+      </button>
+  </div>
+)}
+🔸 FormFill / Preview page — apply values & lock inputs
+(Assuming current page is PreviewPage.tsx)
+
+tsx
+Copy
+Edit
+// inside component
+const location = useLocation() as any;
+const verifiedAttrs = location.state?.verifiedAttrs ?? {};
+
+...renderInput(field) {
+   const value = verifiedAttrs[field.vcMapping?.attributeName];
+   return (
+     <input
+        ...otherProps
+        defaultValue={value}
+        disabled={!!value}
+        className={clsx(base, value && 'bg-gray-100 text-gray-500')}
+     />
+   );
+}
+Visual cues: disabled inputs get grey background; you may also show a small shield icon.
+
+Environment
+Already set:
+
+ini
+Copy
+Edit
+ORBIT_VERIFIER_BASE_URL=https://devapi-verifier.nborbit.ca
+ORBIT_LOB_ID=a03f92ac-5ce7-4037-b8b5-79ff821b0878
+ORBIT_API_KEY=MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et
+Testing checklist
+pnpm dev
+
+Home → Launch KYC TEST → QR page appears.
+
+Scan QR with BC Wallet, accept proof request.
+
+UI switches to “✅ Credentials verified”, click Continue to form.
+
+Required fields are now auto-filled and disabled.
+
+Network:
+• GET /api/proofs/<id>/stream gets event: done
+• POST /verifier/v1/proof-requests/<id>/verify 200.
+
+Deliverable
+Working SSE endpoint /api/proofs/:id/stream with polling & verify.
+
+Front-end reacts, hides QR, moves to form with values filled & locked.
+
+No TS errors + lint passes.
