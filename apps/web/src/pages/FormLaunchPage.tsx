@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import FormPage from '@/components/FormPage';
 import VerificationPanel from '@/components/VerificationPanel';
 import { useToast } from '@/hooks/use-toast';
-import { useProofRequest } from '@/hooks/useProofRequest';
+import { useProofRequest, mockProof } from '@/hooks/useProofRequest';
 
 interface FormConfig {
   id: number;
@@ -24,6 +24,11 @@ export default function FormLaunchPage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  
+  // Parse URL query parameters for preview mode
+  const qs = new URLSearchParams(location.search);
+  const isPreview = qs.get('preview') === '1';
+  const urlShowPanel = qs.get('panel') === '1';
 
   // Helper function - not a hook
   function formHasVCFields(form: any): boolean {
@@ -145,55 +150,35 @@ export default function FormLaunchPage() {
     return null;
   }
 
-  const showPanel = hasVC && proofResponse?.proofId;
+  // HARD-LOCKED PREVIEW: Always render form, dev toggle for panel
+  const debugShowPanel = isPreview && urlShowPanel;
 
   // DEBUG LOGGING: Track verification panel decision
   console.log('[FormLaunchPage]', {
-    mode: 'launch',
-    hasVC,
-    proofId: proofResponse?.proofId,
-    showPanel: showPanel
+    mode: isPreview ? 'preview' : 'launch',
+    isPreview,
+    urlShowPanel,
+    debugShowPanel,
+    hasVC: false, // Currently disabled for testing
   });
 
+  // Hard-locked return: always render form body
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Page Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {form.name || "Form"}
-          </h1>
-          {form.purpose && (
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              {form.purpose}
-            </p>
-          )}
-        </div>
+    <>
+      <FormPage
+        form={form}
+        mode={isPreview ? "preview" : "launch"}
+        onSubmit={!isPreview ? handleFormSubmit : undefined}
+        isSubmitting={!isPreview ? submitFormMutation.isPending : false}
+        showHeader={true}
+      />
 
-        {/* Main Content - Flex Layout */}
-        <div className={`flex gap-8 ${hasVC ? 'flex-col lg:flex-row' : 'justify-center'}`}>
-          
-          {/* Form Section */}
-          <div className={hasVC ? 'flex-1' : 'max-w-4xl'}>
-            <FormPage
-              form={form}
-              mode="launch"
-              onSubmit={handleFormSubmit}
-              isSubmitting={submitFormMutation.isPending}
-              showHeader={false}
-            />
-          </div>
-
-          {/* Verification Panel */}
-          {showPanel && (
-            <div className="lg:w-80">
-              <VerificationPanel 
-                proofId={proofResponse.proofId}
-              />
-            </div>
-          )}
+      {/* Dev toggle: add panel when preview=1&panel=1 */}
+      {debugShowPanel && (
+        <div className="fixed top-4 right-4 w-80 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+          <VerificationPanel proofId={mockProof.proofId} />
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }

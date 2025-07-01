@@ -6,7 +6,22 @@ interface UseProofRequestOpts {
   enabled?: boolean;
 }
 
+export const mockProof = {
+  proofId: 'mock-debug',
+  inviteUrl: '#',
+  svg: `<svg width="180" height="180"><text x="10" y="90">MOCK QR</text></svg>`
+};
+
 export function useProofRequest({ formId, publicSlug, enabled = true }: UseProofRequestOpts) {
+  const inPreview = new URLSearchParams(location.search).get('preview') === '1';
+  const showPanel = new URLSearchParams(location.search).get('panel') === '1';
+
+  // DEBUG MODE: When preview mode + panel=1 → return mockProof immediately for testing
+  if (inPreview && showPanel) {
+    console.log('[useProofRequest] returning mock proof for preview debug mode');
+    return { data: mockProof, isSuccess: true, isLoading: false, error: null };
+  }
+
   return useQuery({
     queryKey: ['proof', formId || publicSlug],
     queryFn: async () => {
