@@ -17,6 +17,8 @@ export default function FillPage() {
   const { id } = useParams();
   const [location] = useLocation();
   const { toast } = useToast();
+  
+  console.log('FillPage: Rendering with ID:', id);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
   const [vcModal, setVcModal] = useState<null | { txId: string; qr: string }>(null);
@@ -51,9 +53,12 @@ export default function FillPage() {
   const { data: formConfig, isLoading } = useQuery({
     queryKey: [`/api/forms/${id}`],
     queryFn: async () => {
+      console.log('FillPage: Fetching form config for ID:', id);
       const response = await fetch(`/api/forms/${id}`);
       if (!response.ok) throw new Error('Form not found');
-      return response.json();
+      const data = await response.json();
+      console.log('FillPage: Form config loaded:', data);
+      return data;
     },
     enabled: !!id
   });
@@ -267,7 +272,10 @@ export default function FillPage() {
     submitFormMutation.mutate(submissionData);
   };
 
+  console.log('FillPage: isLoading:', isLoading, 'formConfig:', formConfig);
+  
   if (isLoading) {
+    console.log('FillPage: Showing loading state');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin" />
@@ -276,6 +284,7 @@ export default function FillPage() {
   }
 
   if (!formConfig) {
+    console.log('FillPage: No form config found, showing error');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -288,6 +297,8 @@ export default function FillPage() {
 
   const config = formConfig as any;
   const formSchema = config?.formSchema;
+  
+  console.log('FillPage: Rendering form with config:', config, 'formSchema:', formSchema);
 
   return (
     <div className="min-h-screen bg-gray-50">
