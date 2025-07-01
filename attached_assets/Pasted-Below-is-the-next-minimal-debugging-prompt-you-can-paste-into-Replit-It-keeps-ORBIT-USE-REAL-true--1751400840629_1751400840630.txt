@@ -1,0 +1,60 @@
+Below is the next, minimal debugging prompt you can paste into Replit.
+It keeps ORBIT_USE_REAL=true and does one thing only – prove we can reach any Orbit-Verifier endpoint before the form flow touches it.
+
+text
+Copy
+Edit
+### 🔍  ONE-OFF CONNECTIVITY CHECK  (no mocks, no UI changes)
+
+/* apps/api/scripts/orbitPing.ts */
+
+import ky from 'ky';
+import config from '../src/config';
+
+(async () => {
+  const { orbit } = config;                                // should contain baseUrl, apiKey, lobId
+  const url = `${orbit.baseUrl}/api/v1/verifier/health`;   // per Swagger → simple GET
+  try {
+    const json = await ky.get(url, {
+      headers: { apiKey: orbit.apiKey, lobId: orbit.lobId }
+    }).json();
+    console.log('[ORBIT-PING-OK]', json);
+    process.exit(0);
+  } catch (err: any) {
+    console.error('[ORBIT-PING-FAIL]', err.response?.status, await err.response?.text());
+    process.exit(1);
+  }
+})();
+Add the file above (exact path).
+
+Run it once:
+
+bash
+Copy
+Edit
+cd apps/api && tsx scripts/orbitPing.ts
+Observe terminal:
+
+If you get [ORBIT-PING-OK] { status: 'UP' } (or similar) → we know baseUrl + headers are correct.
+→ Next step will be to point /proofs/init at /api/v1/verifier/proof-requests and re-test.
+
+If you get [ORBIT-PING-FAIL] 404 ... or 401 → print the entire error body so we can see whether it’s path or authentication.
+
+Do not change any other code or flip back to mock.
+We just need this single connectivity proof before wiring the real flow.
+
+(If /verifier/health is not in Swagger, try /api/v1/health or simply /api and inspect the JSON list of paths.)
+
+yaml
+Copy
+Edit
+
+---
+
+### Why this is the lean next step
+
+* Right now every “real” call 404s. We don’t yet know if it’s the **path** or the **headers**.  
+* A one-shot script avoids crashing the running servers and gives an immediate, readable response.  
+* Once the ping works we can change only two lines in `/api/proofs/init` (the URL and headers) and everything else should fall into place.
+
+Give that a go and paste back **exactly** what `[ORBIT-PING-FAIL]` prints if it’s not “OK”.
