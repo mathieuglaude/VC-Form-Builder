@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { Router } from "express";
 import { WebSocketServer, WebSocket } from "ws";
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
@@ -14,6 +15,7 @@ import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  const router = Router();
 
   // WebSocket server for real-time VC verification
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
@@ -58,17 +60,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Simple auth middleware for demo
-  app.use((req, res, next) => {
+  router.use((req, res, next) => {
     req.user = { id: currentUserProfile.id, role: currentUserProfile.role };
     next();
   });
 
   // User profile routes
-  app.get('/api/auth/user', async (req, res) => {
+  router.get('/auth/user', async (req, res) => {
     res.json(currentUserProfile);
   });
 
-  app.put('/api/auth/user', async (req, res) => {
+  router.put('/auth/user', async (req, res) => {
     try {
       // Update the stored profile with new data
       currentUserProfile = { ...currentUserProfile, ...req.body };
@@ -79,7 +81,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Form management routes
-  app.post('/api/forms', async (req, res) => {
+  router.post('/forms', async (req, res) => {
     try {
       console.log('Creating form with data:', JSON.stringify(req.body, null, 2));
       const validatedData = insertFormConfigSchema.parse(req.body);
@@ -92,7 +94,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/forms/new', async (req, res) => {
+  router.get('/forms/new', async (req, res) => {
     // Return a template for new form creation
     res.json({
       name: '',
@@ -108,7 +110,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check slug availability (must come before /:id routes)
-  app.get('/api/forms/slug-check', async (req, res) => {
+  router.get('/forms/slug-check', async (req, res) => {
     try {
       const { slug } = req.query;
       if (!slug) {
@@ -123,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/forms/:id', async (req, res) => {
+  router.get('/forms/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const formConfig = await storage.getFormConfig(id);
@@ -138,7 +140,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/forms/:id', async (req, res) => {
+  router.put('/forms/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertFormConfigSchema.partial().parse(req.body);
@@ -155,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get published form by public slug
-  app.get('/api/pub-forms/:slug', async (req, res) => {
+  router.get('/pub-forms/:slug', async (req, res) => {
     try {
       const { slug } = req.params;
       const formConfig = await storage.getFormConfigByPublicSlug(slug);
@@ -172,7 +174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Publish form with custom slug
-  app.post('/api/forms/:id/publish', async (req, res) => {
+  router.post('/forms/:id/publish', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { slug } = req.body;
@@ -257,7 +259,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/forms/:id', async (req, res) => {
+  router.delete('/forms/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const formConfig = await storage.getFormConfig(id);
@@ -279,7 +281,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get public forms for community section
-  app.get('/api/forms/public', async (req, res) => {
+  router.get('/forms/public', async (req, res) => {
     // Return sample community forms that are distinct from user's personal forms
     const communityForms = [
       {
@@ -367,7 +369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json(communityForms);
   });
 
-  app.get('/api/forms', async (req, res) => {
+  router.get('/forms', async (req, res) => {
     try {
       const forms = await storage.listFormConfigs();
       res.json(forms);
@@ -377,7 +379,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Clone a form (create a copy)
-  app.post('/api/forms/:id/clone', async (req, res) => {
+  router.post('/forms/:id/clone', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const { authorId = "demo", authorName = "Demo User" } = req.body;
@@ -393,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/forms/slug/:slug', async (req, res) => {
+  router.get('/forms/slug/:slug', async (req, res) => {
     try {
       const slug = req.params.slug;
       const formConfig = await storage.getFormConfigBySlug(slug);
@@ -409,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Form submission routes with credential issuance action
-  app.post('/api/forms/:id/submit', async (req, res) => {
+  router.post('/forms/:id/submit', async (req, res) => {
     try {
       const formConfigId = parseInt(req.params.id);
       const validatedData = insertFormSubmissionSchema.parse({
@@ -471,7 +473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   }
 
-  app.get('/api/forms/:id/submissions', async (req, res) => {
+  router.get('/forms/:id/submissions', async (req, res) => {
     try {
       const formConfigId = parseInt(req.params.id);
       const submissions = await storage.getFormSubmissions(formConfigId);
@@ -482,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credential definition routes
-  app.get('/api/credentials/defs', async (req, res) => {
+  router.get('/credentials/defs', async (req, res) => {
     try {
       // Get from both local storage and VC API
       const [localDefs, apiDefs] = await Promise.all([
@@ -500,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credential library routes
-  app.get('/api/cred-lib', async (req, res) => {
+  router.get('/cred-lib', async (req, res) => {
     try {
       const templates = await storage.listCredentialTemplates();
       
@@ -543,7 +545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/cred-lib/:id', async (req, res) => {
+  router.get('/cred-lib/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -562,7 +564,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post('/api/cred-lib', async (req, res) => {
+  router.post('/cred-lib', async (req, res) => {
     try {
       const validatedData = insertCredentialTemplateSchema.parse(req.body);
       const template = await storage.createCredentialTemplate(validatedData);
@@ -572,7 +574,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put('/api/cred-lib/:id', async (req, res) => {
+  router.put('/cred-lib/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const validatedData = insertCredentialTemplateSchema.partial().parse(req.body);
@@ -588,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete('/api/cred-lib/:id', async (req, res) => {
+  router.delete('/cred-lib/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteCredentialTemplate(id);
@@ -604,7 +606,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Health check endpoint to restore missing credentials
-  app.post('/api/admin/credentials/health', async (req, res) => {
+  router.post('/admin/credentials/health', async (req, res) => {
     try {
       await ensureLawyerCred();
       res.status(204).send();
@@ -653,7 +655,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // TODO: Re-enable credential issuance routes after core proof flow works
 
   // Webhook for VC verification callback
-  app.post('/api/proofs/verify-callback', async (req, res) => {
+  router.post('/proofs/verify-callback', async (req, res) => {
     try {
       const verificationResult = await vcApiService.verifyProofCallback(req.body);
       
@@ -686,7 +688,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Simulate VC verification for demo purposes
-  app.post('/api/proofs/simulate-verification', async (req, res) => {
+  router.post('/proofs/simulate-verification', async (req, res) => {
     try {
       const { clientId, formId } = req.body;
       
@@ -714,7 +716,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Credential Template Import
-  app.post('/api/cred-templates/import', async (req, res) => {
+  router.post('/cred-templates/import', async (req, res) => {
     try {
       // Validation schema for import
       const importCredentialSchema = z.object({
@@ -824,7 +826,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete Credential Template
-  app.delete('/api/cred-templates/:id', async (req, res) => {
+  router.delete('/cred-templates/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       
@@ -856,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Import credential template (for ImportCredentialModal)
-  app.post('/api/cred-templates/import', async (req, res) => {
+  router.post('/cred-templates/import', async (req, res) => {
     try {
       const {
         label,
@@ -971,6 +973,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error.message || 'Failed to import credential' });
     }
   });
+
+  // Mount all API routes under /api prefix
+  app.use('/api', router);
+  
+  // Mount sub-routers
+  app.use('/api', proofsRouter);
+  app.use('/api', adminCredentialsRouter);
 
   return httpServer;
 }
