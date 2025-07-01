@@ -242,22 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get form by public slug (for published forms)
-  app.get('/f/:slug', async (req, res) => {
-    try {
-      const publicSlug = req.params.slug;
-      const form = await storage.getFormConfigByPublicSlug(publicSlug);
-      
-      if (!form) {
-        return res.status(404).json({ error: 'Published form not found' });
-      }
-      
-      res.json(form);
-    } catch (error: any) {
-      console.error('Get published form error:', error);
-      res.status(500).json({ error: 'Failed to retrieve published form' });
-    }
-  });
+
 
   router.delete('/forms/:id', async (req, res) => {
     try {
