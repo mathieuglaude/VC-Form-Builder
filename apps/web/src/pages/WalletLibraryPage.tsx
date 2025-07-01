@@ -121,7 +121,7 @@ export default function WalletLibraryPage() {
         {/* Wallet Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredWallets.map(wallet => (
-            <Card key={wallet.id} className="hover:shadow-lg transition-shadow">
+            <Card key={wallet.id} className="card card-hover">
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div>

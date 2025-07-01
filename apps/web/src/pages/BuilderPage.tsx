@@ -183,7 +183,7 @@ function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => vo
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section */}
           <div className="lg:col-span-2">
-            <Card className="p-6">
+            <Card className="card p-6">
               <div className="mb-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   {formData?.title || "Form"}
@@ -212,7 +212,7 @@ function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => vo
           {/* QR Code Section */}
           {vcModal && (
             <div className="lg:col-span-1">
-              <Card className="p-6 sticky top-8">
+              <Card className="card p-6 sticky top-8">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Scan with BC Wallet
@@ -245,7 +245,7 @@ function FormPreviewMode({ formData, onBack }: { formData: any; onBack: () => vo
           {/* Help Section when no QR */}
           {!vcModal && hasVerifiedFields() && (
             <div className="lg:col-span-1">
-              <Card className="p-6 sticky top-8">
+              <Card className="card p-6 sticky top-8">
                 <div className="text-center">
                   <Shield className="w-12 h-12 mx-auto text-blue-600 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">
