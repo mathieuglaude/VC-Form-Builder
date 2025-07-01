@@ -1,0 +1,103 @@
+🚨  BUG: QR code box shows placeholder but SVG never appears
+===========================================================
+
+Goal
+-----
+When FormLaunchPage mounts for a VC form, we should:
+1. POST  /api/proofs/init  →  { reqId }
+2. GET   /api/proofs/:reqId/qr  →  { qr: <base64 SVG>, inviteUrl }
+3. <img src="data:image/svg+xml;base64,${qr}" /> renders
+
+Currently step 2 returns 200 but qr is empty (or the call 404s).
+Let’s trace & fix.
+
+1️⃣  Verify backend proof flow
+-----------------------------
+```bash
+# a) init proof
+curl -s -XPOST http://localhost:5000/api/proofs/init \
+     -H "Content-Type: application/json" \
+     -d '{"formId":12}' | jq
+# expect {"reqId":"123-abc"}
+# b) get qr
+curl -s http://localhost:5000/api/proofs/123-abc/qr | jq
+# expect {"qr":"PHN2ZyB4bWxucz0...","inviteUrl":"didcomm..."}
+If qr is undefined or empty, log inside apps/api/routes/proofs.ts
+
+ts
+Copy
+Edit
+console.log('[qr-route] cache hit?', cache.has(req.params.id));
+console.log('[qr-route] calling orbit.prepareUrl for', req.params.id);
+2️⃣ Debug VerifierClient.prepareUrl
+File: packages/external/orbit/VerifierClient.ts
+
+ts
+Copy
+Edit
+async prepareUrl(reqId: string) {
+  console.log('[VerifierClient] prepareUrl', reqId, this.base, this.lobId);
+  const res = await this.client.post('verifier/v1/proof-requests/prepare-url', {
+    json: { requestId: reqId, connectionType: 'DIDCOMM' },
+    headers: this.authHeaders
+  }).json<PrepareUrlResponse>();
+  return res;  // { inviteUrl, qrCode }  per Orbit docs
+}
+Ensure endpoint path matches the documentation you added:
+POST /verifier/v1/proof-requests/prepare-url
+
+Orbit returns qrCodeBase64 (without data: prefix) — map it to qr:
+
+ts
+Copy
+Edit
+return { qr: res.qrCodeBase64, inviteUrl: res.inviteUrl };
+3️⃣ Environment variables
+Apps/api .env must include:
+
+ini
+Copy
+Edit
+ORBIT_VERIFIER_BASE_URL=https://testapi-verifier.nborbit.ca
+ORBIT_LOB_ID=a03f92ac-5ce7-4037-b8b5-79ff821b0878
+ORBIT_API_KEY=MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et
+and src/config.ts should expose them as
+
+ts
+Copy
+Edit
+export const orbit = {
+  base: process.env.ORBIT_VERIFIER_BASE_URL!,
+  lobId: process.env.ORBIT_LOB_ID!,
+  apiKey: process.env.ORBIT_API_KEY!
+}
+Add console.log('[env]', orbit) on server start to confirm values.
+
+4️⃣ Front-end fetchQR
+File: apps/web/src/pages/FormLaunchPage.tsx
+
+ts
+Copy
+Edit
+const { data: qrData } = useQuery(['qr', reqId], () =>
+  api.get(`/proofs/${reqId}/qr`).then(r => r.data),
+  { enabled: !!reqId }
+);
+Ensure qrData.qr exists before rendering:
+
+tsx
+Copy
+Edit
+{qrData?.qr
+   ? <img src={`data:image/svg+xml;base64,${qrData.qr}`} alt="QR" />
+   : <Spinner />}
+Remove any hardcoded mock SVG.
+
+5️⃣ Test end-to-end
+pnpm --filter apps/api dev (watch logs for “[VerifierClient] prepareUrl ok”)
+
+Launch form → QR shows
+
+Scan with BC Wallet: invite opens, proof request appears.
+
+🛠 Please implement the above logs + fixes, restart both servers, and verify the QR renders. Remove console.logs after success, but keep the env validation log (once) on server start.

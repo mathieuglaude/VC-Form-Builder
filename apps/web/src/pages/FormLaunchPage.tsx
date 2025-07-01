@@ -77,12 +77,15 @@ function FormLaunchPage() {
   const { data: qrData, isLoading: qrLoading, error: qrError } = useQuery<QRCodeData>({
     queryKey: ['/api/proofs', proofRequestId, 'qr'],
     queryFn: async () => {
+      console.log('FormLaunchPage: Fetching QR for proofRequestId:', proofRequestId);
       const response = await fetch(`/api/proofs/${proofRequestId}/qr`);
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to generate QR code');
       }
-      return response.json();
+      const data = await response.json();
+      console.log('FormLaunchPage: QR data received:', data);
+      return data;
     },
     enabled: !!proofRequestId,
     staleTime: 5 * 60 * 1000, // 5 minutes to match backend cache TTL

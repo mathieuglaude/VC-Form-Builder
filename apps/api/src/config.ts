@@ -51,3 +51,18 @@ const envSchema = z.object({
 });
 
 export const env = envSchema.parse(process.env);
+
+// Export orbit configuration for the VerifierClient
+export const orbit = {
+  base: env.ORBIT_VERIFIER_BASE_URL,
+  lobId: env.ORBIT_LOB_ID,
+  apiKey: env.ORBIT_API_KEY
+};
+
+// Log environment validation on startup
+console.log('[env] Environment configuration loaded:', {
+  port: env.PORT,
+  orbitBase: env.ORBIT_VERIFIER_BASE_URL,
+  orbitLobId: env.ORBIT_LOB_ID,
+  hasApiKey: !!env.ORBIT_API_KEY
+});

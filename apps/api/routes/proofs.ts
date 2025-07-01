@@ -147,6 +147,7 @@ const TTL = 5 * 60 * 1000; // 5 minutes
 router.get('/:id/qr', async (req, res) => {
   try {
     const { id } = req.params;
+    console.log('[qr-route] cache hit?', cache.has(id));
     
     // Check cache first
     const cached = cache.get(id);
@@ -156,8 +157,9 @@ router.get('/:id/qr', async (req, res) => {
     }
 
     // Call Orbit to prepare URL and get QR code
-    console.log(`Generating QR for proof request: ${id}`);
+    console.log('[qr-route] calling orbit.prepareUrl for', id);
     const qr = await verifier.prepareUrl(id);
+    console.log('[qr-route] orbit response:', qr);
     
     // Cache the result
     cache.set(id, { ...qr, ts: Date.now() });

@@ -47,10 +47,14 @@ export class VerifierClient {
     return this.api.post('verifier/v1/proof-requests', { json: def }).json<DefineProofResponse>();
   }
 
-  async prepareUrl(id: string): Promise<{ qrSvg: string; inviteUrl: string }> {
-    console.log(`VerifierClient: POST ${this.api.prefixUrl}verifier/v1/proof-requests/${id}/prepare-url`);
+  async prepareUrl(reqId: string): Promise<{ qrSvg: string; inviteUrl: string }> {
+    console.log('[VerifierClient] prepareUrl', reqId, this.base, this.lobId);
+    const res = await this.api.post('verifier/v1/proof-requests/prepare-url', {
+      json: { requestId: reqId, connectionType: 'DIDCOMM' },
+    }).json<{ inviteUrl: string; qrCodeBase64: string }>();
     
-    return this.api.post(`verifier/v1/proof-requests/${id}/prepare-url`).json<{ qrSvg: string; inviteUrl: string }>();
+    // Map Orbit response to our format
+    return { qrSvg: res.qrCodeBase64, inviteUrl: res.inviteUrl };
   }
 
   async status(id: string): Promise<{ status: string; attributes?: Record<string, string> }> {
