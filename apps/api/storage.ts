@@ -491,6 +491,35 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Helper function to calculate if a form has verifiable credentials
+  private calculateHasVerifiableCredentials(formConfig: any): boolean {
+    try {
+      const formSchema = formConfig.formSchema;
+      const metadata = formConfig.metadata;
+      
+      // Check form schema components for verified data sources
+      if (formSchema?.components) {
+        const hasVerifiedInComponents = formSchema.components.some((comp: any) => 
+          comp.properties?.dataSource === 'verified'
+        );
+        if (hasVerifiedInComponents) return true;
+      }
+      
+      // Check metadata fields for verified types
+      if (metadata?.fields) {
+        const hasVerifiedInMetadata = Object.values(metadata.fields).some((field: any) => 
+          field?.type === 'verified' || field?.dataSource === 'verified'
+        );
+        if (hasVerifiedInMetadata) return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Error calculating hasVerifiableCredentials:', error);
+      return false;
+    }
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;
@@ -539,11 +568,15 @@ export class DatabaseStorage implements IStorage {
       });
     }
     
-    // Add proofDef to the config
+    // Calculate hasVerifiableCredentials
+    const hasVerifiableCredentials = this.calculateHasVerifiableCredentials(config);
+    
+    // Add proofDef and hasVerifiableCredentials to the config
     return { 
       ...config, 
       proofDef: Object.keys(proofDef).length > 0 ? proofDef : null,
-      proofDefId: null 
+      proofDefId: null,
+      hasVerifiableCredentials
     } as FormConfig;
   }
 
@@ -644,7 +677,12 @@ export class DatabaseStorage implements IStorage {
   async listFormConfigs(): Promise<FormConfig[]> {
     try {
       const results = await db.select().from(formConfigs).orderBy(desc(formConfigs.updatedAt));
-      return results;
+      
+      // Add hasVerifiableCredentials to each form
+      return results.map(config => ({
+        ...config,
+        hasVerifiableCredentials: this.calculateHasVerifiableCredentials(config)
+      }));
     } catch (error) {
       console.error('Database error in listFormConfigs:', error);
       throw error;

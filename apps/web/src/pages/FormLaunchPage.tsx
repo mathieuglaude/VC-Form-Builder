@@ -91,7 +91,15 @@ function FormLaunchPage() {
 
   // Auto-initialize proof request when form loads and has VC requirements
   useEffect(() => {
+    console.log('FormLaunchPage: Effect triggered', { 
+      hasVerifiableCredentials: form?.hasVerifiableCredentials, 
+      proofRequestId, 
+      isPending: initProofMutation.isPending,
+      formId: form?.id
+    });
+    
     if (form?.hasVerifiableCredentials && !proofRequestId && !initProofMutation.isPending) {
+      console.log('FormLaunchPage: Initializing proof request for form', form.id);
       initProofMutation.mutate(form.id);
     }
   }, [form, proofRequestId, initProofMutation]);

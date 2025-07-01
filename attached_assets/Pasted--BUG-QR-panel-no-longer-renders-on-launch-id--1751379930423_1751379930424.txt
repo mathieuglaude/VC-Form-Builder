@@ -1,0 +1,87 @@
+🐞  BUG: QR panel no longer renders on /launch/:id
+=================================================
+
+Symptom
+-------
+• All three entry points (Preview, Launch from builder, Public URL) work.  
+• For forms *with* VC fields, the **right-hand “Scan with BC Wallet” card is now blank** – no QR, no buttons.  
+  (It worked before Step 2 of the Orbit integration.)
+
+What to investigate
+-------------------
+1. **FormLaunchPage**
+   File: `apps/web/src/pages/FormLaunchPage.tsx`
+
+   * Verify the state logic that decides `showVerificationCard`.
+     ```ts
+     const { data: proofInit } = useMutation(initProof, ...)
+     const { data: qrData }   = useQuery(
+       ['qr', proofInit?.reqId],
+       () => fetchQR(proofInit.reqId),
+       { enabled: !!proofInit?.reqId }
+     )
+     ```
+   * Console-log `proofInit` and `qrData`. Currently one of them is `undefined`, preventing the JSX from rendering.
+
+2. **Backend: /api/proofs/init**
+   File: `apps/api/routes/proofs.ts`
+   * Confirm it still returns `{ reqId }` for *published* forms (slug route).
+   * If `form.isPublished` path was added recently, make sure that branch still calls `initProofRequest()`.
+
+3. **Backend: /api/proofs/:id/qr**
+   * Hit it manually:
+     ```
+     curl -H "Accept: application/json" http://localhost:5000/api/proofs/123/qr
+     ```
+     You should get `{ qr: <base64|svg>, inviteUrl }`.
+     If it 404s, check the caching map key (was based on `reqId`).
+
+4. **Environment variables**
+   Step 2 added `ORBIT_VERIFIER_BASE_URL`, `ORBIT_LOB_ID`, `ORBIT_API_KEY`.  
+   Ensure those are present in **apps/api/.env** *and* loaded by `src/config.ts`.
+
+Fix plan
+--------
+A. **Guard-render & Error UI**
+
+   ```tsx
+   if (isVCForm && loadingProof) return <SkeletonCard />;        // nice placeholder
+   if (errorProof || errorQR)   return <ErrorCard msg="Failed to start verification." />;
+B. Ensure qrData is displayed
+
+tsx
+Copy
+Edit
+{isVCForm && qrData && (
+  <div className="flex flex-col items-center gap-4">
+    <img alt="QR Code for credential verification"
+         src={`data:image/svg+xml;base64,${qrData.qr}`} />
+    <Button onClick={() => window.open(qrData.inviteUrl, '_blank')}>
+      Open in Wallet
+    </Button>
+  </div>
+)}
+C. API fixes
+
+In init route, do not require isPublished (builder launch should still work).
+Instead:
+
+ts
+Copy
+Edit
+const isVCForm = form.components.some(c => c.properties?.vcMapping);
+if (!isVCForm) return res.status(400).json({ error: 'No VC fields' });
+In qr route, return res.json({ qr, inviteUrl }), not { data: { … } }, so frontend stays compatible.
+
+D. Retest end-to-end
+
+npm run dev → zero TS errors.
+
+Launch a VC form: /launch/12
+• Expect spinner → QR → Open in Wallet.
+
+Non-VC form skips QR panel.
+
+Public slug /f/kyc-test shows same behaviour.
+
+Please implement A-D, add minimal console logs (remove after success), and commit.```
