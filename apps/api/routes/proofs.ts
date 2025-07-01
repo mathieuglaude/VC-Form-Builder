@@ -30,7 +30,7 @@ router.post('/proofs/init', async (req, res) => {
 
     // Real Orbit integration - create proof request
     try {
-      const proofResponse = await fetch(`${orbit.baseUrl}/verifier/v1/proof-requests`, {
+      const proofResponse = await fetch(`${orbit.baseUrl}/v1/proof-requests`, {
         method: 'POST',
         headers: {
           'apiKey': orbit.apiKey,
@@ -51,11 +51,14 @@ router.post('/proofs/init', async (req, res) => {
         })
       });
 
+      const responseText = await proofResponse.text();
+      console.log('[ORBIT-DEBUG] status', proofResponse.status, responseText);
+
       if (!proofResponse.ok) {
         throw new Error(`Orbit proof request failed: ${proofResponse.status} ${proofResponse.statusText}`);
       }
 
-      const proofData = await proofResponse.json();
+      const proofData = JSON.parse(responseText);
       const orbitProofId = proofData.id || proofData.proofId || proofData.txId;
       
       console.log('[INIT-DEBUG] Orbit proof id', orbitProofId);
