@@ -81,8 +81,8 @@ export default function PublicFormPage() {
     );
 
   const handleStartForm = () => {
-    // Navigate to the form launch page (which handles the verification flow)
-    navigate(`/launch/${form.id}`);
+    // Navigate directly to the form filling page for a streamlined experience
+    navigate(`/form/${form.id}`);
   };
 
   return (
