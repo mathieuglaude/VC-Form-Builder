@@ -47,7 +47,8 @@ const envSchema = z.object({
   ORBIT_VERIFIER_BASE_URL: z.string().url().default('https://testapi-verifier.nborbit.ca'),
   ORBIT_LOB_ID: z.string(),
   VERIFIER_BASE: z.string().url().default('https://testapi-verifier.nborbit.ca'),
-  VERIFIER_API_KEY: z.string().default('demo-key')
+  VERIFIER_API_KEY: z.string().default('demo-key'),
+  ORBIT_USE_REAL: z.string().default('false')
 });
 
 export const env = envSchema.parse(process.env);
@@ -56,7 +57,8 @@ export const env = envSchema.parse(process.env);
 export const orbit = {
   base: env.ORBIT_VERIFIER_BASE_URL,
   lobId: env.ORBIT_LOB_ID,
-  apiKey: env.ORBIT_API_KEY
+  apiKey: env.ORBIT_API_KEY,
+  useRealOrbit: env.ORBIT_USE_REAL === 'true'
 };
 
 // Log environment validation on startup
