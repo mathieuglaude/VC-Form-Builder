@@ -132,13 +132,13 @@ export default function PublicFormPage() {
     );
   }
 
-  // Calculate hasVC (safe even if form is undefined)
-  const hasVC = form ? formHasVCFields(form) : false;
+  // TEMPORARILY DISABLE VC LOGIC FOR TESTING
+  const hasVC = false; // form ? formHasVCFields(form) : false;
 
   // Initialize proof request using the hook - MUST be called unconditionally at top level
   const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
     publicSlug: slug,
-    enabled: !!form && hasVC
+    enabled: false // !!form && hasVC
   });
 
   // Now safe to do conditional returns after all hooks

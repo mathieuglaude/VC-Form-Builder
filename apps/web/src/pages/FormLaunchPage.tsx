@@ -96,13 +96,13 @@ export default function FormLaunchPage() {
     }
   });
 
-  // Calculate VC requirement
-  const hasVC = formHasVCFields(form);
+  // TEMPORARILY DISABLE VC LOGIC FOR TESTING
+  const hasVC = false; // formHasVCFields(form);
 
   // Initialize proof request hook - MUST be at top level
   const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
     formId: id,
-    enabled: !!form && hasVC
+    enabled: false // !!form && hasVC
   });
 
   const handleFormSubmit = (formData: Record<string, any>, verifiedFields: Record<string, any>) => {
