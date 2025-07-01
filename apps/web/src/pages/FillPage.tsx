@@ -27,6 +27,20 @@ export default function FillPage() {
   const locationState = (location as any)?.state || {};
   const verifiedAttrs = locationState?.verifiedAttrs || {};
 
+  // Fetch form configuration
+  const { data: formConfig, isLoading } = useQuery({
+    queryKey: [`/api/forms/${id}`],
+    queryFn: async () => {
+      console.log('FillPage: Fetching form config for ID:', id);
+      const response = await fetch(`/api/forms/${id}`);
+      if (!response.ok) throw new Error('Form not found');
+      const data = await response.json();
+      console.log('FillPage: Form config loaded:', data);
+      return data;
+    },
+    enabled: !!id
+  });
+
   // Auto-populate form with verified attributes when form config is loaded
   useEffect(() => {
     if (formConfig && Object.keys(verifiedAttrs).length > 0) {
@@ -48,20 +62,6 @@ export default function FillPage() {
       setVerifiedFields(verifiedAttrs);
     }
   }, [formConfig, verifiedAttrs]);
-
-  // Fetch form configuration
-  const { data: formConfig, isLoading } = useQuery({
-    queryKey: [`/api/forms/${id}`],
-    queryFn: async () => {
-      console.log('FillPage: Fetching form config for ID:', id);
-      const response = await fetch(`/api/forms/${id}`);
-      if (!response.ok) throw new Error('Form not found');
-      const data = await response.json();
-      console.log('FillPage: Form config loaded:', data);
-      return data;
-    },
-    enabled: !!id
-  });
 
   // Submit form mutation
   const submitFormMutation = useMutation({
@@ -123,8 +123,7 @@ export default function FillPage() {
     return formData[fieldKey] || '';
   };
 
-  const hasVerifiedFields = () => {
-    const config = formConfig as any;
+  const hasVerifiedFields = (config: any) => {
     const metadata = config?.metadata;
     const formSchema = config?.formSchema;
     
@@ -309,7 +308,7 @@ export default function FillPage() {
             <h1 className="text-xl font-medium text-gray-900">
               {config?.title || config?.name || "Form Submission"}
             </h1>
-            {hasVerifiedFields() && (
+            {hasVerifiedFields(config) && (
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"

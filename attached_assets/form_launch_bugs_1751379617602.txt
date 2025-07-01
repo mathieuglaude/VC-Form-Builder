@@ -1,0 +1,98 @@
+(1) For launching via the homepage: "WebSocket connection to 'wss://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/?token=C-oqhTazYTXi' failed: 
+setupWebSocket	@	client:536
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=C-oqhTazYTXi' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:14032 The above error occurred in the <FillPage> component:
+
+    at FillPage (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/src/pages/FillPage.tsx:16:18)
+    at Route (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:206:16)
+    at Switch (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:262:17)
+    at Router
+    at main
+    at div
+    at App
+    at QueryClientProvider (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=999e7365:2933:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UIJ6ITMY.js?v=b4b88a8b:19413 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+﻿
+
+", (2) for launching via the public url: "client:536 WebSocket connection to 'wss://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/?token=C-oqhTazYTXi' failed: 
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=C-oqhTazYTXi' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:14032 The above error occurred in the <FillPage> component:
+
+    at FillPage (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/src/pages/FillPage.tsx:16:18)
+    at Route (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:206:16)
+    at Switch (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:262:17)
+    at Router
+    at main
+    at div
+    at App
+    at QueryClientProvider (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=999e7365:2933:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UIJ6ITMY.js?v=b4b88a8b:9129 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+﻿
+
+", and (3) for launching via the preview: "client:536 WebSocket connection to 'wss://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/?token=C-oqhTazYTXi' failed: 
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=C-oqhTazYTXi' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+2
+FillPage.tsx:21 FillPage: Rendering with ID: 12
+FillPage.tsx:50 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+chunk-UIJ6ITMY.js?v=b4b88a8b:14032 The above error occurred in the <FillPage> component:
+
+    at FillPage (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/src/pages/FillPage.tsx:16:18)
+    at Route (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:206:16)
+    at Switch (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=c444e515:262:17)
+    at Router
+    at main
+    at div
+    at App
+    at QueryClientProvider (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=999e7365:2933:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UIJ6ITMY.js?v=b4b88a8b:19413 Uncaught ReferenceError: Cannot access 'formConfig' before initialization
+    at FillPage (FillPage.tsx:50:7)
+﻿
+
+"
