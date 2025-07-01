@@ -292,6 +292,11 @@ export default function BuilderPage() {
   // Fetch existing form if editing
   const { data: formConfig, isLoading } = useQuery({
     queryKey: [`/api/forms/${id}`],
+    queryFn: async () => {
+      const response = await fetch(`/api/forms/${id}`);
+      if (!response.ok) throw new Error('Form not found');
+      return response.json();
+    },
     enabled: Boolean(isEditing),
     retry: false
   });
