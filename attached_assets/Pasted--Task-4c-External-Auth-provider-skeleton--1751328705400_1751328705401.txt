@@ -1,0 +1,133 @@
+**Task 4c – External Auth provider skeleton**
+
+----------------------------------------------------------------
+## 0 · Add env vars to shared schema
+
+```ts
+// packages/shared/env.ts  (where your zod schema lives)
+const envSchema = z.object({
+  /* …existing… */
+  AUTH_BASE: z.string().url().optional(),      // e.g. https://auth.myorg.com
+  AUTH_API_KEY: z.string().optional()          // if your IdP uses x-api-key
+});
+1 · Auth client class
+packages/external/auth/AuthClient.ts
+
+ts
+Copy
+Edit
+import { RestClient } from '@external/rest-client';
+
+export class AuthClient extends RestClient {
+  /** POST /login  -> { token } */
+  login(email: string, password: string) {
+    return this.sdk
+      .post('login', { json: { email, password } })
+      .json<{ token: string }>();
+  }
+
+  /** GET /me -> { id, email, role } */
+  profile() {
+    return this.sdk
+      .get('me')
+      .json<{ id: string; email: string; role: string }>();
+  }
+
+  /** POST /logout */
+  logout() {
+    return this.sdk.post('logout').json<void>();
+  }
+}
+packages/external/auth/index.ts
+
+ts
+Copy
+Edit
+import { env } from '@shared/env';
+import { AuthClient } from './AuthClient';
+
+export const auth = new AuthClient(
+  env.AUTH_BASE ?? 'https://example-idp.local',
+  env.AUTH_API_KEY
+);
+(tsconfig already maps @external/* to packages/external from 4a).
+
+2 · Optional React helper
+packages/external/auth/useAuth.ts
+
+tsx
+Copy
+Edit
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { auth } from '.';
+
+export function useProfile() {
+  return useQuery(['profile'], () => auth.profile(), { staleTime: 5 * 60_000 });
+}
+
+export function useLogin() {
+  const qc = useQueryClient();
+  return useMutation(
+    ({ email, password }: { email: string; password: string }) =>
+      auth.login(email, password),
+    { onSuccess: () => qc.invalidateQueries(['profile']) }
+  );
+}
+
+export function useLogout() {
+  const qc = useQueryClient();
+  return useMutation(() => auth.logout(), {
+    onSuccess: () => qc.invalidateQueries(['profile'])
+  });
+}
+(If you haven’t added React Query yet, keep this file; you’ll enable it in 4d.)
+
+3 · Wire into existing login page (optional)
+Replace direct fetch('/api/auth/login') with:
+
+tsx
+Copy
+Edit
+const login = useLogin();
+login.mutate({ email, password });
+and profile loads with:
+
+tsx
+Copy
+Edit
+const { data: me } = useProfile();
+4 · Compile guard
+bash
+Copy
+Edit
+pnpm -r exec eslint --fix .
+pnpm --filter api dev     # must start 0 TS errors
+pnpm --filter web dev     # UI still loads
+No runtime change expected yet (endpoints may 404 until you point
+AUTH_BASE to a real IdP), but code compiles and auth.login() is callable.
+
+Ghostwriter actions
+• Add env vars, client class, index barrel, optional React hook.
+• Update tsconfig paths if needed.
+• Ensure both servers compile.
+• Commit message: “feat: external AuthClient placeholder”.
+
+yaml
+Copy
+Edit
+
+---
+
+After this, you’ll have:
+
+packages/external/
+├─ rest-client.ts
+├─ orbit/
+├─ formio/
+└─ auth/ ← added
+
+cpp
+Copy
+Edit
+
+and any future service (mailer, analytics, etc.) fits the same pattern.

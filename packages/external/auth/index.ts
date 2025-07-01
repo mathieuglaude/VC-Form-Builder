@@ -1,5 +1,9 @@
+import { env } from '../../shared/env';
 import { AuthClient } from './AuthClient';
 
-// Create a default instance - could use env.AUTH_BASE when needed
-export const auth = new AuthClient('');
+export const auth = new AuthClient(
+  env.AUTH_BASE ?? 'https://example-idp.local',
+  env.AUTH_API_KEY
+);
+
 export { AuthClient };
