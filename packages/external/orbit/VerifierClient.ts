@@ -73,7 +73,19 @@ export class VerifierClient {
   // Step 1: Create proof definition (once per form version)
   async createProofDefinition(definition: ProofDefinition): Promise<ProofDefinitionResponse> {
     console.log('[VerifierClient] Creating proof definition:', definition.name);
-    return this.api.post('verifier/v1/proof-definitions', { json: definition }).json<ProofDefinitionResponse>();
+    try {
+      return await this.api.post('verifier/v1/proof-definitions', { json: definition }).json<ProofDefinitionResponse>();
+    } catch (error: any) {
+      console.error('[VerifierClient] Proof definition creation failed:', error.message);
+      console.error('[VerifierClient] Request details:', {
+        url: error.request?.url,
+        status: error.response?.status,
+        statusText: error.response?.statusText
+      });
+      
+      // Re-throw with more specific error context
+      throw new Error(`Orbit API endpoint not available: ${error.response?.status} ${error.response?.statusText}. Please verify the API endpoint structure.`);
+    }
   }
 
   // Check if proof definition exists

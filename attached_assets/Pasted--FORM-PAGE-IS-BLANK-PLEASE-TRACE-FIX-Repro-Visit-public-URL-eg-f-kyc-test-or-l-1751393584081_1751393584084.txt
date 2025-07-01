@@ -1,0 +1,48 @@
+🚨  **FORM PAGE IS BLANK – PLEASE TRACE & FIX**
+
+Repro
+• Visit public URL  (eg:  /f/kyc-test  or  /launch/12 )
+• Browser shows only the two header cards (“KYC TEST” + “Credential Verification”)
+  – no form fields
+  – no QR code
+
+Required outcome
+1. Published form loads its schema and renders fields in left panel.
+2. Proof-init call fires → QR code shows (or explicit error if Orbit API fails).
+
+Steps
+1. **Open browser devtools in the Vite panel**
+   – Console errors?
+   – Network requests to:
+     •  GET /api/pub-forms/kyc-test   (should return 200 + JSON)
+     •  POST /api/proofs/init         (should return {reqId})
+     •  GET /api/proofs/{id}/qr       (should return SVG/png)
+   Copy any failing URL + status into the log.
+
+2. **Look at FormLaunchPage logic**
+   apps/web/src/pages/FormLaunchPage.tsx  
+   •  verify `useQuery('form', …)` uses `/api/pub-forms/${slug}` (not old routes).  
+   •  ensure it waits for isSuccess before `renderForm()`.
+
+3. **Check server routes**
+   apps/api/routes/pubForms.ts  (or proofs.ts)  
+   •  GET /api/pub-forms/:slug should **not** require auth and should return full formSchema.  
+   •  If it returns 404/500 confirm storage.checkPublicSlugAvailability actually finds unpublished vs published.
+
+4. **Orbit proof init**
+   apps/api/routes/proofs.ts POST /init  
+   •  Log payload sent to Orbit – must include proofDefinitionId etc.  
+   •  If Orbit rejects, log `res.body` and return 502 to front-end (don’t swallow error).
+
+5. **Quick fixes to try**
+   •  If FormLaunchPage is still pointing at `/api/forms/${id}` change to `/api/pub-forms/${slug}`.  
+   •  Add a safe-guard: show “Loading form…” spinner when `isLoading` instead of silent empty state.
+
+6. **Confirm**
+   •  After changes: visiting /f/kyc-test shows form fields.  
+   •  “Scan with Wallet” panel has working QR SVG and “Open in Wallet” link.
+
+Document
+   – Add *one* bullet to replit.md: “Fixed blank launch page – corrected route + Orbit error handling”.
+
+When done reply **`✅ Form + QR render again`**.

@@ -41,11 +41,15 @@ function FormLaunchPage() {
     queryFn: async () => {
       const response = await fetch(`/api/forms/${id}`);
       if (!response.ok) {
-        throw new Error('Form not found');
+        if (response.status === 404) {
+          throw new Error('Form not found');
+        }
+        throw new Error('Failed to load form');
       }
       return response.json();
     },
-    enabled: !!id
+    enabled: !!id,
+    retry: false
   });
 
   // Initialize proof request mutation
