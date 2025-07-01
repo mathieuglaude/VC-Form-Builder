@@ -13,8 +13,10 @@ export const mockProof = {
 };
 
 export function useProofRequest({ formId, publicSlug, enabled = true }: UseProofRequestOpts) {
-  const inPreview = new URLSearchParams(location.search).get('preview') === '1';
-  const shouldMock = inPreview; // only preview => mock
+  const searchParams = new URLSearchParams(location.search);
+  const inPreview = searchParams.get('preview') === '1';
+  const forceReal = !!searchParams.get('real');
+  const shouldMock = inPreview && !forceReal; // preview => mock, unless real=1
 
   if (shouldMock) {
     console.log('[useProofRequest] PREVIEW mock proof');
@@ -24,6 +26,10 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
       isLoading: false,
       error: null
     };
+  }
+
+  if (inPreview && forceReal) {
+    console.log('[useProofRequest] real backend call (preview + real=1)');
   }
 
   // Real API call for non-preview mode
