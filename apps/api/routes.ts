@@ -422,8 +422,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const templates = await storage.listCredentialTemplates();
       
+      // Transform overlay structure to the format expected by frontend
+      const withBranding = templates.map(tpl => {
+        const branding = tpl.overlays.find(o => o.type.includes('branding'))?.data ?? {};
+        const meta = tpl.overlays.find(o => o.type.includes('meta'))?.data ?? {};
+        
+        return {
+          ...tpl,
+          branding,
+          meta,
+          // Ensure issuer name is human readable
+          issuer: meta.issuer || meta.issuer_name || 'Unknown Issuer',
+          issuerUrl: meta.issuer_url || meta.issuerUrl,
+          description: meta.description || `${tpl.label} credential`,
+          // Extract attributes from capture_base overlay if available
+          attributes: (() => {
+            const captureBase = tpl.overlays.find(o => o.type.includes('capture_base'));
+            if (captureBase?.data?.attributes) {
+              return Object.entries(captureBase.data.attributes).map(([name, config]: [string, any]) => ({
+                name,
+                description: config.description || name
+              }));
+            }
+            return [];
+          })()
+        };
+      });
+      
       // Sort alphabetically by label for consistent ordering
-      const sortedTemplates = templates.sort((a, b) => a.label.localeCompare(b.label));
+      const sortedTemplates = withBranding
+        .filter(t => t.visible !== false)
+        .sort((a, b) => a.label.localeCompare(b.label));
       
       res.json(sortedTemplates);
     } catch (error) {

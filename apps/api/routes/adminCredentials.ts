@@ -66,12 +66,29 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+// Import OCA bundle from URL
+router.post('/import', async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!url) {
+      return res.status(400).json({ error: 'OCA bundle URL is required' });
+    }
+
+    const { importOCABundle } = await import('../../../packages/external/oca/importBundle.js');
+    const template = await importOCABundle(url);
+    res.status(201).json(template);
+  } catch (error) {
+    console.error('Error importing OCA bundle:', error);
+    res.status(400).json({ error: 'Failed to import OCA bundle' });
+  }
+});
+
 // Health check endpoint to restore missing credentials
 router.post('/health', async (req, res) => {
   try {
     // Re-run credential seeding to restore any missing templates
-    const { ensureLawyerCred } = await import('../ensureLawyerCred.js');
-    await ensureLawyerCred();
+    const seedCredentialBundles = (await import('../boot/seedCredentialBundles.js')).default;
+    await seedCredentialBundles();
     res.status(204).send();
   } catch (error) {
     console.error('Error running health check:', error);

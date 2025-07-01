@@ -59,6 +59,12 @@ export const credentialDefinitions = pgTable("credential_definitions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export interface OCAOverlay {
+  type: string;
+  data: any;
+}
+
+
 export const credentialTemplates = pgTable("credential_templates", {
   id: serial("id").primaryKey(),
   label: text("label").notNull().unique(),
@@ -66,25 +72,8 @@ export const credentialTemplates = pgTable("credential_templates", {
   schemaId: text("schema_id").notNull(),
   credDefId: text("cred_def_id").notNull(),
   issuerDid: text("issuer_did").notNull(),
-  schemaUrl: text("schema_url"),
-  attributes: jsonb("attributes").$type<AttributeDef[]>().notNull(),
-  isPredefined: boolean("is_predefined").notNull().default(false),
-  ecosystem: text("ecosystem"),
-  interopProfile: text("interop_profile"),
-  compatibleWallets: jsonb("compatible_wallets").$type<string[]>().notNull(),
-  walletRestricted: boolean("wallet_restricted").notNull().default(false),
-  branding: jsonb("branding").$type<{
-    logoUrl?: string;
-    backgroundImage?: string;
-    primaryColor?: string;
-    secondaryColor?: string;
-    layout?: 'banner-bottom' | 'logo-left' | 'default';
-  }>(),
-  metaOverlay: jsonb("meta_overlay").$type<{
-    issuer?: string;
-    issuerUrl?: string;
-    description?: string;
-  }>(),
+  overlays: jsonb("overlays").$type<OCAOverlay[]>().notNull().default([]),
+  visible: boolean("visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
