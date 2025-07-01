@@ -1,0 +1,81 @@
+**Bug – clicking the launch icon opens /form-not-found**
+
+Symptoms  
+• Home-page card → external-link icon opens new tab  
+• URL renders “Form Not Found” blank page
+
+Goal  
+• Identify the route/link mismatch  
+• Ensure backend returns the form JSON and the front-end preview page
+  renders it.
+
+Steps
+----------------------------------------------------------------
+1. **Reproduce & log**  
+   ▸ In `apps/web/src/components/FormCard.tsx` (or similar)
+     - log the `href` that the external-link icon uses  
+   ▸ Confirm what path ends up in the new tab  
+     (likely `/forms/:id`, `/preview/:slug`, etc).
+
+2. **Match route on front-end router**  
+   ▸ Open `apps/web/src/router.tsx` (or `routes.tsx`).  
+   ▸ Ensure there is a `<Route path="/forms/:id" element={<PreviewPage/>} />`
+     (or whatever path the link uses).  
+   ▸ If missing, add it to the router.
+
+3. **Back-end API**  
+   ▸ In `apps/api/src/routes/forms.ts` locate the handler for
+     `GET /api/forms/:id`.  
+     • If it does NOT exist or returns 404, implement:
+       ```ts
+       r.get('/:id', async (req,res)=>{
+         const form = await FormConfig.findById(req.params.id);
+         if (!form) return res.status(404).json({error:'not found'});
+         res.json(form);
+       });
+       ```
+     • Export this route from the main router.
+
+4. **Preview page**  
+   ▸ `apps/web/src/pages/PreviewPage.tsx`
+     • Make sure it reads `const { id } = useParams();`
+     • Fetches `/api/forms/${id}` with React-Query (`useQuery`) and,
+       on success, renders the Formio renderer.
+
+5. **Card link helper**  
+   In the card component change:
+   ```tsx
+   const url = `${window.location.origin}/forms/${form.id}`;
+   <a href={url} target="_blank" rel="noopener" ...>
+(If slug is required, use form.slug.)
+
+Test sequence
+▸ pnpm --filter api dev – GET /api/forms/:id returns JSON 200
+▸ pnpm --filter web dev – click launch icon → new tab → form renders.
+
+Regression unit test (optional)
+Add Jest test in apps/api/tests/forms.e2e.ts that
+expect(200) on /api/forms/:id.
+
+Commit
+commit-msg: “fix: launch icon opens live form correctly”
+
+Ghostwriter instructions
+• Follow above steps, printing link & id in console where needed.
+• Don’t change other card actions.
+• Run eslint-fix, restart both dev servers, screenshot working form.
+
+yaml
+Copy
+Edit
+
+---
+
+Give the prompt to Replit; once it finishes, refresh your dashboard and click the launch icon again—each form should now open in its own tab with the full Formio renderer instead of the “Form Not Found” screen.
+
+
+
+
+
+
+Ask ChatGPT

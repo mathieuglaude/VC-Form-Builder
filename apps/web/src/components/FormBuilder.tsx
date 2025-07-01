@@ -67,6 +67,11 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
   // Fetch credential templates for wallet compatibility
   const { data: credentialTemplates = [] } = useQuery({
     queryKey: ['/api/cred-lib'],
+    queryFn: async () => {
+      const response = await fetch('/api/cred-lib');
+      if (!response.ok) throw new Error('Failed to fetch credentials');
+      return response.json();
+    }
   });
 
   // Calculate credential requirements based on form components

@@ -31,6 +31,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
 
   const { data: credentialTemplates } = useQuery({
     queryKey: ['/api/cred-lib'],
+    queryFn: async () => {
+      const response = await fetch('/api/cred-lib');
+      if (!response.ok) throw new Error('Failed to fetch credentials');
+      return response.json();
+    },
     enabled: isOpen
   });
 
