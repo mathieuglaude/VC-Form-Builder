@@ -88,7 +88,20 @@ function FormLaunchPage() {
       return data;
     },
     enabled: !!proofRequestId,
-    staleTime: 5 * 60 * 1000, // 5 minutes to match backend cache TTL
+  });
+
+  // Poll proof request status
+  const { data: statusData } = useQuery({
+    queryKey: ['/api/proofs', proofRequestId, 'status'],
+    queryFn: async () => {
+      const response = await fetch(`/api/proofs/${proofRequestId}/status`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch proof status');
+      }
+      return response.json();
+    },
+    enabled: !!proofRequestId && !verificationComplete,
+    refetchInterval: 4000, // Poll every 4 seconds
     refetchOnWindowFocus: false
   });
 
@@ -107,44 +120,21 @@ function FormLaunchPage() {
     }
   }, [form, proofRequestId, initProofMutation]);
 
-  // Listen for proof request status via Server-Sent Events
+  // Handle status changes from polling
   useEffect(() => {
-    if (!proofRequestId || verificationComplete) return;
+    if (!statusData || verificationComplete) return;
 
-    console.log(`Setting up SSE for proof request: ${proofRequestId}`);
-    const eventSource = new EventSource(`/api/proofs/${proofRequestId}/stream`);
-
-    eventSource.addEventListener('done', (event) => {
-      try {
-        const attributes = JSON.parse(event.data);
-        console.log('Proof verification completed with attributes:', attributes);
-        setVerifiedAttributes(attributes);
-        setVerificationComplete(true);
-        eventSource.close();
-      } catch (error) {
-        console.error('Failed to parse verified attributes:', error);
-      }
-    });
-
-    eventSource.addEventListener('status', (event) => {
-      try {
-        const { status } = JSON.parse(event.data);
-        console.log(`Proof request status: ${status}`);
-      } catch (error) {
-        console.error('Failed to parse status update:', error);
-      }
-    });
-
-    eventSource.addEventListener('error', (event) => {
-      console.error('SSE error:', event);
-      eventSource.close();
-    });
-
-    return () => {
-      console.log(`Cleaning up SSE for proof request: ${proofRequestId}`);
-      eventSource.close();
-    };
-  }, [proofRequestId, verificationComplete]);
+    console.log('Status data received:', statusData);
+    
+    if (statusData.status === 'presentation_verified') {
+      console.log('Proof verification completed with attributes:', statusData.verifiedAttributes);
+      setVerifiedAttributes(statusData.verifiedAttributes || {});
+      setVerificationComplete(true);
+    } else if (statusData.status === 'presentation_declined' || statusData.status === 'error') {
+      console.log('Proof verification failed or declined:', statusData.status);
+      // Handle error case - could add error state here
+    }
+  }, [statusData, verificationComplete]);
 
   // Loading state
   if (formLoading) {
@@ -164,7 +154,7 @@ function FormLaunchPage() {
       <div className="flex items-center justify-center min-h-screen">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle className="text-red-600">Form Not Found</CardTitle>
+            <CardTitle>Form Not Found</CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
@@ -236,148 +226,137 @@ function FormLaunchPage() {
           </CardHeader>
         </Card>
 
-        {/* Credential Verification Section */}
+        {/* Credential Verification */}
         {form.hasVerifiableCredentials && (
           <Card className="mb-6">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Shield className="h-5 w-5 text-blue-600" />
-                <span>Credential Verification Required</span>
+                <span>Credential Verification</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <p className="text-gray-600">
-                  This form requires verification of your digital credentials to auto-populate certain fields.
-                </p>
-
-                {initProofMutation.isPending && (
-                  <div className="flex items-center space-x-2 text-blue-600">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span>Initializing verification...</span>
+              {/* Verification Complete */}
+              {verificationComplete && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center space-x-2 mb-3">
+                    <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      Verification Complete ✓
+                    </Badge>
                   </div>
-                )}
-
-                {initProofMutation.error && (
-                  <Alert>
-                    <AlertDescription>
-                      Failed to initialize credential verification: {initProofMutation.error.message}
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                {proofRequestId && !verificationComplete && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                        Verification Ready
-                      </Badge>
-                      <span className="text-sm text-gray-500">
-                        Request ID: {proofRequestId}
-                      </span>
+                  
+                  <p className="text-sm text-green-700 mb-3">
+                    Your credentials have been successfully verified. The form has been pre-filled with your verified information.
+                  </p>
+                  
+                  {Object.keys(verifiedAttributes).length > 0 && (
+                    <div className="bg-white rounded border p-3 mb-3">
+                      <h4 className="font-medium text-sm mb-2">Verified Information:</h4>
+                      <ul className="text-sm space-y-1">
+                        {Object.entries(verifiedAttributes).map(([key, value]) => (
+                          <li key={key}>
+                            <strong>{key}:</strong> {value}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    
-                    <div className="space-y-3">
-                      <p className="text-sm text-gray-700">
-                        Scan the QR code with your wallet app or use the direct link below:
-                      </p>
-                      
-                      {/* QR Code Display */}
-                      <div className="flex justify-center">
-                        {qrLoading && (
-                          <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
-                            <div className="text-center">
-                              <Loader2 className="h-8 w-8 mx-auto text-blue-600 animate-spin mb-2" />
-                              <p className="text-sm text-gray-600">Generating QR...</p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {qrError && (
-                          <div className="w-48 h-48 bg-red-50 border-2 border-red-200 rounded-lg flex items-center justify-center">
-                            <div className="text-center">
-                              <QrCode className="h-12 w-12 mx-auto text-red-400 mb-2" />
-                              <p className="text-sm text-red-600">QR Generation Failed</p>
-                              <p className="text-xs text-red-500">
-                                {qrError.message || 'Unknown error'}
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        {qrData && (
-                          <div 
-                            className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center"
-                            dangerouslySetInnerHTML={{ __html: qrData.qrSvg }}
-                          />
-                        )}
-                      </div>
+                  )}
+                  
+                  <Button 
+                    onClick={handleProceedToForm}
+                    className="w-full"
+                  >
+                    Continue to Form
+                  </Button>
+                </div>
+              )}
 
-                      {/* Action Buttons */}
-                      <div className="flex space-x-3">
-                        <Button 
-                          className="flex-1"
-                          disabled={!qrData}
-                          asChild={!!qrData}
-                        >
-                          {qrData ? (
-                            <a
-                              href={qrData.inviteUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center justify-center"
-                            >
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Open in Wallet
-                            </a>
-                          ) : (
-                            <>
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              Open in Wallet
-                            </>
-                          )}
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          onClick={handleSkipVerification}
-                          className="flex-1"
-                        >
-                          Skip Verification
-                        </Button>
-                      </div>
-                    </div>
+              {/* QR Code for Verification */}
+              {proofRequestId && !verificationComplete && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      Verification Ready
+                    </Badge>
+                    <span className="text-sm text-gray-500">
+                      Request ID: {proofRequestId}
+                    </span>
                   </div>
-                )}
-
-                {verificationComplete && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                    <div className="flex items-center mb-3">
-                      <Shield className="h-5 w-5 text-green-600 mr-2" />
-                      <Badge variant="default" className="bg-green-100 text-green-800">
-                        ✅ Credentials Verified
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-sm text-green-700 mb-3">
-                      Your digital credentials have been successfully verified.
-                      {Object.keys(verifiedAttributes).length > 0 && (
-                        <span className="block mt-1 text-xs">
-                          Verified attributes: {Object.keys(verifiedAttributes).join(', ')}
-                        </span>
-                      )}
+                  
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-700">
+                      Scan the QR code with your wallet app or use the direct link below:
                     </p>
                     
-                    <Button 
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      onClick={() => navigate(`/form/${form.id}`, { 
-                        state: { verifiedAttrs: verifiedAttributes } 
-                      })}
-                    >
-                      Continue to Form
-                    </Button>
+                    {/* QR Code Display */}
+                    <div className="flex justify-center">
+                      {qrLoading && (
+                        <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                          <div className="text-center">
+                            <Loader2 className="h-8 w-8 mx-auto text-blue-600 animate-spin mb-2" />
+                            <p className="text-sm text-gray-600">Generating QR...</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {qrError && (
+                        <div className="w-48 h-48 bg-red-50 border-2 border-red-200 rounded-lg flex items-center justify-center">
+                          <div className="text-center">
+                            <QrCode className="h-12 w-12 mx-auto text-red-400 mb-2" />
+                            <p className="text-sm text-red-600">QR Generation Failed</p>
+                            <p className="text-xs text-red-500">
+                              {qrError.message || 'Unknown error'}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {qrData && (
+                        <div className="flex justify-center">
+                          <div 
+                            className="bg-white border-2 border-gray-300 rounded-lg p-4"
+                            dangerouslySetInnerHTML={{ __html: qrData.qrSvg }}
+                            style={{ width: 'fit-content', height: 'fit-content' }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex space-x-3">
+                      <Button 
+                        className="flex-1"
+                        disabled={!qrData}
+                        asChild={!!qrData}
+                      >
+                        {qrData ? (
+                          <a
+                            href={qrData.inviteUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center"
+                          >
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open in Wallet
+                          </a>
+                        ) : (
+                          <>
+                            <ExternalLink className="h-4 w-4 mr-2" />
+                            Open in Wallet
+                          </>
+                        )}
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        onClick={handleSkipVerification}
+                        className="flex-1"
+                      >
+                        Skip Verification
+                      </Button>
+                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

@@ -176,6 +176,18 @@ router.get('/:id/qr', async (req, res) => {
   }
 });
 
+// Get proof request status
+router.get('/:id/status', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const status = await verifier.status(id);
+    res.json(status);
+  } catch (error: any) {
+    console.error('Proof status error:', error);
+    res.status(502).json({ error: 'Failed to get proof status' });
+  }
+});
+
 // Server-Sent Events endpoint for real-time proof status monitoring
 router.get('/:id/stream', async (req, res) => {
   console.log(`Setting up SSE stream for proof request: ${req.params.id}`);

@@ -22,6 +22,11 @@ export interface DefineProofResponse {
   proofRequestId: string;
 }
 
+export interface ProofStatusResp {
+  status: 'request-sent' | 'request-received' | 'presentation_received' | 'presentation_verified' | 'presentation_declined' | 'error';
+  verifiedAttributes?: Record<string,string>;
+}
+
 export class VerifierClient {
   private api: typeof ky;
 
@@ -117,21 +122,8 @@ export const verifier = {
   status: async (id: string): Promise<{ status: string; attributes?: Record<string, string> }> => {
     console.log('Mock Orbit status called for proof request:', id);
     
-    // Simulate timing - after 10 seconds, return presentation_received with mock attributes
-    const proofAge = Date.now() - parseInt(id.split('_')[2] || '0');
-    
-    if (proofAge > 10000) { // 10 seconds
-      return {
-        status: 'presentation_received',
-        attributes: {
-          given_name: 'John',
-          surname: 'Doe',
-          email: 'john.doe@example.com',
-          phone: '+1-555-0123'
-        }
-      };
-    }
-    
+    // For testing purposes, always return 'waiting' status unless we implement real Orbit integration
+    // This prevents the mock timer from auto-completing verification
     return {
       status: 'waiting'
     };

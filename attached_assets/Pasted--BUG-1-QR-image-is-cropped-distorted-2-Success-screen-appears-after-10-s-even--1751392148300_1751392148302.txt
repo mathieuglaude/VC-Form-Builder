@@ -1,0 +1,133 @@
+🐞  BUG:  (1) QR image is cropped / distorted
+           (2) Success screen appears after 10 s even when Orbit never verified
+
+We need to:
+
+ A. Render the QR we get from Orbit at its native size.
+ B. Stop using the mock “auto-success after 10 s” timer.
+ C. Poll Orbit’s  /presentation-status  endpoint until
+    status === "presentation_verified" (or failed).
+
+────────────────────────────────────────────────────────────
+1️⃣   Backend – replace mock proof-status logic
+────────────────────────────────────────────────────────────
+📄  packages/external/orbit/VerifierClient.ts
+------------------------------------------------------------
+Add *real* status + presentation-result calls per docs:
+
+```ts
+export interface ProofStatusResp {
+  status: 'request-sent' | 'request-received' | 'presentation_received' |
+          'presentation_verified' | 'presentation_declined' | 'error';
+  verifiedAttributes?: Record<string,string>;
+}
+
+async status(reqId: string) {
+  const res = await this.client.get(`verifier/v1/proof-requests/${reqId}/status`, {
+    headers: this.authHeaders
+  }).json<ProofStatusResp>();
+  return res;
+}
+📄 apps/api/routes/proofs.ts
+Add GET /api/proofs/:id/status that just proxies to
+orbit.verifier.status(req.params.id) and caches for 4 s.
+
+ts
+Copy
+Edit
+router.get('/:id/status', async (req,res) => {
+  try {
+    const data = await orbit.verifier.status(req.params.id);
+    res.json(data);
+  } catch(e){ next(e); }
+});
+Remove any leftover “setTimeout(10 000)…auto-success” code.
+
+────────────────────────────────────────────────────────────
+2️⃣ Front-end – correct QR & live polling
+────────────────────────────────────────────────────────────
+📄 apps/web/src/pages/FormLaunchPage.tsx
+a. Fix QR sizing
+
+tsx
+Copy
+Edit
+{qrData?.qr && (
+  <img
+     src={`data:image/svg+xml;base64,${qrData.qr}`}
+     alt="QR Code"
+     style={{ width: 220, height: 220 }}   // intrinsic square
+  />
+)}
+Ensure parent div has className="flex justify-center" so it doesn’t crop.
+
+b. Replace 10 s timer with real poll
+
+ts
+Copy
+Edit
+const { data: status } = useQuery(
+  ['proofStatus', reqId],
+  () => api.get(`/proofs/${reqId}/status`).then(r=>r.data),
+  { enabled: !!reqId, refetchInterval: 4000 }
+);
+
+useEffect(() => {
+  if (status?.status === 'presentation_verified') {
+    setStep('verified');
+    setVerifiedAttrs(status.verifiedAttributes);
+  } else if (status?.status === 'presentation_declined' || status?.status === 'error') {
+    setStep('error');
+  }
+}, [status]);
+Remove the old setTimeout.
+
+c. Display real verified attributes
+
+tsx
+Copy
+Edit
+<ul>
+ {verifiedAttrs && Object.entries(verifiedAttrs).map(([k,v]) =>
+    <li key={k}><strong>{k}</strong>: {v}</li>
+ )}
+</ul>
+────────────────────────────────────────────────────────────
+3️⃣ Environment check
+────────────────────────────────────────────────────────────
+Confirm .env in apps/api has:
+
+ini
+Copy
+Edit
+ORBIT_VERIFIER_BASE_URL=https://testapi-verifier.nborbit.ca
+ORBIT_LOB_ID=a03f92ac-5ce7-4037-b8b5-79ff821b0878
+ORBIT_API_KEY=MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et
+Add in src/config.ts:
+
+ts
+Copy
+Edit
+console.log('[orbit env]', process.env.ORBIT_VERIFIER_BASE_URL);
+────────────────────────────────────────────────────────────
+4️⃣ Manual test plan (keep logs on)
+────────────────────────────────────────────────────────────
+
+pnpm --filter apps/api dev → watch console:
+
+[VerifierClient] prepareUrl OK
+
+[VerifierClient] status ...
+
+Open public URL → Scan QR with BC Wallet →
+
+wallet should show proof request.
+
+after you present, status should flip to presentation_verified
+and UI shows green section without any arbitrary delay.
+
+Decline request in wallet → UI should switch to red/error step.
+
+Please implement these changes, restart both servers, and post the
+console logs if anything else fails. Once verified, we can delete
+the debug logs but keep the new status polling.
