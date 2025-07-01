@@ -39,15 +39,14 @@ export default function Navigation() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Check if user is admin (for simplicity, assume first user is admin)
-  const isAdmin = !isLoading && (user?.id === 1 || user?.role === 'admin' || currentUser.email === 'john.doe@example.com');
+  // Check if user is super admin
+  const isSuperAdmin = !isLoading && (user?.role === 'super_admin' || currentUser.email === 'john.doe@example.com');
 
   const navItems = [
     { path: "/", label: "Form Builder", icon: FileText },
     { path: "/community", label: "Community Forms", icon: Users },
     { path: "/credentials", label: "Credential Library", icon: Database },
     { path: "/wallets", label: "Wallet Library", icon: Wallet },
-    ...(isAdmin ? [{ path: "/admin/credentials", label: "Admin", icon: Shield }] : []),
   ];
 
   const handleLogout = () => {
@@ -133,16 +132,18 @@ export default function Navigation() {
                   Account Settings
                 </button>
                 
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                  onClick={() => {
-                    setLocation('/admin/credentials');
-                    setShowDropdown(false);
-                  }}
-                >
-                  <Database className="mr-2 h-4 w-4" />
-                  Credential Templates
-                </button>
+                {isSuperAdmin && (
+                  <button
+                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
+                    onClick={() => {
+                      setLocation('/admin/credentials');
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Database className="mr-2 h-4 w-4" />
+                    Credential Templates
+                  </button>
+                )}
                 
                 <div className="border-t my-1"></div>
                 

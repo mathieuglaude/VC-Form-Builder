@@ -51,7 +51,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     profileImage: null,
     location: "Vancouver, BC",
     timezone: "America/Vancouver",
-    role: "admin" as const
+    role: "super_admin" as const
   };
 
   // Simple auth middleware for demo

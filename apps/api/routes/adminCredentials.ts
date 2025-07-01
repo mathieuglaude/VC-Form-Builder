@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { isAdmin } from '../middleware/isAdmin.js';
+import { isSuperAdmin } from '../src/middleware/isSuperAdmin.js';
 import { storage } from '../storage.js';
 import { insertCredentialTemplateSchema } from '../../../packages/shared/schema';
 
 const router = Router();
-router.use(isAdmin);
+router.use(isSuperAdmin);
 
 // Get all credential templates for admin
 router.get('/', async (req, res) => {

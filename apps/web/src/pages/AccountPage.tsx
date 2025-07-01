@@ -260,6 +260,11 @@ export default function AccountPage() {
                 <div className="flex gap-2 mt-2">
                   <Badge variant="secondary">Form Builder User</Badge>
                   <Badge variant="outline">Verified Account</Badge>
+                  {user?.role === 'super_admin' && (
+                    <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">
+                      Super Admin
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
