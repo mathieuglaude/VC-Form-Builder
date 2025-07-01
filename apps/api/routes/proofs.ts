@@ -63,10 +63,28 @@ router.get('/proofs/:id/qr', async (req, res) => {
     let invitationUrl: string;
 
     if (orbit.useRealOrbit) {
-      // TODO: Call Orbit "Prepare URL for Proof Request" API
-      // For now, use mock URL even when useRealOrbit is true
-      invitationUrl = `https://example.org/mock/${id}`;
-      console.log(`[GET /qr] Orbit integration pending - using mock URL: ${invitationUrl}`);
+      // Call Orbit "Prepare URL for Proof Request" API
+      try {
+        const prepareResponse = await fetch(`${orbit.baseUrl}/verifier/v1/proof-requests/${id}/prepare-url`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${orbit.apiKey}`,
+            'Content-Type': 'application/json',
+            'X-LOB-ID': orbit.lobId
+          }
+        });
+
+        if (!prepareResponse.ok) {
+          throw new Error(`Orbit prepare-url failed: ${prepareResponse.status} ${prepareResponse.statusText}`);
+        }
+
+        const prepareData = await prepareResponse.json();
+        invitationUrl = prepareData.invitationUrl;
+        console.log(`[GET /qr] Got real Orbit invitation URL: ${invitationUrl}`);
+      } catch (error: any) {
+        console.error(`[GET /qr] Orbit prepare-url error:`, error.message);
+        throw new Error(`Failed to prepare Orbit invitation URL: ${error.message}`);
+      }
     } else {
       // Mock invitation URL
       invitationUrl = `https://example.org/mock/${id}`;
