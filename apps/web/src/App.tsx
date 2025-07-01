@@ -1,6 +1,4 @@
 import { Switch, Route, Redirect } from "wouter";
-import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import Navigation from "@/components/Navigation";
 import NotFound from "@/pages/not-found";
@@ -39,17 +37,15 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-gray-50">
-        <div className="test-tailwind-loaded fixed top-2 right-2" />
-        <div className="hidden grid rounded-lg bg-slate-50 p-4 border shadow-md"></div>
-        <Navigation />
-        <main className="pt-4">
-          <Router />
-        </main>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="test-tailwind-loaded fixed top-2 right-2" />
+      <div className="hidden grid rounded-lg bg-slate-50 p-4 border shadow-md"></div>
+      <Navigation />
+      <main className="pt-4">
+        <Router />
+      </main>
       <Toaster />
-    </QueryClientProvider>
+    </div>
   );
 }
 

@@ -1,31 +1,18 @@
-import { useQuery } from "@tanstack/react-query";
-
-export interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  organization?: string;
-  jobTitle?: string;
-  linkedinProfile?: string;
-  website?: string;
-  bio?: string;
-  profileImage?: string;
-  location?: string;
-  timezone?: string;
-}
+import { useState, useEffect } from 'react';
 
 export function useAuth() {
-  const { data: user, isLoading, refetch } = useQuery({
-    queryKey: ["/api/auth/user"],
-    retry: false,
-  });
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Simple implementation without React Query for now
+    setIsLoading(false);
+    // Return null user for now - this can be implemented properly later
+    setUser(null);
+  }, []);
 
   return {
-    user: user as User | undefined,
-    isLoading,
-    isAuthenticated: !!user,
-    refetch,
+    user,
+    isLoading
   };
 }

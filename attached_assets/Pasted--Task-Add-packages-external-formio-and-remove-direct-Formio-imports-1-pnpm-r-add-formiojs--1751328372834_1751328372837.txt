@@ -1,0 +1,149 @@
+**Task – Add packages/external/formio and remove direct Formio imports**
+
+1. `pnpm -r add formiojs`
+2. `packages/external/formio/FormioClient.ts`
+   ```ts
+   import { Formio } from 'formiojs';
+
+   export class FormioClient {
+     constructor(base: string) {
+       this.sdk = new Formio(base);
+     }
+     // --- auth helpers -----------
+     setToken(token: string) { this.sdk.setToken(token); }
+     clearToken()            { this.sdk.setToken(null); }
+
+     // --- form helpers ----------
+     loadForm(id: string)    { return this.sdk.loadForm(id); }
+     saveSubmission(id: string, data: any) {
+       return this.sdk.saveSubmission(id, { data });
+     }
+   }
+packages/external/formio/index.ts
+
+ts
+Copy
+Edit
+import { env } from '@shared/env';
+import { FormioClient } from './FormioClient';
+export const formio = new FormioClient(env.FORMIO_BASE);
+Replace every import { Formio } from 'formiojs' in apps/web with
+
+ts
+Copy
+Edit
+import { formio } from '@external/formio';
+and adjust calls (formio.loadForm(...), etc.).
+
+Delete any leftover new Formio(...) instantiations in React pages.
+
+Run pnpm --filter web dev — pages must still load forms.
+
+Guard: zero TypeScript errors and a form still renders in Preview mode.
+
+yaml
+Copy
+Edit
+
+---
+
+## **Prompt 4c — Add AuthClient placeholder**
+
+Task – External Auth provider skeleton
+
+packages/external/auth/AuthClient.ts
+
+ts
+Copy
+Edit
+import { RestClient } from '@external/rest-client';
+
+export class AuthClient extends RestClient {
+  constructor(base: string) { super(base); }
+
+  login(email: string, pwd: string) {
+    return this.sdk.post('login', { json:{ email, pwd } }).json<{ token:string }>();
+  }
+  profile() {
+    return this.sdk.get('me').json<{ id:string; email:string; role:string }>();
+  }
+}
+packages/external/auth/index.ts
+
+ts
+Copy
+Edit
+import { env } from '@shared/env';
+import { AuthClient } from './AuthClient';
+export const auth = new AuthClient(env.AUTH_BASE ?? '');
+Add AUTH_BASE (optional) to env Zod schema.
+
+Wherever the web app currently fetches /api/auth/login, replace with:
+
+ts
+Copy
+Edit
+const { token } = await auth.login(email, pwd);
+(If there is no auth yet, leave imports unused; TS will tree-shake.)
+
+npm run dev still compiles.
+
+Guard: build passes. No runtime change expected until you wire a real auth endpoint.
+
+yaml
+Copy
+Edit
+
+---
+
+## **Prompt 4d — Use TanStack Query + external clients**
+
+Task – Replace ad-hoc fetches with React-Query hooks that call external layer
+
+pnpm -r add @tanstack/react-query
+
+Wrap web root with QueryClientProvider:
+
+tsx
+Copy
+Edit
+// apps/web/src/main.tsx
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+const qc = new QueryClient();
+<QueryClientProvider client={qc}>
+  <App/>
+</QueryClientProvider>
+Create typed hooks in packages/shared/react-query:
+
+ts
+Copy
+Edit
+import { useQuery } from '@tanstack/react-query';
+import { orbit } from '@external/orbit';
+
+export function useProof(defId: string) {
+  return useQuery({
+    queryKey: ['proof', defId],
+    queryFn: () => orbit.verifier.prepareUrl(defId)
+  });
+}
+In VCModal replace manual fetch + useEffect with:
+
+tsx
+Copy
+Edit
+const { data, isLoading } = useProof(defId);
+if (isLoading) return <Spinner/>;
+return <img src={`data:image/png;base64,${data.qrCodePng}`} />;
+Same pattern for /api/cred-lib and /api/forms:
+
+ts
+Copy
+Edit
+const { data: forms } = useQuery({
+  queryKey:['forms'],
+  queryFn: () => fetch('/api/forms').then(r=>r.json())
+});
+Delete the old SWR imports (useSWR) and its package if unused.
+
+Guard: Dashboard still lists forms; QR modal still appears; console shows “React Query Devtools: query updated” (prove TanStack is active) and no SWR warnings.

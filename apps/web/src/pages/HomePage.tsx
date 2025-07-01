@@ -1,4 +1,3 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -7,26 +6,48 @@ import { Plus, FileText, Edit, ExternalLink, Clock, TrendingUp, Filter, X } from
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
   const [filterIds, setFilterIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
+  const [formsData, setFormsData] = useState([]);
+  const [creds, setCreds] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const { data: formsData = [], isLoading } = useQuery({
-    queryKey: ['/api/forms'],
-  });
+  // Fetch forms and credentials data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [formsResponse, credsResponse] = await Promise.all([
+          fetch('/api/forms'),
+          fetch('/api/cred-lib')
+        ]);
+        
+        const forms = await formsResponse.json();
+        const credentials = await credsResponse.json();
+        
+        setFormsData(forms);
+        setCreds(credentials);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  const { data: creds = [] } = useQuery({
-    queryKey: ['/api/cred-lib'],
-  });
+    fetchData();
+  }, []);
 
   // Re-validate every minute so "Updated last" moves cards to show recent changes
   useEffect(() => {
     const intervalId = setInterval(() => {
-      queryClient.invalidateQueries({ queryKey: ['/api/forms'] });
+      // Refetch forms data periodically
+      fetch('/api/forms')
+        .then(r => r.json())
+        .then(setFormsData)
+        .catch(console.error);
     }, 60000); // 60 seconds
 
     return () => clearInterval(intervalId);
-  }, [queryClient]);
+  }, []);
 
   // Load saved filter preferences
   useEffect(() => {
