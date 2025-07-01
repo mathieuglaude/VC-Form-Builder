@@ -81,8 +81,13 @@ export default function PublicFormPage() {
     );
 
   const handleStartForm = () => {
-    // Navigate directly to the form filling page for a streamlined experience
-    navigate(`/form/${form.id}`);
+    // For forms with verifiable credentials, go to launch page first for QR verification
+    // For forms without credentials, go directly to fill page
+    if (hasVerifiableCredentials) {
+      navigate(`/launch/${form.id}`);
+    } else {
+      navigate(`/form/${form.id}`);
+    }
   };
 
   return (
