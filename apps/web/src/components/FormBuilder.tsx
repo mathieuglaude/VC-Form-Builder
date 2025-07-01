@@ -11,7 +11,7 @@ import IssuanceActionModal from "./IssuanceActionModal";
 import DeleteFormModal from "./DeleteFormModal";
 import PublishFormDialog from "./PublishFormDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Trash2, Share2 } from "lucide-react";
+import { Trash2, Share2, Copy } from "lucide-react";
 
 interface FormBuilderProps {
   initialForm?: any;
@@ -292,6 +292,29 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
               className="text-sm resize-none"
               rows={2}
             />
+            
+            {/* Public URL Display */}
+            {initialForm?.isPublished && initialForm?.publicSlug && (
+              <div className="mt-4 flex items-center gap-2" hidden={!initialForm?.isPublished}>
+                <span className="text-sm font-medium">Public URL:</span>
+                <a 
+                  href={`${window.location.origin}/f/${initialForm.publicSlug}`} 
+                  target="_blank" 
+                  rel="noopener"
+                  className="text-blue-600 underline break-all"
+                >
+                  {`${window.location.origin}/f/${initialForm.publicSlug}`}
+                </a>
+                <button
+                  onClick={() => navigator.clipboard.writeText(`${window.location.origin}/f/${initialForm.publicSlug}`)}
+                  className="p-1 rounded hover:bg-slate-100"
+                  title="Copy to clipboard"
+                >
+                  <Copy className="w-4 h-4"/>
+                </button>
+              </div>
+            )}
+            
             <div className="flex items-center space-x-2 mt-3">
               <Switch
                 id="publish-form"
