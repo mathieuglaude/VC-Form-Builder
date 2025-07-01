@@ -1,10 +1,10 @@
-import { useState } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FormPage from '@/components/FormPage';
 import VerificationPanel from '@/components/VerificationPanel';
+import { useProofRequest } from '@/hooks/useProofRequest';
 
 interface FormConfig {
   id: number;
@@ -24,7 +24,6 @@ export default function FormLaunchPage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [proofId, setProofId] = useState<string | null>(null);
 
   // Fetch form configuration
   const { data: form, isLoading: formLoading, error: formError } = useQuery<FormConfig>({
@@ -121,24 +120,8 @@ export default function FormLaunchPage() {
     return null;
   }
 
-  // Initialize proof request for forms with VC requirements
-  const { data: proofResponse } = useQuery({
-    queryKey: ['proof-init', id],
-    queryFn: async () => {
-      const response = await fetch('/api/proofs/init', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ formId: parseInt(id!) })
-      });
-      if (!response.ok) throw new Error('Failed to initialize proof');
-      return response.json();
-    },
-    enabled: !!form && needsVerificationCredentials(form),
-    retry: false
-  });
-
   // Check if form needs verification credentials
-  function needsVerificationCredentials(form: any): boolean {
+  function formHasVCFields(form: any): boolean {
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
     
@@ -147,8 +130,14 @@ export default function FormLaunchPage() {
     );
   }
 
-  const hasVCRequirements = needsVerificationCredentials(form);
-  const currentProofId = proofResponse?.proofId;
+  // Initialize proof request using the hook
+  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
+    formId: id,
+    enabled: !!form && formHasVCFields(form)
+  });
+
+  const hasVC = formHasVCFields(form);
+  const showPanel = hasVC && proofResponse?.proofId;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -166,10 +155,10 @@ export default function FormLaunchPage() {
         </div>
 
         {/* Main Content - Flex Layout */}
-        <div className={`flex gap-8 ${hasVCRequirements ? 'flex-col lg:flex-row' : 'justify-center'}`}>
+        <div className={`flex gap-8 ${hasVC ? 'flex-col lg:flex-row' : 'justify-center'}`}>
           
           {/* Form Section */}
-          <div className={hasVCRequirements ? 'flex-1' : 'max-w-4xl'}>
+          <div className={hasVC ? 'flex-1' : 'max-w-4xl'}>
             <FormPage
               form={form}
               mode="launch"
@@ -179,10 +168,10 @@ export default function FormLaunchPage() {
           </div>
 
           {/* Verification Panel Section */}
-          {hasVCRequirements && (
+          {hasVC && (
             <div className="lg:w-80 flex-shrink-0">
-              {currentProofId ? (
-                <VerificationPanel proofId={currentProofId} />
+              {showPanel ? (
+                <VerificationPanel proofId={proofResponse.proofId} />
               ) : (
                 <div className="w-80 bg-white rounded-lg shadow-lg p-6">
                   <div className="text-center">

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import FormRenderer from '@/components/FormRenderer';
@@ -11,10 +12,14 @@ interface FormPageProps {
 }
 
 export default function FormPage({ form, mode, onSubmit, isSubmitting = false }: FormPageProps) {
+  const [location] = useLocation();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
+  
+  // Check if this is preview mode
+  const isPreview = new URLSearchParams(location.split('?')[1] || '').has('preview');
 
-  console.log('[FormPage]', mode, form.id, { needsVC: needsVerificationCredentials(form) });
+  console.log('[FormPage]', mode, form.id, { needsVC: needsVerificationCredentials(form), isPreview });
 
   // Check if form needs verification credentials
   function needsVerificationCredentials(form: any): boolean {

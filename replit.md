@@ -317,6 +317,14 @@ Changelog:
   - Successfully validated WebSocket client implementation, environment variables, and authentication headers
   - Identified SSL certificate issue as server-side development configuration (client implementation correct)
   - Ready for production WebSocket integration when SSL certificate issues are resolved by Northern Block
+- July 1, 2025. Hot-fix: VerificationPanel hidden in Preview, standardised between Launch/Public
+  - Added useProofRequest hook to eliminate duplicate proof initialization code across pages
+  - Updated /api/proofs/:id/qr endpoint to return JSON format with both svg and invitationUrl fields
+  - Fixed FormPage to detect preview mode via URL parameters and hide verification panel
+  - Unified verification panel logic between FormLaunchPage and PublicFormPage using consistent patterns
+  - Added spinner placeholders for proof loading states with proper sizing (w-80 to match panel)
+  - Fixed VerificationPanel to use correct img attributes with 250px dimensions and proper JSON parsing
+  - Updated proof initialization API to handle both formId and publicSlug parameters for flexibility
 ```
 
 ## User Preferences

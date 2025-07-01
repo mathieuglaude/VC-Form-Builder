@@ -1,0 +1,68 @@
+🎯 Hot-fix + refactor before Step 3  
+
+Problem  
+▪ /form/:id “Preview” route is showing a half-rendered QR it shouldn’t.  
+▪ /launch/:id and /f/:slug don’t always show the QR at all.  
+Root cause: proof-initialisation + QR fetch logic duplicated / missing between pages, and `VerificationPanel` mounted in Preview by mistake.  
+
+Tasks (one commit)  
+
+1️⃣ Unify proof initialisation  
+   • create **/web/hooks/useProofRequest.ts**  
+     ```ts
+     interface UseProofRequestOpts { formId?: string; publicSlug?: string; enabled?: boolean; }
+     export function useProofRequest({formId, publicSlug, enabled=true}:UseProofRequestOpts){
+       // uses react-query; key ['proof',formId||publicSlug]
+       // POST /api/proofs/init  body {formId} or {publicSlug}
+       // returns {proofId}  -> state {proofId, isLoading, error}
+     }
+     ```  
+   • remove any inline `/api/proofs/init` fetches and replace with hook in **FormLaunchPage.tsx** and **PublicFormPage.tsx**.  
+   • Don’t call the hook in **FormPage** (Preview).
+
+2️⃣ Hide panel in Preview  
+   • Builder sends users to preview with `?preview=1` (link is already there – if not, add).  
+   • Inside **FormPage.tsx** read `const isPreview = new URLSearchParams(location.search).has('preview');`  
+     → render the form only. No VerificationPanel, no “Verify Credentials” button.
+
+3️⃣ Always show panel in Launch & Public flows  
+   • In both pages:  
+     ```tsx
+     const {proofId,isLoading:proofLoading} = useProofRequest({formId, publicSlug});
+     const hasVC = formHasVCFields(form);   // existing helper
+     const showPanel = hasVC && proofId;
+     ```  
+   • If `hasVC && proofLoading` → show small spinner placeholder same size as panel.  
+   • On `showPanel`, mount `<VerificationPanel proofId={proofId} />` (already built in Step-2).
+
+4️⃣ Fix QR `<img>`  
+   • In **VerificationPanel.tsx** after you fetch `/api/proofs/${proofId}/qr` the API returns `{svg, invitationUrl}` – we only sent `svg` before.  
+   • Update backend route `GET /api/proofs/:id/qr` to respond  
+     ```json
+     { "svg": "<svg…>", "invitationUrl": "https://…" }
+     ```  
+   • Panel does  
+     ```tsx
+     <img width={250} height={250}
+          src={`data:image/svg+xml;utf8,${encodeURIComponent(data.svg)}`}
+          alt="Credential verification QR" />
+     ```  
+
+5️⃣ Smoke-tests (you can run):  
+   ☐ **Preview** (/form/ID?preview=1) – shows form only, no QR.  
+   ☐ **Launch** (/launch/ID) – shows QR after short spinner.  
+   ☐ **Public** (/f/SLUG) – identical behaviour to Launch.  
+   ☐ Clicking “Open in Wallet” opens `invitationUrl`.  
+   ☐ Network tab shows exactly one call to `/api/proofs/:id/qr` (cache working).
+
+6️⃣ Update *replit.md*  
+2025-07-01
+Hot-fix: VerificationPanel hidden in Preview, standardised between Launch/Public
+
+Added useProofRequest hook → no duplicate code
+
+/api/proofs/:id/qr now returns {svg, invitationUrl}
+
+arduino
+Copy
+Edit

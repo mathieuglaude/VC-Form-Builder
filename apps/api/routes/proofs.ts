@@ -12,13 +12,14 @@ const qrCache = new Map<string, { svg: string; expiry: number }>();
 // POST /proofs/init - Initialize proof request
 router.post('/proofs/init', async (req, res) => {
   try {
-    const { formId } = req.body;
+    const { formId, publicSlug } = req.body;
     
-    if (!formId) {
-      return res.status(400).json({ error: 'formId is required' });
+    if (!formId && !publicSlug) {
+      return res.status(400).json({ error: 'formId or publicSlug is required' });
     }
 
-    console.log(`[POST /init] Starting proof initialization for form: ${formId}`);
+    const identifier = formId || publicSlug;
+    console.log(`[POST /init] Starting proof initialization for: ${formId ? `form ${formId}` : `slug ${publicSlug}`}`);
 
     if (!orbit.useRealOrbit) {
       // Mock response when Orbit integration is disabled
@@ -54,8 +55,9 @@ router.get('/proofs/:id/qr', async (req, res) => {
     const cached = qrCache.get(id);
     if (cached && Date.now() < cached.expiry) {
       console.log(`[GET /qr] Using cached QR for: ${id}`);
-      res.setHeader('Content-Type', 'image/svg+xml');
-      return res.send(cached.svg);
+      const invitationUrl = orbit.useRealOrbit ? `https://example.org/mock/${id}` : `https://example.org/mock/${id}`;
+      res.setHeader('Content-Type', 'application/json');
+      return res.json({ svg: cached.svg, invitationUrl });
     }
 
     let invitationUrl: string;
@@ -85,12 +87,13 @@ router.get('/proofs/:id/qr', async (req, res) => {
 
     // Cache for 5 minutes
     const expiry = Date.now() + (5 * 60 * 1000);
+    const responseData = { svg, invitationUrl };
     qrCache.set(id, { svg, expiry });
 
     console.log(`[GET /qr] Generated and cached QR for: ${id}`);
 
-    res.setHeader('Content-Type', 'image/svg+xml');
-    res.send(svg);
+    res.setHeader('Content-Type', 'application/json');
+    res.json(responseData);
 
   } catch (error: any) {
     console.error(`[GET /qr] Error generating QR for ${req.params.id}:`, error.message);

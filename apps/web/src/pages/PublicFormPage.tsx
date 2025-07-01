@@ -3,6 +3,8 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import FormPage from '@/components/FormPage';
+import VerificationPanel from '@/components/VerificationPanel';
+import { useProofRequest } from '@/hooks/useProofRequest';
 
 interface FormConfig {
   id: number;
@@ -119,12 +121,70 @@ export default function PublicFormPage() {
     return null;
   }
 
+  // Check if form needs verification credentials
+  function formHasVCFields(form: any): boolean {
+    const formSchema = form?.formSchema || form?.formDefinition;
+    if (!formSchema?.components) return false;
+    
+    return formSchema.components.some((component: any) => 
+      component.vcMapping?.credentialType && component.vcMapping?.attributeName
+    );
+  }
+
+  // Initialize proof request using the hook
+  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
+    publicSlug: slug,
+    enabled: !!form && formHasVCFields(form)
+  });
+
+  const hasVC = formHasVCFields(form);
+  const showPanel = hasVC && proofResponse?.proofId;
+
   return (
-    <FormPage
-      form={form}
-      mode="public"
-      onSubmit={handleFormSubmit}
-      isSubmitting={submitFormMutation.isPending}
-    />
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Page Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {form.name || "Form"}
+          </h1>
+          {form.purpose && (
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+              {form.purpose}
+            </p>
+          )}
+        </div>
+
+        {/* Main Content - Flex Layout */}
+        <div className={`flex gap-8 ${hasVC ? 'flex-col lg:flex-row' : 'justify-center'}`}>
+          
+          {/* Form Section */}
+          <div className={hasVC ? 'flex-1' : 'max-w-4xl'}>
+            <FormPage
+              form={form}
+              mode="public"
+              onSubmit={handleFormSubmit}
+              isSubmitting={submitFormMutation.isPending}
+            />
+          </div>
+
+          {/* Verification Panel Section */}
+          {hasVC && (
+            <div className="lg:w-80 flex-shrink-0">
+              {showPanel ? (
+                <VerificationPanel proofId={proofResponse.proofId} />
+              ) : (
+                <div className="w-80 bg-white rounded-lg shadow-lg p-6">
+                  <div className="text-center">
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+                    <p className="text-gray-600">Preparing verification...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }

@@ -17,18 +17,13 @@ export default function VerificationPanel({ proofId, onCancel }: VerificationPan
   const { data: qrResponse, isLoading, error, refetch } = useQuery({
     queryKey: ['qr-code', proofId],
     queryFn: async () => {
-      // Get the SVG directly from the API
-      const svgResponse = await fetch(`/api/proofs/${proofId}/qr`);
-      if (!svgResponse.ok) {
+      // Get the JSON response with SVG and invitation URL
+      const response = await fetch(`/api/proofs/${proofId}/qr`);
+      if (!response.ok) {
         throw new Error('Failed to generate QR code');
       }
       
-      const svg = await svgResponse.text();
-      
-      // For now, use a mock invitation URL - in real implementation this would come from Orbit
-      const invitationUrl = `https://example.org/mock/${proofId}`;
-      
-      return { svg, invitationUrl };
+      return response.json();
     },
     enabled: !!proofId && isVisible,
     retry: 2
@@ -103,10 +98,11 @@ export default function VerificationPanel({ proofId, onCancel }: VerificationPan
                 <div className="w-64 h-64 bg-white rounded-lg border shadow-sm p-2 flex items-center justify-center">
                   {qrResponse.svg ? (
                     <img
+                      width={250}
+                      height={250}
                       src={`data:image/svg+xml;utf8,${encodeURIComponent(qrResponse.svg)}`}
-                      alt="Verification QR Code"
+                      alt="Credential verification QR"
                       className="w-full h-full object-contain"
-                      style={{ maxWidth: '250px', maxHeight: '250px' }}
                     />
                   ) : (
                     <div className="flex flex-col items-center text-gray-400">
