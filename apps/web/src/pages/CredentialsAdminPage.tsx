@@ -1,294 +1,297 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Plus, ExternalLink, Trash2, Edit, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Edit, Trash2, Plus, RotateCcw, Download } from "lucide-react";
-import { CredentialTemplate } from "@shared/schema";
-import { CredFormDialog } from "@/components/CredFormDialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import Navigation from "@/components/Navigation";
+import { apiRequest } from "@/lib/queryClient";
+
+interface CredentialTemplate {
+  id: number;
+  label: string;
+  version: string;
+  schemaId: string;
+  credDefId: string;
+  issuerDid: string;
+  overlays: any[];
+  governanceUrl?: string;
+  visible: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function CredentialsAdminPage() {
-  const [editing, setEditing] = useState<CredentialTemplate | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showImportDialog, setShowImportDialog] = useState(false);
-  const [importUrl, setImportUrl] = useState("");
+  const [bundleUrl, setBundleUrl] = useState("");
+  const [governanceUrl, setGovernanceUrl] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ["/api/admin/credentials"],
-    retry: false,
+  // Fetch credential templates
+  const { data: templates = [], isLoading } = useQuery({
+    queryKey: ['/api/admin/credentials'],
+    queryFn: async () => {
+      const response = await fetch('/api/admin/credentials');
+      if (!response.ok) throw new Error('Failed to fetch templates');
+      return response.json();
+    }
   });
 
-  const templatesArray = (templates as CredentialTemplate[]) || [];
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      const response = await fetch(`/api/admin/credentials/${id}`, {
-        method: "DELETE",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to delete credential template");
-      }
-    },
-    onSuccess: () => {
-      toast({ title: "Credential template deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cred-lib"] });
-    },
-    onError: () => {
-      toast({ 
-        title: "Failed to delete credential template",
-        variant: "destructive"
-      });
-    },
-  });
-
-  const healthCheckMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch("/api/admin/credentials/health", {
-        method: "POST",
-      });
-      if (!response.ok) {
-        throw new Error("Health check failed");
-      }
-    },
-    onSuccess: () => {
-      toast({ title: "Credential assets validated and restored" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cred-lib"] });
-    },
-    onError: () => {
-      toast({ 
-        title: "Health check failed",
-        variant: "destructive"
-      });
-    },
-  });
-
+  // Import bundle mutation
   const importMutation = useMutation({
-    mutationFn: async (url: string) => {
-      const response = await fetch("/api/admin/credentials/import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url }),
+    mutationFn: async ({ bundleUrl, governanceUrl }: { bundleUrl: string; governanceUrl?: string }) => {
+      const response = await apiRequest('POST', '/api/admin/credentials', {
+        bundleUrl,
+        governanceUrl: governanceUrl || undefined
       });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to import OCA bundle");
-      }
       return response.json();
     },
     onSuccess: () => {
-      toast({ title: "OCA bundle imported successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/cred-lib"] });
+      toast({
+        title: "Success",
+        description: "Credential template imported successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/credentials'] });
       setShowImportDialog(false);
-      setImportUrl("");
+      setBundleUrl("");
+      setGovernanceUrl("");
     },
-    onError: (error: Error) => {
-      toast({ 
-        title: "Failed to import OCA bundle",
-        description: error.message,
+    onError: (error: any) => {
+      toast({
+        title: "Import Failed",
+        description: error.message || "Failed to import credential template",
         variant: "destructive"
       });
-    },
+    }
   });
 
-  const handleDelete = async (id: number, label: string) => {
-    if (window.confirm(`Are you sure you want to delete "${label}"?`)) {
-      deleteMutation.mutate(id);
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest('DELETE', `/api/admin/credentials/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Credential template deleted successfully"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/credentials'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to delete credential template",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleImport = async () => {
+    if (!bundleUrl.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Bundle URL is required",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      await importMutation.mutateAsync({
+        bundleUrl: bundleUrl.trim(),
+        governanceUrl: governanceUrl.trim() || undefined
+      });
+    } finally {
+      setIsImporting(false);
     }
   };
 
-  const handleSaved = () => {
-    setEditing(null);
-    setShowCreateDialog(false);
-    queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/cred-lib"] });
+  const handleDelete = (template: CredentialTemplate) => {
+    if (confirm(`Are you sure you want to delete "${template.label}"?`)) {
+      deleteMutation.mutate(template.id);
+    }
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto p-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading credential templates...</div>
-        </div>
-      </div>
-    );
-  }
+  const getIssuerName = (template: CredentialTemplate) => {
+    // Extract issuer name from overlays or use DID
+    const metaOverlay = template.overlays?.find(o => o.type === 'oca/overlays/meta/1.0');
+    return metaOverlay?.issuer_name || template.issuerDid;
+  };
+
+  const getEcosystem = (template: CredentialTemplate) => {
+    const metaOverlay = template.overlays?.find(o => o.type === 'oca/overlays/meta/1.0');
+    return metaOverlay?.ecosystem || 'Unknown';
+  };
 
   return (
-    <div className="max-w-6xl mx-auto p-8 space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-2xl">Credential Template Management</CardTitle>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => healthCheckMutation.mutate()}
-                disabled={healthCheckMutation.isPending}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Health Check
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowImportDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                Import Bundle
-              </Button>
-              <Button
-                onClick={() => setShowCreateDialog(true)}
-                className="flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Template
-              </Button>
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Credential Templates</h1>
+              <p className="text-gray-600 mt-2">
+                Manage credential templates and import new ones from OCA bundles
+              </p>
             </div>
+            <Button onClick={() => setShowImportDialog(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Import Credential
+            </Button>
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b text-left text-sm text-muted-foreground">
-                  <th className="py-2 font-medium">Name</th>
-                  <th className="py-2 font-medium">Issuer</th>
-                  <th className="py-2 font-medium">Version</th>
-                  <th className="py-2 font-medium">Ecosystem</th>
-                  <th className="py-2 font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {templatesArray.map((template: CredentialTemplate) => {
-                  const meta = template.overlays?.find(o => o.type.includes('meta'))?.data ?? {};
-                  const isPredefined = template.schemaId?.includes('bcgov') || false;
-                  return (
-                    <tr key={template.id} className="border-b hover:bg-muted/50">
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{template.label}</span>
-                          {isPredefined && (
-                            <Badge variant="secondary" className="text-xs">
-                              System
-                            </Badge>
-                          )}
+        </div>
+
+        <Card className="card">
+          <CardHeader>
+            <CardTitle>All Credential Templates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading templates...</p>
+              </div>
+            ) : templates.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-600">No credential templates found</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Issuer</TableHead>
+                    <TableHead>Version</TableHead>
+                    <TableHead>Ecosystem</TableHead>
+                    <TableHead>Updated</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {templates.map((template: CredentialTemplate) => (
+                    <TableRow key={template.id}>
+                      <TableCell className="font-medium">{template.label}</TableCell>
+                      <TableCell className="max-w-48 truncate" title={getIssuerName(template)}>
+                        {getIssuerName(template)}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{template.version}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{getEcosystem(template)}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="w-4 h-4 mr-1" />
+                          {new Date(template.updatedAt).toLocaleDateString()}
                         </div>
-                      </td>
-                      <td className="py-3 text-muted-foreground">
-                        {meta.issuer || meta.issuer_name || '—'}
-                      </td>
-                      <td className="py-3 text-muted-foreground">
-                        {template.version || '—'}
-                      </td>
-                      <td className="py-3">
-                        {meta.ecosystem && (
-                          <Badge variant="outline" className="text-xs">
-                            {meta.ecosystem}
-                          </Badge>
-                        )}
-                      </td>
-                      <td className="py-3">
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditing(template)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          {!isPredefined && (
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          {template.governanceUrl && (
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(template.id, template.label)}
-                              disabled={deleteMutation.isPending}
-                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => window.open(template.governanceUrl, '_blank')}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <ExternalLink className="w-4 h-4" />
                             </Button>
                           )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(template)}
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Import Dialog */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="card p-6 space-y-4">
+          <DialogHeader>
+            <DialogTitle>Import Credential Template</DialogTitle>
+            <DialogDescription>
+              Import a new credential template from an OCA bundle URL. You can provide either a direct 
+              bundle.json URL or a folder URL containing the bundle.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="bundleUrl">Bundle URL *</Label>
+              <Input
+                id="bundleUrl"
+                value={bundleUrl}
+                onChange={(e) => setBundleUrl(e.target.value)}
+                placeholder="https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/..."
+                className="mt-1"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Folder URL or direct bundle.json URL
+              </p>
+            </div>
+            
+            <div>
+              <Label htmlFor="governanceUrl">Governance Documentation URL</Label>
+              <Input
+                id="governanceUrl"
+                value={governanceUrl}
+                onChange={(e) => setGovernanceUrl(e.target.value)}
+                placeholder="https://bcgov.github.io/digital-trust-toolkit/..."
+                className="mt-1"
+              />
+              <p className="text-sm text-gray-500 mt-1">
+                Optional link to governance documentation
+              </p>
+            </div>
           </div>
 
-          {templatesArray.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <p>No credential templates found.</p>
-              <p className="text-sm mt-1">Create your first template to get started.</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {editing && (
-        <CredFormDialog
-          initial={editing}
-          onClose={() => setEditing(null)}
-          onSaved={handleSaved}
-        />
-      )}
-
-      {showCreateDialog && (
-        <CredFormDialog
-          initial={{}}
-          onClose={() => setShowCreateDialog(false)}
-          onSaved={handleSaved}
-        />
-      )}
-
-      {showImportDialog && (
-        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Import OCA Bundle</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Input
-                  value={importUrl}
-                  onChange={(e) => setImportUrl(e.target.value)}
-                  placeholder="Paste GitHub folder or raw JSON URL"
-                  className="w-full"
-                />
-                <p className="text-sm text-muted-foreground">
-                  Examples:
-                  <br />• bcgov/aries-oca-bundles/OCABundles/schema/bcgov-digital-trust/HealthCard/Prod
-                  <br />• https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/...
-                  <br />• https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/.../OCABundle.json
-                </p>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!importUrl.trim() || importMutation.isPending}
-                  onClick={() => importMutation.mutate(importUrl.trim())}
-                >
-                  {importMutation.isPending ? "Importing..." : "Import"}
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowImportDialog(false)}
+              disabled={isImporting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleImport}
+              disabled={isImporting || !bundleUrl.trim()}
+            >
+              {isImporting ? 'Importing...' : 'Import Template'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

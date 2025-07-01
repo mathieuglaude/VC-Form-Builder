@@ -3,104 +3,106 @@ import { credentialTemplates } from '../../shared/schema';
 import { eq } from 'drizzle-orm';
 
 interface OCABundle {
-  schema_id: string;
-  name?: string;
-  version?: string;
-  cred_def_id?: string;
+  capture_base: {
+    type: string;
+    digest: string;
+    classification?: string;
+    attributes: Record<string, any>;
+  };
   overlays: Array<{
     type: string;
-    data: any;
+    capture_base: string;
+    [key: string]: any;
   }>;
+  bundle_digest?: string;
 }
 
-function toRaw(url: string): string {
-  // GitHub path like 'bcgov/aries-oca-bundles/...'
-  if (!url.startsWith('http')) {
-    return 'https://raw.githubusercontent.com/' + url.replace('/tree/', '/') + (url.endsWith('.json') ? '' : '/OCABundle.json');
-  }
-  // Full GitHub URL
-  if (url.includes('github.com') && !url.includes('raw.githubusercontent')) {
-    return url
-      .replace('github.com', 'raw.githubusercontent.com')
-      .replace('/tree/', '/')
-      .replace(/\/$/, '') +
-      (url.endsWith('.json') ? '' : '/OCABundle.json');
-  }
-  return url;
-}
-
-export async function importOCABundle(pathOrRaw: string) {
-  // 1️⃣ Normalize: if the string ends with ".json" keep it; else append "/OCABundle.json"
-  const rawJsonUrl = pathOrRaw.endsWith('.json')
-    ? toRaw(pathOrRaw)
-    : toRaw(pathOrRaw.replace(/\/$/, '') + '/OCABundle.json');
-
-  // 2️⃣ Derive overlay base dir for asset download
-  const baseDir = rawJsonUrl.replace(/OCABundle\.json$/, 'overlays/branding/');
-
-  // Fetch the OCA bundle
-  const response = await fetch(rawJsonUrl);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch OCA bundle: ${response.statusText}`);
-  }
-  
-  const [bundle]: [OCABundle] = await response.json();
-  
-  // Validation
-  if (!Array.isArray(bundle?.overlays)) {
-    throw new Error('Invalid OCA bundle: overlays missing');
-  }
-
-  // Extract branding and meta overlays
-  const branding = bundle.overlays.find(o => o.type.includes('branding'));
-  const meta = bundle.overlays.find(o => o.type.includes('meta'));
-
-  // Cache artwork locally if present
-  if (branding?.data?.logo) {
-    const logoUrl = baseDir + branding.data.logo;
-    try {
-      const logoResponse = await fetch(logoUrl);
-      if (logoResponse.ok) {
-        // For now, keep the original URL - we could implement local caching later
-        branding.data.logoUrl = logoUrl;
-      }
-    } catch (error) {
-      console.warn('Failed to cache logo:', error);
+export async function importOCABundle(url: string, governanceUrl?: string) {
+  try {
+    console.log(`Importing OCA bundle from: ${url}`);
+    
+    // Handle both direct file URLs and folder URLs
+    let bundleUrl = url;
+    if (url.includes('/tree/') || url.endsWith('/')) {
+      // Convert GitHub folder URL to raw bundle.json URL
+      bundleUrl = url
+        .replace('github.com', 'raw.githubusercontent.com')
+        .replace('/tree/', '/')
+        .replace(/\/$/, '') + '/bundle.json';
+    } else if (!url.endsWith('.json')) {
+      bundleUrl = url + '/bundle.json';
     }
-  }
 
-  // Create or update credential template
-  const existingTemplate = await db
-    .select()
-    .from(credentialTemplates)
-    .where(eq(credentialTemplates.schemaId, bundle.schema_id))
-    .limit(1);
+    const response = await fetch(bundleUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch OCA bundle: ${response.status} ${response.statusText}`);
+    }
 
-  const templateData = {
-    label: meta?.data?.name || bundle.name || 'Unknown Credential',
-    version: bundle.version || '1.0',
-    schemaId: bundle.schema_id,
-    credDefId: bundle.cred_def_id || '',
-    issuerDid: meta?.data?.issuer_did || '',
-    overlays: bundle.overlays,
-    visible: true,
-    updatedAt: new Date(),
-  };
+    const bundle: OCABundle = await response.json();
+    
+    if (!bundle.capture_base) {
+      throw new Error('Invalid OCA bundle: missing capture_base');
+    }
 
-  if (existingTemplate.length > 0) {
-    // Update existing template
-    const [updated] = await db
-      .update(credentialTemplates)
-      .set(templateData)
-      .where(eq(credentialTemplates.schemaId, bundle.schema_id))
-      .returning();
-    return updated;
-  } else {
-    // Create new template
-    const [created] = await db
-      .insert(credentialTemplates)
-      .values(templateData)
-      .returning();
-    return created;
+    // Extract metadata overlay for label and description
+    const metaOverlay = bundle.overlays?.find(overlay => overlay.type === 'oca/overlays/meta/1.0');
+    const labelOverlay = bundle.overlays?.find(overlay => overlay.type === 'oca/overlays/label/1.0');
+    const brandingOverlay = bundle.overlays?.find(overlay => overlay.type === 'oca/overlays/branding/1.0');
+
+    // Generate schema ID from bundle digest or attributes
+    const schemaId = bundle.bundle_digest || 
+                    `${bundle.capture_base.classification || 'credential'}:${Date.now()}:1.0`;
+
+    // Extract credential label
+    const label = labelOverlay?.attr_labels?.credential_name || 
+                  metaOverlay?.name ||
+                  bundle.capture_base.classification ||
+                  'Imported Credential';
+
+    // Create or update credential template
+    const credentialData = {
+      label,
+      version: '1.0',
+      schemaId,
+      credDefId: `${schemaId}:cred_def`,
+      issuerDid: 'did:unknown:issuer', // Will be updated when actual issuer is known
+      overlays: bundle.overlays || [],
+      governanceUrl: governanceUrl || null,
+      visible: true,
+      updatedAt: new Date(),
+    };
+
+    // Check if credential already exists
+    const existing = await db
+      .select()
+      .from(credentialTemplates)
+      .where(eq(credentialTemplates.schemaId, schemaId))
+      .limit(1);
+
+    let result;
+    if (existing.length > 0) {
+      // Update existing credential
+      result = await db
+        .update(credentialTemplates)
+        .set(credentialData)
+        .where(eq(credentialTemplates.schemaId, schemaId))
+        .returning();
+    } else {
+      // Create new credential
+      result = await db
+        .insert(credentialTemplates)
+        .values({
+          ...credentialData,
+          createdAt: new Date(),
+        })
+        .returning();
+    }
+
+    console.log(`Successfully imported credential: ${label}`);
+    return result[0];
+
+  } catch (error) {
+    console.error('Failed to import OCA bundle:', error);
+    throw new Error(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }

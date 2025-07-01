@@ -73,6 +73,7 @@ export const credentialTemplates = pgTable("credential_templates", {
   credDefId: text("cred_def_id").notNull(),
   issuerDid: text("issuer_did").notNull(),
   overlays: jsonb("overlays").$type<OCAOverlay[]>().notNull().default([]),
+  governanceUrl: text("governance_url"),
   visible: boolean("visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

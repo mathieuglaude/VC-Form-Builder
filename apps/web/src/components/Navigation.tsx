@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { FileText, Database, Wallet, Users, Settings, LogOut, User } from "lucide-react";
+import { FileText, Database, Wallet, Users, Settings, LogOut, User, Shield } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -39,11 +39,15 @@ export default function Navigation() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  // Check if user is admin (for simplicity, assume first user is admin)
+  const isAdmin = !isLoading && (user?.id === 1 || user?.role === 'admin' || currentUser.email === 'john.doe@example.com');
+
   const navItems = [
     { path: "/", label: "Form Builder", icon: FileText },
     { path: "/community", label: "Community Forms", icon: Users },
     { path: "/credentials", label: "Credential Library", icon: Database },
     { path: "/wallets", label: "Wallet Library", icon: Wallet },
+    ...(isAdmin ? [{ path: "/admin/credentials", label: "Admin", icon: Shield }] : []),
   ];
 
   const handleLogout = () => {
