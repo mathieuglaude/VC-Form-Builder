@@ -282,8 +282,7 @@ export default function BuilderPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [isPreviewMode, setIsPreviewMode] = useState(false);
-  const [previewData, setPreviewData] = useState<any>(null);
+
   const [showPublishModal, setShowPublishModal] = useState(false);
 
   // Determine if we're editing an existing form or creating new
@@ -415,8 +414,10 @@ export default function BuilderPage() {
   };
 
   const handlePreview = (formData: any) => {
-    setPreviewData(formData);
-    setIsPreviewMode(true);
+    // Navigate to the actual form page like other entry points
+    if (isEditing && formConfig?.id) {
+      window.open(`/form/${formConfig.id}`, '_blank');
+    }
   };
 
   if (isLoading) {
@@ -431,18 +432,13 @@ export default function BuilderPage() {
   }
 
   // Redirect to homepage if no specific form ID (eliminate duplicate form listing)
-  if (!id && !isPreviewMode) {
+  if (!id) {
     console.log('No form ID provided, redirecting to homepage');
     setLocation('/');
     return null;
   }
 
   console.log('BuilderPage rendering with id:', id, 'isEditing:', isEditing);
-
-  // Show preview mode with consistent layout
-  if (isPreviewMode && previewData) {
-    return <FormPreviewMode formData={previewData} onBack={() => setIsPreviewMode(false)} />;
-  }
 
   // Show form builder
   return (
