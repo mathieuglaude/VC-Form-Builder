@@ -1,0 +1,64 @@
+client:536 WebSocket connection to 'wss://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/?token=GCVN1fmSxnFK' failed: 
+
+client:536 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=GCVN1fmSxnFK' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+chunk-UIJ6ITMY.js?v=1934ae3d:21551 Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+chunk-UIJ6ITMY.js?v=1934ae3d:521 Warning: React has detected a change in the order of Hooks called by FormLaunchPage. This will lead to bugs and errors if not fixed. For more information, read the Rules of Hooks: https://reactjs.org/link/rules-of-hooks
+
+   Previous render            Next render
+   ------------------------------------------------------
+1. useContext                 useContext
+2. useContext                 useContext
+3. useSyncExternalStore       useSyncExternalStore
+4. useRef                     useRef
+5. useInsertionEffect         useInsertionEffect
+6. useState                   useState
+7. useEffect                  useEffect
+8. useContext                 useContext
+9. useContext                 useContext
+10. useContext                useContext
+11. useEffect                 useEffect
+12. useState                  useState
+13. useCallback               useCallback
+14. useSyncExternalStore      useSyncExternalStore
+15. useEffect                 useEffect
+16. useContext                useContext
+17. useState                  useState
+18. useEffect                 useEffect
+19. useCallback               useCallback
+20. useSyncExternalStore      useSyncExternalStore
+21. useCallback               useCallback
+22. undefined                 useContext
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    at FormLaunchPage (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/src/pages/FormLaunchPage.tsx:10:18)
+    at Route (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=8460f9cf:206:16)
+    at Switch (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=8460f9cf:262:17)
+    at Router
+    at main
+    at div
+    at App
+    at QueryClientProvider (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=779de6c8:2933:3)
+2
+chunk-UIJ6ITMY.js?v=1934ae3d:11678 Uncaught Error: Rendered more hooks than during the previous render.
+    at useProofRequest (useProofRequest.ts:10:10)
+    at FormLaunchPage (FormLaunchPage.tsx:134:60)
+chunk-UIJ6ITMY.js?v=1934ae3d:14032 The above error occurred in the <FormLaunchPage> component:
+
+    at FormLaunchPage (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/src/pages/FormLaunchPage.tsx:10:18)
+    at Route (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=8460f9cf:206:16)
+    at Switch (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/wouter.js?v=8460f9cf:262:17)
+    at Router
+    at main
+    at div
+    at App
+    at QueryClientProvider (https://936d361d-a56a-4ebf-8675-3fafe317279e-00-1wmd4b1ql0s8q.spock.replit.dev/node_modules/.vite/deps/@tanstack_react-query.js?v=779de6c8:2933:3)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-UIJ6ITMY.js?v=1934ae3d:9129 Uncaught Error: Rendered more hooks than during the previous render.
+    at useProofRequest (useProofRequest.ts:10:10)
+    at FormLaunchPage (FormLaunchPage.tsx:134:60)
+﻿

@@ -1,9 +1,9 @@
 import { useParams, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import FormPage from '@/components/FormPage';
 import VerificationPanel from '@/components/VerificationPanel';
+import { useToast } from '@/hooks/use-toast';
 import { useProofRequest } from '@/hooks/useProofRequest';
 
 interface FormConfig {
@@ -25,6 +25,17 @@ export default function FormLaunchPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
 
+  // Helper function - not a hook
+  function formHasVCFields(form: any): boolean {
+    const formSchema = form?.formSchema || form?.formDefinition;
+    if (!formSchema?.components) return false;
+    
+    return formSchema.components.some((component: any) => 
+      component.vcMapping?.credentialType && component.vcMapping?.attributeName
+    );
+  }
+
+  // ALL HOOKS MUST BE CALLED AT TOP LEVEL
   // Fetch form configuration
   const { data: form, isLoading: formLoading, error: formError } = useQuery<FormConfig>({
     queryKey: ['/api/forms', id],
@@ -80,6 +91,15 @@ export default function FormLaunchPage() {
     }
   });
 
+  // Calculate VC requirement
+  const hasVC = formHasVCFields(form);
+
+  // Initialize proof request hook - MUST be at top level
+  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
+    formId: id,
+    enabled: !!form && hasVC
+  });
+
   const handleFormSubmit = (formData: Record<string, any>, verifiedFields: Record<string, any>) => {
     submitFormMutation.mutate({ formData, verifiedFields });
   };
@@ -120,23 +140,6 @@ export default function FormLaunchPage() {
     return null;
   }
 
-  // Check if form needs verification credentials
-  function formHasVCFields(form: any): boolean {
-    const formSchema = form?.formSchema || form?.formDefinition;
-    if (!formSchema?.components) return false;
-    
-    return formSchema.components.some((component: any) => 
-      component.vcMapping?.credentialType && component.vcMapping?.attributeName
-    );
-  }
-
-  // Initialize proof request using the hook
-  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
-    formId: id,
-    enabled: !!form && formHasVCFields(form)
-  });
-
-  const hasVC = formHasVCFields(form);
   const showPanel = hasVC && proofResponse?.proofId;
 
   return (
@@ -167,19 +170,13 @@ export default function FormLaunchPage() {
             />
           </div>
 
-          {/* Verification Panel Section */}
-          {hasVC && (
-            <div className="lg:w-80 flex-shrink-0">
-              {showPanel ? (
-                <VerificationPanel proofId={proofResponse.proofId} />
-              ) : (
-                <div className="w-80 bg-white rounded-lg shadow-lg p-6">
-                  <div className="text-center">
-                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-                    <p className="text-gray-600">Preparing verification...</p>
-                  </div>
-                </div>
-              )}
+          {/* Verification Panel */}
+          {showPanel && (
+            <div className="lg:w-80">
+              <VerificationPanel 
+                proofId={proofResponse.proofId}
+                isLoading={proofLoading}
+              />
             </div>
           )}
         </div>
