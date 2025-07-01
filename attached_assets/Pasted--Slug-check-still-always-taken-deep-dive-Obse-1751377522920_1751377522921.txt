@@ -1,0 +1,75 @@
+🚑  Slug check still always “taken” — deep dive
+==============================================
+
+Observed
+--------
+• After latest fix, Publish dialog still shows _URL taken_ for **every** slug.
+• Network tab: GET /api/forms/slug-check?slug=xyz (or maybe /check-slug …)
+  always returns { available:false }.
+
+Goal
+----
+1. Backend: verify /api/forms/slug-check returns correct {available:true|false}.
+2. Front-end: ensure PublishFormDialog hits that exact endpoint and interprets
+   the JSON properly.
+
+Step-by-step
+------------
+
+1. **Add temporary debug logs**
+   ```ts
+   // apps/api/routes/forms.ts  (or wherever slug-check is)
+   router.get('/slug-check', async (req,res)=>{
+     const { slug } = req.query;
+     console.log('[slug-check] slug=', slug);
+     const available = await storage.checkPublicSlugAvailability(slug as string);
+     console.log('[slug-check] available=', available);
+     res.json({ available });
+   });
+Unit-test availability logic
+In apps/api/scripts/testSlug.ts:
+
+ts
+Copy
+Edit
+import { storage } from '../deps/storage';
+(async ()=>{
+  console.log(await storage.checkPublicSlugAvailability('zzz-test-'+Date.now()));
+  process.exit(0);
+})();
+Run once with pnpm tsx apps/api/scripts/testSlug.ts to ensure true.
+
+Confirm front-end call
+In apps/web/src/components/PublishFormDialog.tsx add:
+
+ts
+Copy
+Edit
+console.log('[slug] checking', slug);
+Ensure it fetches /api/forms/slug-check?slug=...
+
+Fix mismatched route if needed
+
+If dialog still calls /forms/${id}/check-slug, update to
+/api/forms/slug-check?slug=${encodeURIComponent(slug)}.
+
+Normalise backend route to /api/forms/slug-check (GET) in router index.
+
+Return type
+Backend now sends {available:boolean}.
+In dialog:
+
+ts
+Copy
+Edit
+const ok = data.available;
+setAvailable(ok ? 'yes' : 'no');
+Re-test
+• Publish modal: enter random slug (abc123)
+• Expect green “✓ URL available”, Publish button enabled.
+• Save → new row in form_configs shows public_slug='abc123'.
+
+Remove debug logs once confirmed.
+
+Please apply these steps; app must restart with zero TS errors and allow
+publishing when slug truly unique.

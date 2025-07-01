@@ -107,6 +107,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Check slug availability (must come before /:id routes)
+  app.get('/api/forms/slug-check', async (req, res) => {
+    try {
+      const { slug } = req.query;
+      if (!slug) {
+        return res.status(400).json({ error: 'slug required' });
+      }
+      
+      const available = await storage.checkPublicSlugAvailability(slug as string);
+      res.json({ available });
+    } catch (error) {
+      console.error('Slug check error:', error);
+      res.status(500).json({ error: 'Failed to check slug availability' });
+    }
+  });
+
   app.get('/api/forms/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -135,22 +151,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(formConfig);
     } catch (error) {
       res.status(400).json({ error: 'Invalid form data', details: error });
-    }
-  });
-
-  // Check slug availability
-  app.get('/api/forms/slug-check', async (req, res) => {
-    try {
-      const { slug } = req.query;
-      if (!slug) {
-        return res.status(400).json({ error: 'slug required' });
-      }
-      
-      const available = await storage.checkPublicSlugAvailability(slug as string);
-      res.json({ available });
-    } catch (error) {
-      console.error('Slug check error:', error);
-      res.status(500).json({ error: 'Failed to check slug availability' });
     }
   });
 
