@@ -1,0 +1,142 @@
+**Task 4d – Standardise data-fetching on React Query**
+
+----------------------------------------------------------------
+## 0 · Install packages
+
+```bash
+pnpm -r add @tanstack/react-query
+pnpm -r remove swr
+1 · Provide QueryClient to the web app
+apps/web/src/main.tsx
+
+tsx
+Copy
+Edit
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+const qc = new QueryClient();
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <QueryClientProvider client={qc}>
+      <App />
+    </QueryClientProvider>
+  </React.StrictMode>
+);
+2 · Shared hooks folder
+packages/shared/react-query/index.ts
+
+ts
+Copy
+Edit
+import { useQuery, useMutation, QueryKey } from '@tanstack/react-query';
+import { orbit } from '@external/orbit';
+import { formio } from '@external/formio';
+import { auth } from '@external/auth';
+
+// 1️⃣ Proof request (returns QR PNG + reqId)
+export function useProof(defId: string) {
+  return useQuery({
+    queryKey: ['proof', defId],
+    queryFn: () => orbit.verifier.prepareUrl(defId),
+    staleTime: 5 * 60_000
+  });
+}
+
+// 2️⃣ Proof status (poll every 3 s)
+export function useProofStatus(reqId: string) {
+  return useQuery({
+    queryKey: ['proof-status', reqId],
+    queryFn: () => orbit.verifier.status(reqId),
+    refetchInterval: 3_000,
+    enabled: Boolean(reqId)
+  });
+}
+
+// 3️⃣ Credential library
+export function useCredentialLibrary() {
+  return useQuery({
+    queryKey: ['cred-lib'],
+    queryFn: () => fetch('/api/cred-lib').then(r => r.json()),
+    staleTime: 60 * 60_000
+  });
+}
+
+// 4️⃣ Forms list
+export function useForms() {
+  return useQuery({
+    queryKey: ['forms'],
+    queryFn: () => fetch('/api/forms').then(r => r.json())
+  });
+}
+(Add more hooks later—these replace SWR.)
+
+3 · Convert two screens
+3.1 HomePage
+apps/web/src/pages/HomePage.tsx
+
+tsx
+Copy
+Edit
+// replace import useSWR…
+import { useForms, useCredentialLibrary } from '@shared/react-query';
+
+const { data: forms, isLoading } = useForms();
+const { data: creds } = useCredentialLibrary();
+Delete old useSWR code and state; use forms directly in render.
+
+3.2 VCModal
+apps/web/src/components/VCModal.tsx
+
+tsx
+Copy
+Edit
+import { useProof, useProofStatus } from '@shared/react-query';
+
+const { data } = useProof(defId);           // returns { qrCodePng, proofRequestId }
+const status = useProofStatus(data?.proofRequestId);
+
+if (status.data?.status === 'presentation_verified') {
+  onVerified(status.data.attributes);
+  return null;
+}
+return (
+  <img src={`data:image/png;base64,${data?.qrCodePng}`} alt="QR" />
+);
+Remove custom useEffect + fetch polling.
+
+4 · Clean up old code
+Delete useSWR imports, localStorage polling code, and fetch helpers that became dead.
+
+pnpm -r exec eslint --fix .
+
+5 · Compile + runtime guard
+bash
+Copy
+Edit
+pnpm --filter web dev
+Checklist:
+
+Home page loads forms list with no SWR warnings.
+
+Network tab shows /api/forms & /api/cred-lib fetched once; re-loading not every second.
+
+Opening a form → QR modal appears; Tailwind grids still styled.
+
+Scanning QR verifies proof; modal closes, form autofills (same behaviour as before).
+
+Ghostwriter instructions
+• Add QueryClient provider, create shared hooks folder, migrate HomePage & VCModal, remove useSWR.
+• Ensure npm run dev starts 0 TS errors & proof flow works.
+• Commit message: “feat: migrate to TanStack Query”.
+
+yaml
+Copy
+Edit
+
+---
+
+After this prompt:
+
+* **All remote calls** (Orbit, Form.io, future Auth) live in `packages/external/*`.  
+* **All front-end data fetching** is via React Query hooks in `packages/shared/react-query`.  
+* SWR is removed, reducing bundle size and unifying caching/retry logic.

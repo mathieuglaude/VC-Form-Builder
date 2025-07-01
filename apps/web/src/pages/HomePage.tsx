@@ -1,53 +1,18 @@
 import { useLocation } from 'wouter';
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, FileText, Edit, ExternalLink, Clock, TrendingUp, Filter, X } from 'lucide-react';
+import { useForms, useCredentialLibrary } from '@shared/react-query';
 
 export default function HomePage() {
   const [, setLocation] = useLocation();
   const [filterIds, setFilterIds] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-  const [formsData, setFormsData] = useState([]);
-  const [creds, setCreds] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch forms and credentials data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [formsResponse, credsResponse] = await Promise.all([
-          fetch('/api/forms'),
-          fetch('/api/cred-lib')
-        ]);
-        
-        const forms = await formsResponse.json();
-        const credentials = await credsResponse.json();
-        
-        setFormsData(forms);
-        setCreds(credentials);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Re-validate every minute so "Updated last" moves cards to show recent changes
-  useEffect(() => {
-    const intervalId = setInterval(() => {
-      // Refetch forms data periodically
-      fetch('/api/forms')
-        .then(r => r.json())
-        .then(setFormsData)
-        .catch(console.error);
-    }, 60000); // 60 seconds
-
-    return () => clearInterval(intervalId);
-  }, []);
+  // Use React Query hooks for data fetching
+  const { data: formsData = [], isLoading } = useForms();
+  const { data: creds = [] } = useCredentialLibrary();
 
   // Load saved filter preferences
   useEffect(() => {
