@@ -13,14 +13,43 @@ interface OCABundle {
   }>;
 }
 
-export async function importOCABundle(url: string) {
+function toRaw(url: string): string {
+  // GitHub path like 'bcgov/aries-oca-bundles/...'
+  if (!url.startsWith('http')) {
+    return 'https://raw.githubusercontent.com/' + url.replace('/tree/', '/') + (url.endsWith('.json') ? '' : '/OCABundle.json');
+  }
+  // Full GitHub URL
+  if (url.includes('github.com') && !url.includes('raw.githubusercontent')) {
+    return url
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/tree/', '/')
+      .replace(/\/$/, '') +
+      (url.endsWith('.json') ? '' : '/OCABundle.json');
+  }
+  return url;
+}
+
+export async function importOCABundle(pathOrRaw: string) {
+  // 1️⃣ Normalize: if the string ends with ".json" keep it; else append "/OCABundle.json"
+  const rawJsonUrl = pathOrRaw.endsWith('.json')
+    ? toRaw(pathOrRaw)
+    : toRaw(pathOrRaw.replace(/\/$/, '') + '/OCABundle.json');
+
+  // 2️⃣ Derive overlay base dir for asset download
+  const baseDir = rawJsonUrl.replace(/OCABundle\.json$/, 'overlays/branding/');
+
   // Fetch the OCA bundle
-  const response = await fetch(url);
+  const response = await fetch(rawJsonUrl);
   if (!response.ok) {
     throw new Error(`Failed to fetch OCA bundle: ${response.statusText}`);
   }
   
   const [bundle]: [OCABundle] = await response.json();
+  
+  // Validation
+  if (!Array.isArray(bundle?.overlays)) {
+    throw new Error('Invalid OCA bundle: overlays missing');
+  }
 
   // Extract branding and meta overlays
   const branding = bundle.overlays.find(o => o.type.includes('branding'));
@@ -28,7 +57,7 @@ export async function importOCABundle(url: string) {
 
   // Cache artwork locally if present
   if (branding?.data?.logo) {
-    const logoUrl = url.replace(/OCABundle.json$/, 'overlays/branding/' + branding.data.logo);
+    const logoUrl = baseDir + branding.data.logo;
     try {
       const logoResponse = await fetch(logoUrl);
       if (logoResponse.ok) {

@@ -47,6 +47,17 @@ Frontend polls every 3 seconds → State changes to 'verified' → Modal shows s
 - `POST /api/credentials/definition` - Setup credential definitions
 - `POST /api/credentials/issue` - Issue credentials to holders
 
+## Adding New Credentials
+
+1. Open **Account → Credential Templates** (admin access required)
+2. Click **Import OCA Bundle**
+3. Paste *either*
+   • GitHub folder path (e.g. `bcgov/aries-oca-bundles/OCABundles/schema/bcgov-digital-trust/HealthCard/Prod`)
+   • Full GitHub URL
+   • Raw JSON URL
+
+The system fetches OCABundle.json, caches artwork, and the credential appears in the library with full branding.
+
 ## Environment Configuration
 
 Required environment variables for Orbit Enterprise integration:

@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Edit, Trash2, Plus, RotateCcw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Edit, Trash2, Plus, RotateCcw, Download } from "lucide-react";
 import { CredentialTemplate } from "@shared/schema";
 import { CredFormDialog } from "@/components/CredFormDialog";
 import { useToast } from "@/hooks/use-toast";
@@ -11,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 export default function CredentialsAdminPage() {
   const [editing, setEditing] = useState<CredentialTemplate | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [importUrl, setImportUrl] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -65,6 +69,35 @@ export default function CredentialsAdminPage() {
     },
   });
 
+  const importMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const response = await fetch("/api/admin/credentials/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to import OCA bundle");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "OCA bundle imported successfully" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/credentials"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/cred-lib"] });
+      setShowImportDialog(false);
+      setImportUrl("");
+    },
+    onError: (error: Error) => {
+      toast({ 
+        title: "Failed to import OCA bundle",
+        description: error.message,
+        variant: "destructive"
+      });
+    },
+  });
+
   const handleDelete = async (id: number, label: string) => {
     if (window.confirm(`Are you sure you want to delete "${label}"?`)) {
       deleteMutation.mutate(id);
@@ -106,6 +139,15 @@ export default function CredentialsAdminPage() {
                 Health Check
               </Button>
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowImportDialog(true)}
+                className="flex items-center gap-2"
+              >
+                <Download className="h-4 w-4" />
+                Import Bundle
+              </Button>
+              <Button
                 onClick={() => setShowCreateDialog(true)}
                 className="flex items-center gap-2"
               >
@@ -128,56 +170,60 @@ export default function CredentialsAdminPage() {
                 </tr>
               </thead>
               <tbody className="text-sm">
-                {templatesArray.map((template: CredentialTemplate) => (
-                  <tr key={template.id} className="border-b hover:bg-muted/50">
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{template.label}</span>
-                        {template.isPredefined && (
-                          <Badge variant="secondary" className="text-xs">
-                            System
+                {templatesArray.map((template: CredentialTemplate) => {
+                  const meta = template.overlays?.find(o => o.type.includes('meta'))?.data ?? {};
+                  const isPredefined = template.schemaId?.includes('bcgov') || false;
+                  return (
+                    <tr key={template.id} className="border-b hover:bg-muted/50">
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{template.label}</span>
+                          {isPredefined && (
+                            <Badge variant="secondary" className="text-xs">
+                              System
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {meta.issuer || meta.issuer_name || '—'}
+                      </td>
+                      <td className="py-3 text-muted-foreground">
+                        {template.version || '—'}
+                      </td>
+                      <td className="py-3">
+                        {meta.ecosystem && (
+                          <Badge variant="outline" className="text-xs">
+                            {meta.ecosystem}
                           </Badge>
                         )}
-                      </div>
-                    </td>
-                    <td className="py-3 text-muted-foreground">
-                      {template.metaOverlay?.issuer || '—'}
-                    </td>
-                    <td className="py-3 text-muted-foreground">
-                      {template.version || '—'}
-                    </td>
-                    <td className="py-3">
-                      {template.ecosystem && (
-                        <Badge variant="outline" className="text-xs">
-                          {template.ecosystem}
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="py-3">
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditing(template)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {!template.isPredefined && (
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleDelete(template.id, template.label)}
-                            disabled={deleteMutation.isPending}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            onClick={() => setEditing(template)}
+                            className="h-8 w-8 p-0"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Edit className="h-4 w-4" />
                           </Button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          {!isPredefined && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(template.id, template.label)}
+                              disabled={deleteMutation.isPending}
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -205,6 +251,43 @@ export default function CredentialsAdminPage() {
           onClose={() => setShowCreateDialog(false)}
           onSaved={handleSaved}
         />
+      )}
+
+      {showImportDialog && (
+        <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Import OCA Bundle</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Input
+                  value={importUrl}
+                  onChange={(e) => setImportUrl(e.target.value)}
+                  placeholder="Paste GitHub folder or raw JSON URL"
+                  className="w-full"
+                />
+                <p className="text-sm text-muted-foreground">
+                  Examples:
+                  <br />• bcgov/aries-oca-bundles/OCABundles/schema/bcgov-digital-trust/HealthCard/Prod
+                  <br />• https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/...
+                  <br />• https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/.../OCABundle.json
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!importUrl.trim() || importMutation.isPending}
+                  onClick={() => importMutation.mutate(importUrl.trim())}
+                >
+                  {importMutation.isPending ? "Importing..." : "Import"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

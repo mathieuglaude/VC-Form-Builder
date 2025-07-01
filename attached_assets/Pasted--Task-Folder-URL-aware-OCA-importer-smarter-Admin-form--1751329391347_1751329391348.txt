@@ -1,0 +1,154 @@
+**Task – Folder-URL aware OCA importer + smarter Admin form**
+
+----------------------------------------------------------------
+## 1 · Enhance `importOCABundle()` to accept folder paths
+
+`packages/external/oca/importBundle.ts`
+
+```ts
+export async function importOCABundle(pathOrRaw: string) {
+  // 1️⃣ Normalize: if the string ends with ".json" keep it; else append "/OCABundle.json"
+  const rawJsonUrl = pathOrRaw.endsWith('.json')
+    ? pathOrRaw
+    : pathOrRaw.replace(/\/$/, '') + '/OCABundle.json';
+
+  // 2️⃣ Derive overlay base dir for asset download
+  const baseDir = rawJsonUrl.replace(/OCABundle\.json$/, 'overlays/branding/');
+
+  const [bundle] = await fetch(rawJsonUrl).then(r => r.json());
+
+  // --- rest unchanged ---
+  const branding = bundle.overlays.find(o => o.type.includes('branding'));
+  if (branding?.logo) {
+    branding.logo = await cacheAsset(
+      baseDir + branding.logo,
+      branding.logo
+    );
+  }
+  /* ... */
+}
+Now you can call it with:
+
+Full raw URL
+https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/.../Lawyer/Test/OCABundle.json
+
+Folder URL
+https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/.../Lawyer/Test
+
+Short repo path
+bcgov/aries-oca-bundles/OCABundles/schema/.../Lawyer/Test
+
+The helper converts each form into the raw JSON URL.
+
+2 · Resolve GitHub “tree/branch” → raw URL
+Right above the fetch add:
+
+ts
+Copy
+Edit
+function toRaw(url: string) {
+  // gh path like 'bcgov/aries-oca-bundles/...'
+  if (!url.startsWith('http')) {
+    return 'https://raw.githubusercontent.com/' + url.replace('/tree/', '/') + (url.endsWith('.json') ? '' : '/OCABundle.json');
+  }
+  // full GitHub URL
+  if (url.includes('github.com') && !url.includes('raw.githubusercontent')) {
+    return url
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/tree/', '/')
+      .replace(/\/$/, '') +
+      (url.endsWith('.json') ? '' : '/OCABundle.json');
+  }
+  return url;
+}
+const rawJsonUrl = toRaw(pathOrRaw);
+const baseDir = rawJsonUrl.replace(/OCABundle\.json$/, 'overlays/branding/');
+3 · Admin UI – “Import Bundle” mode
+In CredentialsAdminPage add a second tab or button:
+
+tsx
+Copy
+Edit
+<button onClick={()=>setImportOpen(true)} className="ml-2 text-sm">
+  + Import OCA Bundle
+</button>
+ImportOCADialog.tsx
+
+tsx
+Copy
+Edit
+const [url, setUrl] = useState('');
+return (
+  <Dialog /* basic modal */>
+    <input
+      value={url}
+      onChange={e=>setUrl(e.target.value)}
+      placeholder="Paste GitHub folder or raw JSON URL"
+      className="input w-full mb-4"
+    />
+    <button
+      disabled={!url}
+      onClick={async ()=>{
+        await fetch('/api/admin/credentials/import', {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ url })
+        });
+        onSaved();
+      }}
+      className="btn-primary"
+    >
+      Import
+    </button>
+  </Dialog>
+);
+When the POST succeeds the new template appears in the table immediately.
+
+4 · Validation & feedback
+Inside importOCABundle():
+
+ts
+Copy
+Edit
+if (!Array.isArray(bundle?.overlays)) {
+  throw new Error('Invalid OCA bundle: overlays missing');
+}
+In the route handler wrap with try/catch and return 400 { error }.
+
+5 · Update README
+Add a short section:
+
+pgsql
+Copy
+Edit
+### Adding new credentials
+
+1. Open **Account → Credential Templates**  
+2. Click **Import OCA Bundle**  
+3. Paste *either*  
+   • GitHub folder path (e.g. `bcgov/aries-oca-bundles/OCABundles/schema/bcgov-digital-trust/HealthCard/Prod`)  
+   • Full GitHub URL  
+   • Raw JSON URL  
+
+The system fetches OCABundle.json, caches artwork, and the credential appears in the library with full branding.
+6 · Compile guard
+bash
+Copy
+Edit
+pnpm --filter api dev   # API starts, log "GET new OCA bundle"
+pnpm --filter web dev
+Use the Admin dialog to import another bundle; its card should appear styled.
+
+Ghostwriter
+• Implement helper upgrades (toRaw, folder path handling).
+• Add import dialog + route.
+• Confirm existing Lawyer credential still loads via new schema.
+• Commit: “feat: bundle-import by folder URL”.
+
+yaml
+Copy
+Edit
+
+---
+
+After this change every credential—Lawyer, Person, Business Card, future custom ones—uses the same imp
