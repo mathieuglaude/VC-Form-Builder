@@ -1,0 +1,84 @@
+🔧  BUG – Publish Form always says “URL taken”                    (high-severity)
+==========================================================================
+
+🪧  Symptoms
+-----------
+• Any slug entered in the “Publish Form” modal (e.g. `kyc-test`, `hello`) is
+  marked “taken” and the Publish button stays disabled.
+
+• Network tab: the GET/POST request that checks slug availability returns
+  `{ available:false }` for every value.
+
+• DB contains no published_forms row with those slugs.
+
+🥅  Expected
+-----------
+• Slug is considered **taken** only when a *different* form already owns it.
+• Otherwise `{ available:true }` and user can publish.
+• A unique DB constraint prevents races.
+
+🚩  What to inspect
+-------------------
+1. **API route**  
+   `apps/api/routes/forms.ts` (or `publish.ts`) has the slug-lookup handler
+   e.g.  
+   ```ts
+   router.get('/slug/:slug/available', async (req,res)=>{ … })
+Verify the query:
+
+ts
+Copy
+Edit
+const exists = await db.form.findFirst({
+  where:{ publicSlug: slug }          // should NOT filter by owner
+});
+res.json({ available: !exists });
+Remove accidental filter AND userId = req.user.id.
+
+Database
+• form_configs (or published_forms) table has public_slug column.
+• Create / ensure a UNIQUE INDEX on public_slug.
+
+sql
+Copy
+Edit
+CREATE UNIQUE INDEX IF NOT EXISTS idx_form_public_slug
+  ON form_configs (public_slug);
+Publish endpoint
+POST /api/forms/:id/publish must:
+
+validate body.slug,
+
+upsert {id, publicSlug, publishedAt},
+
+return { publicUrl }.
+
+Catch UniqueViolation and respond 409.
+
+Frontend
+apps/web/src/pages/FormBuilderPro/PublishModal.tsx
+
+debounce fetch to /slug/${slug}/available
+
+show ✓ green if available, red error otherwise.
+
+enable Publish when available === true.
+
+Tests & QA
+• pnpm test:e2e publish-slug
+• manual: try “abc”, “abc” again → second fails.
+
+🔨 Tasks
+ Fix backend availability route (point 1)
+
+ Add DB unique index / migration (point 2)
+
+ Harden publish controller (point 3)
+
+ Wire frontend validation (point 4)
+
+ Regression tests
+
+No other files should be touched. pnpm dev must restart with 0 TS errors
+and publishing a new slug like kyc-test should succeed, returning
+https://<hostname>/f/kyc-test.

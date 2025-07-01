@@ -146,8 +146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'slug required' });
       }
       
-      const existing = await storage.getFormConfigByPublicSlug(slug as string);
-      res.json({ available: !existing });
+      const available = await storage.checkPublicSlugAvailability(slug as string);
+      res.json({ available });
     } catch (error) {
       console.error('Slug check error:', error);
       res.status(500).json({ error: 'Failed to check slug availability' });
@@ -165,8 +165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if slug is already taken
-      const existing = await storage.getFormConfigByPublicSlug(slug);
-      if (existing) {
+      const available = await storage.checkPublicSlugAvailability(slug);
+      if (!available) {
         return res.status(409).json({ error: 'slug taken' });
       }
       

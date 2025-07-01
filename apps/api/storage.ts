@@ -30,6 +30,7 @@ export interface IStorage {
   getFormConfig(id: number): Promise<FormConfig | undefined>;
   getFormConfigBySlug(slug: string): Promise<FormConfig | undefined>;
   getFormConfigByPublicSlug(publicSlug: string): Promise<FormConfig | undefined>;
+  checkPublicSlugAvailability(publicSlug: string): Promise<boolean>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
   publishFormConfig(id: number, transport: 'connection' | 'oob'): Promise<FormConfig | undefined>;
   publishFormConfigWithSlug(id: number, slug: string): Promise<FormConfig | undefined>;
@@ -194,6 +195,13 @@ export class MemStorage implements IStorage {
     return Array.from(this.formConfigs.values()).find(
       (form) => form.publicSlug === publicSlug && form.isPublished,
     );
+  }
+
+  async checkPublicSlugAvailability(publicSlug: string): Promise<boolean> {
+    const existing = Array.from(this.formConfigs.values()).find(
+      (form) => form.publicSlug === publicSlug
+    );
+    return !existing;
   }
 
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {
@@ -549,6 +557,11 @@ export class DatabaseStorage implements IStorage {
       and(eq(formConfigs.publicSlug, publicSlug), eq(formConfigs.isPublished, true))
     );
     return config || undefined;
+  }
+
+  async checkPublicSlugAvailability(publicSlug: string): Promise<boolean> {
+    const [existing] = await db.select().from(formConfigs).where(eq(formConfigs.publicSlug, publicSlug));
+    return !existing;
   }
 
   async updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined> {

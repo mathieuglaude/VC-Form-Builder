@@ -32,18 +32,18 @@ export default function PublishFormDialog({ isOpen, onClose, form }: PublishForm
     queryKey: ['slug-check', slug],
     queryFn: async () => {
       if (!slug) return { available: false };
-      const response = await fetch(`/api/forms/${form?.id}/check-slug?slug=${slug}`);
+      const response = await fetch(`/api/forms/slug-check?slug=${slug}`);
       if (!response.ok) throw new Error('Failed to check slug');
       return response.json();
     },
-    enabled: Boolean(slug && form?.id) && isOpen,
+    enabled: Boolean(slug) && isOpen,
     staleTime: 0
   });
 
   // Publish form mutation
   const publishMutation = useMutation({
     mutationFn: async (slugToPublish: string) => {
-      const response = await fetch(`/api/forms/${form.id}/publish-with-slug`, {
+      const response = await fetch(`/api/forms/${form.id}/publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ slug: slugToPublish })
