@@ -1,0 +1,155 @@
+**Feature – Draft vs Published forms with unique public URL**
+
+----------------------------------------------------------------
+## 0 · DB / Prisma / Mongoose change
+
+`FormConfig` model → add fields
+
+```ts
+slug:      { type: String, unique: true, sparse: true },  // public path
+published: { type: Boolean, default: false },
+publishedAt: Date
+Create unique index on slug.
+
+Run migration (pnpm --filter api db:push).
+
+1 · API routes
+1.1 Slug availability
+GET /api/forms/slug-check?slug=my-form
+
+ts
+Copy
+Edit
+if (!req.query.slug) return res.status(400).json({error:'slug required'});
+const exists = await FormConfig.exists({ slug: req.query.slug });
+res.json({ available: !exists });
+1.2 Publish form
+POST /api/forms/:id/publish
+
+ts
+Copy
+Edit
+const { slug } = req.body;
+if (!slug) return res.status(400).json({ error:'slug required'});
+if (await FormConfig.exists({ slug }))
+  return res.status(409).json({ error:'slug taken'});
+
+const form = await FormConfig.findByIdAndUpdate(
+  req.params.id,
+  { slug, published:true, publishedAt:new Date() },
+  { new:true }
+);
+res.json(form);
+Return 404/403 if user not owner.
+
+1.3 Public fetch (already exists or add)
+GET /public/:slug → returns form JSON for renderer.
+
+2 · Front-end
+2.1 Draft save unchanged
+“Save Form” POST → /api/forms/:id (keeps published:false).
+
+2.2 Publish dialog
+components/PublishFormDialog.tsx
+
+tsx
+Copy
+Edit
+const [slug, setSlug] = useState(
+  kebabCase(form.label)            // initial suggestion
+);
+const { data } = useQuery(
+  ['slug-check', slug],
+  () => fetch(`/api/forms/slug-check?slug=${slug}`).then(r=>r.json()),
+  { enabled:Boolean(slug), staleTime:0 }
+);
+
+return (
+  <Dialog open={open} onOpenChange={setOpen}>
+    {/* input */}
+    <input
+      value={slug}
+      onChange={e=>setSlug(kebabCase(e.target.value))}
+      className="input w-full"
+    />
+    {slug && (
+      data?.available
+        ? <p className="text-sm text-green-600">✓ URL available</p>
+        : <p className="text-sm text-red-600">URL taken, try another</p>
+    )}
+    <button
+      className="btn-primary mt-4"
+      disabled={!data?.available}
+      onClick={async ()=>{
+        await fetch(`/api/forms/${form._id}/publish`,{
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({ slug })
+        });
+        queryClient.invalidateQueries(['forms']);   // refresh lists
+        setOpen(false);
+      }}
+    >
+      Publish
+    </button>
+  </Dialog>
+);
+kebabCase comes from lodash-es.
+
+2.3 FormBuilder page buttons
+tsx
+Copy
+Edit
+<button onClick={()=>setPublishOpen(true)} disabled={form.published}>
+  Publish
+</button>
+{form.published && (
+  <span className="ml-2 text-xs text-gray-500">Published</span>
+)}
+2.4 Home-page cards
+Show external-link icon only if form.published === true.
+
+Use URL ${origin}/f/${form.slug}.
+
+2.5 Public route
+Add to React Router:
+
+tsx
+Copy
+Edit
+<Route path="/f/:slug" element={<LiveFormPage />} />
+LiveFormPage fetches /public/${slug} and renders Form.io.
+
+3 · Tests / Lint
+bash
+Copy
+Edit
+pnpm -r exec eslint --fix .
+pnpm --filter api dev    # 0 TS errors
+pnpm --filter web dev
+Manual QA:
+
+Create new form → Save → appears in “My Forms” (draft).
+
+Click Publish → dialog suggests my-form slug, green “URL available”.
+
+Publish → card now shows external-link; slug field greyed-out in dialog if reopened.
+
+Enter duplicate slug in another draft → red “URL taken”.
+
+Open /f/my-form in incognito → form renders.
+
+Ghostwriter actions
+• Add schema fields & index, build routes (/slug-check, /publish, /public/:slug).
+• Implement dialog + hooks, update buttons & card link, router entry.
+• Use lodash-es/kebabCase for slug suggestion.
+• Keep styling consistent with existing card / dialog components.
+• Commit: “feat: draft vs publish with unique public URL”.
+
+yaml
+Copy
+Edit
+
+---
+
+Run the prompt; afterward you’ll have “Save” (private template) and “Publish” (unique public UR

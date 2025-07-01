@@ -32,6 +32,7 @@ export interface IStorage {
   getFormConfigByPublicSlug(publicSlug: string): Promise<FormConfig | undefined>;
   updateFormConfig(id: number, formConfig: Partial<InsertFormConfig>): Promise<FormConfig | undefined>;
   publishFormConfig(id: number, transport: 'connection' | 'oob'): Promise<FormConfig | undefined>;
+  publishFormConfigWithSlug(id: number, slug: string): Promise<FormConfig | undefined>;
   deleteFormConfig(id: number): Promise<boolean>;
   listFormConfigs(): Promise<FormConfig[]>;
   listPublicFormConfigs(): Promise<FormConfig[]>;
@@ -221,6 +222,22 @@ export class MemStorage implements IStorage {
       isPublished: true,
       publicSlug,
       proofTransport: transport,
+      updatedAt: new Date()
+    };
+    this.formConfigs.set(id, updated);
+    return updated;
+  }
+
+  async publishFormConfigWithSlug(id: number, slug: string): Promise<FormConfig | undefined> {
+    const existing = this.formConfigs.get(id);
+    if (!existing) return undefined;
+
+    const updated: FormConfig = {
+      ...existing,
+      isTemplate: false,
+      isPublished: true,
+      publicSlug: slug,
+      publishedAt: new Date(),
       updatedAt: new Date()
     };
     this.formConfigs.set(id, updated);
@@ -569,6 +586,30 @@ export class DatabaseStorage implements IStorage {
       return updated || undefined;
     } catch (error) {
       console.error('Database error in publishFormConfig:', error);
+      return undefined;
+    }
+  }
+
+  async publishFormConfigWithSlug(id: number, slug: string): Promise<FormConfig | undefined> {
+    try {
+      const [existing] = await db.select().from(formConfigs).where(eq(formConfigs.id, id));
+      if (!existing) return undefined;
+
+      const [updated] = await db
+        .update(formConfigs)
+        .set({
+          isTemplate: false,
+          isPublished: true,
+          publicSlug: slug,
+          publishedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(formConfigs.id, id))
+        .returning();
+      
+      return updated || undefined;
+    } catch (error) {
+      console.error('Database error in publishFormConfigWithSlug:', error);
       return undefined;
     }
   }

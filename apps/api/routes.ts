@@ -135,7 +135,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Publish form endpoint
+  // Check slug availability
+  app.get('/api/forms/slug-check', async (req, res) => {
+    try {
+      const { slug } = req.query;
+      if (!slug) {
+        return res.status(400).json({ error: 'slug required' });
+      }
+      
+      const existing = await storage.getFormConfigByPublicSlug(slug as string);
+      res.json({ available: !existing });
+    } catch (error) {
+      console.error('Slug check error:', error);
+      res.status(500).json({ error: 'Failed to check slug availability' });
+    }
+  });
+
+  // Publish form with custom slug
+  app.post('/api/forms/:id/publish', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const { slug } = req.body;
+      
+      if (!slug) {
+        return res.status(400).json({ error: 'slug required' });
+      }
+      
+      // Check if slug is already taken
+      const existing = await storage.getFormConfigByPublicSlug(slug);
+      if (existing) {
+        return res.status(409).json({ error: 'slug taken' });
+      }
+      
+      const publishedForm = await storage.publishFormConfigWithSlug(id, slug);
+      
+      if (!publishedForm) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      
+      res.json(publishedForm);
+    } catch (error: any) {
+      console.error('Form publish error:', error);
+      res.status(500).json({ error: 'Failed to publish form', details: error.message });
+    }
+  });
+
+  // Legacy publish endpoint (for backward compatibility)
   app.patch('/api/forms/:id/publish', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -155,6 +200,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Form publish error:', error);
       res.status(500).json({ error: 'Failed to publish form', details: error.message });
+    }
+  });
+
+  // Public form access API endpoint  
+  app.get('/public/:slug', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const formConfig = await storage.getFormConfigByPublicSlug(slug);
+      
+      if (!formConfig || !formConfig.isPublished) {
+        return res.status(404).json({ error: 'Form not found or not published' });
+      }
+      
+      res.json(formConfig);
+    } catch (error) {
+      console.error('Public form access error:', error);
+      res.status(500).json({ error: 'Failed to retrieve form' });
     }
   });
 

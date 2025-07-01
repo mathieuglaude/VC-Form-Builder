@@ -32,6 +32,7 @@ export const formConfigs = pgTable("form_configs", {
   isTemplate: boolean("is_template").notNull().default(true),
   isPublished: boolean("is_published").notNull().default(false),
   publicSlug: text("public_slug"),
+  publishedAt: timestamp("published_at"),
   proofTransport: text("proof_transport").$type<'connection' | 'oob'>(),
   authorId: text("author_id").notNull().default("demo"),
   authorName: text("author_name").notNull().default("Demo User"),

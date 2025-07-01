@@ -11,6 +11,7 @@ import WalletLibraryPage from "@/pages/WalletLibraryPage";
 import CommunityPage from "@/pages/CommunityPage";
 import AccountPage from "@/pages/AccountPage";
 import CredentialsAdminPage from "@/pages/CredentialsAdminPage";
+import PublicFormPage from "@/pages/PublicFormPage";
 
 function Router() {
   // Fix URL encoding issues by redirecting malformed paths to root
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
       <Route path="/builder/:id" component={BuilderPage} />
       <Route path="/form/:id" component={FillPage} />
+      <Route path="/f/:slug" component={PublicFormPage} />
       <Route path="/community" component={CommunityPage} />
       <Route path="/credentials" component={CredentialsPage} />
       <Route path="/credentials/:id" component={CredentialDetailPage} />

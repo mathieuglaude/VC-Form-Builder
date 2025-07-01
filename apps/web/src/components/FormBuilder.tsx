@@ -9,6 +9,7 @@ import FieldConfigModal from "./FieldConfigModal";
 import WalletSelector from "./WalletSelector";
 import IssuanceActionModal from "./IssuanceActionModal";
 import DeleteFormModal from "./DeleteFormModal";
+import PublishFormDialog from "./PublishFormDialog";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Trash2, Share2 } from "lucide-react";
 
@@ -32,6 +33,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
   const [issuanceActions, setIssuanceActions] = useState<any[]>(initialForm?.metadata?.issuanceActions || []);
   const [isIssuanceModalOpen, setIsIssuanceModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -308,14 +310,15 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
             <Button onClick={handleSave}>
               Save Form
             </Button>
-            {initialForm?.id && onPublish && (
+            {initialForm?.id && (
               <Button 
                 variant="default" 
-                onClick={onPublish}
+                onClick={() => setIsPublishDialogOpen(true)}
                 className="bg-blue-600 hover:bg-blue-700"
+                disabled={initialForm?.isPublished}
               >
                 <Share2 className="h-4 w-4 mr-2" />
-                Publish
+                {initialForm?.isPublished ? 'Published' : 'Publish'}
               </Button>
             )}
             {initialForm?.id && (
@@ -613,6 +616,13 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
         formName={formTitle || 'Untitled Form'}
         isPublic={isPublic}
         isDeleting={deleteMutation.isPending}
+      />
+
+      {/* Publish Form Dialog */}
+      <PublishFormDialog
+        isOpen={isPublishDialogOpen}
+        onClose={() => setIsPublishDialogOpen(false)}
+        form={initialForm}
       />
     </div>
   );
