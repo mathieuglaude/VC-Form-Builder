@@ -1,0 +1,116 @@
+**Bug – “Map to Attribute” list empty after refactor**
+
+Symptoms  
+• In `FieldConfigDialog` the *Select from Credential Catalogue* dropdown works  
+  but the *Map to Attribute* dropdown stays empty.  
+• Console shows no network error; likely we stopped calling the attribute-fetch
+  endpoint during the monorepo move.
+
+Goal  
+• Restore attribute loading whenever `selectedCredential` changes.  
+• Use data straight from the single-source `GET /api/credential-templates/:id`
+  (contains `attributes: string[]`).  
+• Show helpful “No attributes found” notice if the template has none.
+
+Steps
+----------------------------------------------------------------
+1. **Confirm backend still returns attributes**  
+   ```bash
+   curl http://localhost:5000/api/credential-templates/<templateId>
+   # expect { attributes: ["given_names","family_name", …] }
+Locate front-end component
+apps/web/src/components/FieldConfig/VerifiedAttributeSection.tsx
+(was VerifiedAttributeConfig.tsx before refactor).
+
+Add React-Query hook
+
+tsx
+Copy
+Edit
+import { useQuery } from '@tanstack/react-query';
+
+const { data: attrs, isLoading } = useQuery(
+  ['cred-attrs', selectedTemplateId],
+  () => fetch(`/api/credential-templates/${selectedTemplateId}`)
+          .then(r => r.json())
+          .then(r => r.attributes ?? []),
+  { enabled: Boolean(selectedTemplateId) }
+);
+Populate dropdown
+
+tsx
+Copy
+Edit
+<Select
+  disabled={!selectedTemplateId || isLoading || attrs?.length === 0}
+  value={mappedAttr}
+  onValueChange={setMappedAttr}
+>
+  {attrs?.map(a => (
+    <Select.Item key={a} value={a}>
+      {a}
+    </Select.Item>
+  ))}
+</Select>
+{attrs?.length === 0 && !isLoading && (
+  <p className="mt-1 text-sm text-red-600">
+    This credential template exposes no attributes.
+  </p>
+)}
+(Replace with your shadcn <Select> component names.)
+
+State reset – when user changes template, clear old mapping:
+
+tsx
+Copy
+Edit
+useEffect(() => setMappedAttr(''), [selectedTemplateId]);
+Type safety – extend shared type:
+
+packages/common/src/types.ts
+
+ts
+Copy
+Edit
+export interface CredentialTemplate {
+  id: string;
+  label: string;
+  attributes: string[];
+  // …
+}
+ESLint / TS check
+
+bash
+Copy
+Edit
+pnpm -r exec eslint --fix .
+pnpm -r tsc --noEmit
+Manual QA
+
+open Form Builder → Edit field →
+▸ select “BC Person Credential” → attribute list shows given_name …
+▸ pick “family_name”, Save – mapping persists
+
+select a template with no attributes → disabled dropdown + red text.
+
+attribute list re-loads each time you switch templates.
+
+Commit
+
+arduino
+Copy
+Edit
+fix: reload credential attributes in field config dialog
+Ghostwriter instructions
+• Implement hook, dropdown population, state reset.
+• Don’t touch API routes (already working).
+• Keep UI style consistent with shadcn.
+• Finish with 0 TypeScript errors and restart web dev server.
+
+yaml
+Copy
+Edit
+
+---
+
+After the agent applies this patch, re-open the field dialog: once you pick a credential templat

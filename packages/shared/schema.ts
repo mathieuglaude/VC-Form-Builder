@@ -4,7 +4,7 @@ import { z } from "zod";
 
 export interface AttributeDef {
   name: string;
-  description?: string;
+  description: string;
 }
 
 export const users = pgTable("users", {
@@ -65,7 +65,6 @@ export interface OCAOverlay {
   data: any;
 }
 
-
 export const credentialTemplates = pgTable("credential_templates", {
   id: serial("id").primaryKey(),
   label: text("label").notNull().unique(),
@@ -75,6 +74,15 @@ export const credentialTemplates = pgTable("credential_templates", {
   issuerDid: text("issuer_did").notNull(),
   overlays: jsonb("overlays").$type<OCAOverlay[]>().notNull().default([]),
   governanceUrl: text("governance_url"),
+  schemaUrl: text("schema_url"),
+  attributes: jsonb("attributes").$type<AttributeDef[]>().notNull().default([]),
+  isPredefined: boolean("is_predefined").notNull().default(false),
+  ecosystem: text("ecosystem"),
+  interopProfile: text("interop_profile"),
+  compatibleWallets: jsonb("compatible_wallets").$type<string[]>().default([]),
+  walletRestricted: boolean("wallet_restricted").notNull().default(false),
+  branding: jsonb("branding").$type<Record<string, any>>().default({}),
+  metaOverlay: jsonb("meta_overlay").$type<Record<string, any>>().default({}),
   visible: boolean("visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

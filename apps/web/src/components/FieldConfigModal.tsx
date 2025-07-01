@@ -39,6 +39,21 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
     enabled: isOpen
   });
 
+  // Get selected credential template ID
+  const selectedTemplateId = credentialTemplates?.find((t: any) => t.label === config.credentialType)?.id;
+
+  // Fetch credential attributes for the selected template
+  const { data: attrs, isLoading: attrsLoading } = useQuery({
+    queryKey: ['cred-attrs', selectedTemplateId],
+    queryFn: async () => {
+      const response = await fetch(`/api/cred-lib/${selectedTemplateId}`);
+      if (!response.ok) throw new Error('Failed to fetch credential template');
+      const template = await response.json();
+      return template.attributes || [];
+    },
+    enabled: Boolean(selectedTemplateId)
+  });
+
   useEffect(() => {
     if (initialConfig && isOpen) {
       setConfig({
@@ -67,6 +82,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
       });
     }
   }, [initialConfig, isOpen]);
+
+  // Reset attribute mapping when credential template changes
+  useEffect(() => {
+    setConfig(prev => ({ ...prev, attributeName: '' }));
+  }, [selectedTemplateId]);
 
   const handleSave = () => {
     const fieldConfig = {
@@ -97,18 +117,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   };
 
   const getCredentialAttributes = () => {
-    if (!credentialTemplates || !config.credentialType) return [];
-    
-    try {
-      const selectedTemplate = (credentialTemplates as any[]).find((template: any) => 
-        template.label === config.credentialType
-      );
-      
-      return selectedTemplate?.attributes || [];
-    } catch (error) {
-      console.error('Error getting credential attributes:', error);
-      return [];
-    }
+    if (!attrs || attrsLoading) return [];
+    return attrs;
   };
 
   const getCredentialTypes = () => {
@@ -268,9 +278,23 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                 {config.credentialType && (
                   <div>
                     <Label htmlFor="attributeName">Map to Attribute</Label>
-                    <Select value={config.attributeName} onValueChange={(value) => setConfig({ ...config, attributeName: value })}>
+                    <Select 
+                      value={config.attributeName} 
+                      onValueChange={(value) => setConfig({ ...config, attributeName: value })}
+                      disabled={attrsLoading || !config.credentialType}
+                    >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select which attribute to map to this field..." />
+                        <SelectValue 
+                          placeholder={
+                            attrsLoading 
+                              ? "Loading attributes..." 
+                              : !config.credentialType 
+                                ? "Select a credential type first"
+                                : getCredentialAttributes().length === 0
+                                  ? "No attributes found"
+                                  : "Select which attribute to map to this field..."
+                          } 
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {getCredentialAttributes().map((attr: any) => {
@@ -285,6 +309,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                             </SelectItem>
                           );
                         })}
+                        {getCredentialAttributes().length === 0 && (
+                          <div className="p-2 text-sm text-gray-500">
+                            No attributes available for this credential type
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                     {config.attributeName && (
