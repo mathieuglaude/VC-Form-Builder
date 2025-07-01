@@ -1,0 +1,136 @@
+Below is a reference integration play-book you can keep beside your code while wiring Orbit Enterprise Verifier into the VC Form Builder.
+Everything is expressed as a linear flow of client → server → Orbit calls, with the JSON snippets you’ll actually send, and the UI events that should trigger each step.
+
+0 ⃣ One-time prerequisites (already done)
+What	Why	Where in code
+LOB registered → you have lobId, apiKey, transactionId.	Every call to the Verifier API requires these headers.	packages/external/orbit/VerifierClient.ts (base headers).
+Socket registered (POST /verifier/v1/sockets/register)	Lets Orbit push proof-status events to your app. Save socketId.	You can create a singleton socketId in deps/orbit.ts.
+WebSocket client listening on the channel you registered.	Real-time “presentation_received/verified” updates.	Already mocked in WebSocketProofProvider, replace with real listener.
+
+1 ⃣ User clicks Launch → FormLaunchPage
+Your backend route: POST /api/proofs/init
+File: apps/api/routes/proofs.ts
+
+Discover VC requirements from the form schema (vcMapping blocks).
+You already walk the components array to find them.
+
+Build a Proof Definition JSON (only once per form version).
+
+json
+Copy
+Edit
+{
+  "name": "vcfb-form12-v1",
+  "description": "Auto-generated proof for form 12",
+  "requestedCredentials": [
+    {
+      "credentialType": "Unverified Person",
+      "attributes": ["given_names", "surname", "email"],
+      "restrictions": [
+        { "schemaId": "L6ASj..." }
+      ]
+    }
+  ]
+}
+POST /verifier/v1/proof-definitions if it does not exist yet.
+Save the returned proofDefinitionId in form.proofDefId.
+
+POST /verifier/v1/proof-requests to create a new request instance:
+
+json
+Copy
+Edit
+{
+  "proofDefinitionId": "123-abc",
+  "expiresIn": 600,
+  "binding": { "type": "Connection" }   // you are using connection-based flow
+}
+→ returns proofRequestId.
+
+Cache {formId, proofRequestId} for 5 min in Redis / in-memory.
+Return { proofRequestId } to the web client.
+
+2 ⃣ FormLaunchPage calls /api/proofs/:id/qr
+File: apps/api/routes/proofs.ts (prepareUrl endpoint)
+
+GET /verifier/v1/proof-requests/{proofRequestId}/url
+Orbit responds with:
+
+json
+Copy
+Edit
+{
+  "oobUrl": "didcomm://...?_oob=ey...",
+  "qrSvg": "<svg>...</svg>"
+}
+Send { inviteUrl, qrSvg } back to React.
+Cache for 5 min to avoid a second Orbit hit.
+
+React:
+
+Render dangerouslySetInnerHTML of qrSvg.
+
+“Open in Wallet” button → window.location.href = inviteUrl.
+
+3 ⃣ Wallet connects & accepts proof request
+Two parallel channels report status back:
+Channel	Setup	Expected messages
+WebSocket (recommended)
+Orbit → your socketId	You already registered sockets. Listen for proof_request_verified.	{"proofRequestId":"...","status":"verified","presentation":{"given_names":"Alice"}}
+Polling (fallback)
+GET /verifier/v1/proof-requests/{id}	Call every 3 s until status=="verified" or timeout 2 min.	Same JSON as above
+
+4 ⃣ /api/proofs/:id/status (new route)
+When the browser opens (or polls), hit this endpoint:
+
+If WebSocket already pushed “verified”
+→ respond with cached presentation.
+
+Else call Orbit polling endpoint, update cache.
+
+5 ⃣ React autofills fields and locks them
+ts
+Copy
+Edit
+const { data: presentation } = useQuery(['proofStatus', proofRequestId], fetchStatus)
+
+if (presentation?.status === 'verified') {
+  // Iterate over form schema, find vcMapping.attributeName,
+  // set defaultValue and disable the input.
+}
+Display “Continue to form” button only after verified OR user skips.
+
+6 ⃣ Optional clean-up
+DELETE /verifier/v1/proof-requests/{id} after submission or timeout.
+
+DELETE old proof definitions if a builder changes the form mapping.
+
+Quick reference of Orbit Verifier endpoints
+Purpose	Method & URL	Doc MD file
+Create proof definition	POST /verifier/v1/proof-definitions	Define Proof Request.md
+List definitions	GET /verifier/v1/proof-definitions	same
+Create proof request	POST /verifier/v1/proof-requests	Send Proof Request.md
+Prepare QR / OOB URL	GET /verifier/v1/proof-requests/{id}/url	Prepare URL for Proof Request.md
+Proof status	GET /verifier/v1/proof-requests/{id}	Retrieve Status of A Proof Request.md
+Delete proof	DELETE /verifier/v1/proof-requests/{id}	Delete Proof Request.md
+
+(All filenames match the markdown you added in Orbit_API_Docs/.)
+
+How to implement incrementally in Replit
+Create createProofDefinitionIfMissing(form) helper in VerifierService.
+
+Extend /api/proofs/init to call 1 – 4 above.
+
+Add /api/proofs/:id/qr (already partially there).
+
+Add /api/proofs/:id/status route returning cached / live status.
+
+WebSocket listener → update React Query cache proofStatus.
+
+Modify FormLaunchPage to:
+
+step through waiting → verified → continue UI states
+
+autofill & lock verified fields.
+
+Work through in that order, testing each call with curl or Postman before wiring the next layer.

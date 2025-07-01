@@ -1,30 +1,52 @@
 import ky from 'ky';
 
-export interface ProofRequestDefinition {
-  proofName: string;
-  proofVersion: string;
-  comment: string;
-  requestedAttributes: Array<{
-    name: string;
+// Updated interfaces based on Orbit Enterprise API documentation
+export interface ProofDefinition {
+  name: string;
+  description: string;
+  requestedCredentials: Array<{
+    credentialType: string;
+    attributes: string[];
     restrictions: Array<{
-      cred_def_id: string;
-      issuer_did: string;
+      schemaId?: string;
+      credDefId?: string;
+      issuerDid?: string;
     }>;
-    non_revoked: {
-      from: number;
-      to: number;
-    };
   }>;
-  requestedPredicates: Array<unknown>;
 }
 
-export interface DefineProofResponse {
+export interface ProofDefinitionResponse {
+  proofDefinitionId: string;
+  name: string;
+  description: string;
+}
+
+export interface ProofRequest {
+  proofDefinitionId: string;
+  expiresIn: number;
+  binding: {
+    type: string; // "Connection"
+  };
+}
+
+export interface ProofRequestResponse {
   proofRequestId: string;
+  proofDefinitionId: string;
+  expiresAt: string;
+  status: string;
 }
 
-export interface ProofStatusResp {
+export interface ProofUrlResponse {
+  oobUrl: string;
+  qrSvg: string;
+}
+
+export interface ProofStatusResponse {
+  proofRequestId: string;
   status: 'request-sent' | 'request-received' | 'presentation_received' | 'presentation_verified' | 'presentation_declined' | 'error';
-  verifiedAttributes?: Record<string,string>;
+  presentation?: {
+    [attributeName: string]: string;
+  };
 }
 
 export class VerifierClient {
@@ -44,97 +66,95 @@ export class VerifierClient {
         apiKey: this.key,
         'Content-Type': 'application/json'
       },
-      timeout: 10_000
+      timeout: 30_000
     });
   }
 
-  async defineProof(def: ProofRequestDefinition): Promise<DefineProofResponse> {
-    return this.api.post('verifier/v1/proof-requests', { json: def }).json<DefineProofResponse>();
+  // Step 1: Create proof definition (once per form version)
+  async createProofDefinition(definition: ProofDefinition): Promise<ProofDefinitionResponse> {
+    console.log('[VerifierClient] Creating proof definition:', definition.name);
+    return this.api.post('verifier/v1/proof-definitions', { json: definition }).json<ProofDefinitionResponse>();
+  }
+
+  // Check if proof definition exists
+  async getProofDefinitions(): Promise<ProofDefinitionResponse[]> {
+    console.log('[VerifierClient] Retrieving all proof definitions');
+    return this.api.get('verifier/v1/proof-definitions').json<ProofDefinitionResponse[]>();
+  }
+
+  // Step 2: Create proof request instance
+  async createProofRequest(request: ProofRequest): Promise<ProofRequestResponse> {
+    console.log('[VerifierClient] Creating proof request:', request.proofDefinitionId);
+    return this.api.post('verifier/v1/proof-requests', { json: request }).json<ProofRequestResponse>();
+  }
+
+  // Step 3: Get QR code and invite URL
+  async getProofRequestUrl(proofRequestId: string): Promise<ProofUrlResponse> {
+    console.log('[VerifierClient] Getting proof request URL:', proofRequestId);
+    return this.api.get(`verifier/v1/proof-requests/${proofRequestId}/url`).json<ProofUrlResponse>();
+  }
+
+  // Step 4: Check proof request status
+  async getProofRequestStatus(proofRequestId: string): Promise<ProofStatusResponse> {
+    console.log('[VerifierClient] Getting proof request status:', proofRequestId);
+    return this.api.get(`verifier/v1/proof-requests/${proofRequestId}`).json<ProofStatusResponse>();
+  }
+
+  // Clean up: Delete proof request
+  async deleteProofRequest(proofRequestId: string): Promise<void> {
+    console.log('[VerifierClient] Deleting proof request:', proofRequestId);
+    await this.api.delete(`verifier/v1/proof-requests/${proofRequestId}`);
+  }
+
+  // Legacy methods for backward compatibility (will be removed)
+  async defineProof(def: any): Promise<any> {
+    console.log('[VerifierClient] Legacy defineProof - use createProofDefinition instead');
+    return this.createProofDefinition(def);
   }
 
   async prepareUrl(reqId: string): Promise<{ qrSvg: string; inviteUrl: string }> {
-    console.log('[VerifierClient] prepareUrl', reqId, this.base, this.lobId);
-    const res = await this.api.post('verifier/v1/proof-requests/prepare-url', {
-      json: { requestId: reqId, connectionType: 'DIDCOMM' },
-    }).json<{ inviteUrl: string; qrCodeBase64: string }>();
-    
-    // Map Orbit response to our format
-    return { qrSvg: res.qrCodeBase64, inviteUrl: res.inviteUrl };
+    console.log('[VerifierClient] Legacy prepareUrl - use getProofRequestUrl instead');
+    const result = await this.getProofRequestUrl(reqId);
+    return { qrSvg: result.qrSvg, inviteUrl: result.oobUrl };
   }
 
   async status(id: string): Promise<{ status: string; attributes?: Record<string, string> }> {
-    console.log(`VerifierClient: GET ${this.api.prefixUrl}verifier/v1/proof-requests/${id}/status`);
-    
-    return this.api.get(`verifier/v1/proof-requests/${id}/status`).json<{ status: string; attributes?: Record<string, string> }>();
-  }
-
-  async verify(id: string): Promise<{ verified: boolean }> {
-    console.log(`VerifierClient: POST ${this.api.prefixUrl}verifier/v1/proof-requests/${id}/verify`);
-    
-    return this.api.post(`verifier/v1/proof-requests/${id}/verify`).json<{ verified: boolean }>();
+    console.log('[VerifierClient] Legacy status - use getProofRequestStatus instead');
+    const result = await this.getProofRequestStatus(id);
+    return { status: result.status, attributes: result.presentation };
   }
 }
 
-// Create verifier instance lazily to ensure env vars are loaded
-let verifierInstance: VerifierClient | null = null;
+// Create verifier instance with proper environment configuration
+let _verifierInstance: VerifierClient | null = null;
 
+export function getVerifierClient(): VerifierClient {
+  if (!_verifierInstance) {
+    _verifierInstance = new VerifierClient();
+  }
+  return _verifierInstance;
+}
+
+// Legacy export for backward compatibility
 export const verifier = {
-  defineProof: async (def: ProofRequestDefinition): Promise<DefineProofResponse> => {
-    console.log('Mock Orbit verifier called with proof definition:', JSON.stringify(def, null, 2));
-    
-    // For now, return a mock proof request ID
-    // This allows us to test the integration flow without requiring actual Orbit connectivity
-    const mockProofRequestId = `vcfb_proof_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    return {
-      proofRequestId: mockProofRequestId
-    };
+  defineProof: async (def: any): Promise<any> => {
+    const client = getVerifierClient();
+    return client.defineProof(def);
   },
 
   prepareUrl: async (id: string): Promise<{ qrSvg: string; inviteUrl: string }> => {
-    console.log('Mock Orbit prepareUrl called for proof request:', id);
-    
-    // Generate mock QR code SVG and invite URL for testing
-    const mockQrSvg = `
-      <svg width="200" height="200" xmlns="http://www.w3.org/2000/svg">
-        <rect width="200" height="200" fill="white"/>
-        <rect x="10" y="10" width="180" height="180" fill="white" stroke="black" stroke-width="2"/>
-        <text x="100" y="100" text-anchor="middle" font-family="Arial" font-size="12" fill="black">
-          <tspan x="100" dy="0">QR Code</tspan>
-          <tspan x="100" dy="20">Mock for ${id}</tspan>
-        </text>
-        <!-- Mock QR pattern -->
-        <rect x="20" y="20" width="20" height="20" fill="black"/>
-        <rect x="160" y="20" width="20" height="20" fill="black"/>
-        <rect x="20" y="160" width="20" height="20" fill="black"/>
-        <rect x="60" y="60" width="80" height="80" fill="none" stroke="black" stroke-width="2"/>
-      </svg>
-    `.trim();
-    
-    const mockInviteUrl = `didcomm://invite?_url=https://devapi-verifier.nborbit.ca/mock-invite/${id}`;
-    
-    return {
-      qrSvg: mockQrSvg,
-      inviteUrl: mockInviteUrl
-    };
+    const client = getVerifierClient();
+    return client.prepareUrl(id);
   },
 
   status: async (id: string): Promise<{ status: string; attributes?: Record<string, string> }> => {
-    console.log('Mock Orbit status called for proof request:', id);
-    
-    // For testing purposes, always return 'waiting' status unless we implement real Orbit integration
-    // This prevents the mock timer from auto-completing verification
-    return {
-      status: 'waiting'
-    };
+    const client = getVerifierClient();
+    return client.status(id);
   },
 
   verify: async (id: string): Promise<{ verified: boolean }> => {
-    console.log('Mock Orbit verify called for proof request:', id);
-    
-    // Mock verification always succeeds
-    return {
-      verified: true
-    };
+    // This method is not used in the new integration flow
+    console.log('[VerifierClient] Legacy verify method called - deprecated');
+    return { verified: false };
   }
 };
