@@ -2,7 +2,9 @@ import { useLocation } from 'wouter';
 import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, FileText, Edit, ExternalLink, Clock, TrendingUp, Filter, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useForms, useCredentialLibrary } from '@shared/react-query';
 
 export default function HomePage() {
@@ -113,39 +115,60 @@ export default function HomePage() {
             </Card>
 
             {/* Existing Personal Forms */}
-            {formsFiltered.map((form: any) => (
-              <Card key={form.id} className="card card-hover flex flex-col">
-                <CardContent className="p-0">
-                  {/* Form Header with Logo */}
-                  <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg p-4 flex items-center justify-center">
-                    {form.logoUrl ? (
-                      <img src={form.logoUrl} alt="Form logo" className="h-16 w-auto object-contain" />
-                    ) : (
-                      <FileText className="w-12 h-12 text-blue-600" />
-                    )}
-                  </div>
-                  
-                  {/* Form Content */}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-semibold text-gray-900 line-clamp-2">{form.name}</h3>
-                      <div className="flex space-x-1 ml-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setLocation(`/builder/${form.id}`)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(`/form/${form.id}`, '_blank')}
-                        >
-                          <ExternalLink className="w-4 h-4" />
-                        </Button>
+            {formsFiltered.map((form: any) => {
+              const isPublished = form.isPublished && form.publicSlug;
+              
+              return (
+                <TooltipProvider key={form.id}>
+                  <Card className="card card-hover flex flex-col">
+                    <CardContent className="p-0">
+                      {/* Form Header with Logo */}
+                      <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg p-4 flex items-center justify-center">
+                        {form.logoUrl ? (
+                          <img src={form.logoUrl} alt="Form logo" className="h-16 w-auto object-contain" />
+                        ) : (
+                          <FileText className="w-12 h-12 text-blue-600" />
+                        )}
                       </div>
-                    </div>
+                      
+                      {/* Form Content */}
+                      <div className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <h3 className="font-semibold text-gray-900 line-clamp-2">{form.name}</h3>
+                          <div className="flex space-x-1 ml-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setLocation(`/builder/${form.id}`)}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span
+                                  className={cn(
+                                    "p-2 rounded-md",
+                                    isPublished
+                                      ? "hover:bg-slate-100 cursor-pointer text-blue-600"
+                                      : "opacity-40 cursor-not-allowed"
+                                  )}
+                                  onClick={e => {
+                                    if (!isPublished) return;
+                                    e.stopPropagation();
+                                    window.open(`/f/${form.publicSlug}`, "_blank");
+                                  }}
+                                >
+                                  <ExternalLink className="h-4 w-4" />
+                                </span>
+                              </TooltipTrigger>
+                              {!isPublished && (
+                                <TooltipContent side="top">
+                                  Publish the form to generate a public URL.
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </div>
+                        </div>
                     
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">{form.purpose}</p>
                     
@@ -162,7 +185,9 @@ export default function HomePage() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            </TooltipProvider>
+          );
+          })}
           </div>
 
           {/* Empty State */}

@@ -1,0 +1,74 @@
+🎯  FEATURE TWEAK – LAUNCH ICON ONLY WHEN FORM IS PUBLISHED
+==========================================================
+
+User flow we want
+-----------------
+• Every form card shows two actions:
+  1. **Preview**   (🡆 /preview/:id) → always enabled.
+  2. **Launch**    (🡆 public URL)   → enabled *only* if isPublished === true.
+
+• If `isPublished` is **false**
+  – show the “launch / external-link” button as **disabled / greyed-out**.  
+  – hover tooltip: **“Publish the form to generate a public URL.”**
+
+Implementation steps
+--------------------
+1. **HomePage card component**
+   File: `apps/web/src/pages/HomePage.tsx` (or whichever component renders the cards)
+
+   ```tsx
+   // locate the two icons:
+   //   <EyeIcon ... onClick={handlePreview} />
+   //   <ExternalLinkIcon ... />
+   //
+   // Replace ExternalLinkIcon with:
+
+   const isPublished = form.isPublished && form.publicSlug; // safety
+
+   <TooltipProvider>
+     <Tooltip>
+       <TooltipTrigger asChild>
+         <span
+           className={cn(
+             "p-2 rounded-md",
+             isPublished
+               ? "hover:bg-slate-100 cursor-pointer text-blue-600"
+               : "opacity-40 cursor-not-allowed"
+           )}
+           onClick={e => {
+             if (!isPublished) return;
+             e.stopPropagation();
+             window.open(`/f/${form.publicSlug}`, "_blank");
+           }}
+         >
+           <ExternalLinkIcon className="h-4 w-4" />
+         </span>
+       </TooltipTrigger>
+
+       {!isPublished && (
+         <TooltipContent side="top">
+           Publish the form to generate a public URL.
+         </TooltipContent>
+       )}
+     </Tooltip>
+   </TooltipProvider>
+Uses existing shadcn Tooltip.
+cn() is the tailwind classnames helper already used elsewhere.
+
+Preview icon stays the same (/preview/:id logic unchanged).
+
+Nothing to change on the backend – GET /api/forms already returns isPublished and publicSlug.
+
+Visual style
+• Disabled launch icon: opacity-40 cursor-not-allowed.
+• Enabled state unchanged (keeps current blue hover).
+
+Build & Test
+• npm run dev – expect 0 TS errors.
+• Card shows grey launch icon until you press Publish in the builder.
+• After publishing, refresh HomePage → icon turns blue and opens /f/<slug> in new tab.
+
+No other refactors. Keep code concise; reuse imported Tooltip components; ensure imports are added if missing (TooltipProvider, TooltipTrigger, TooltipContent from @/components/ui/tooltip).
+
+Copy
+Edit
