@@ -1,0 +1,85 @@
+🔧  Debug-next: fix PublicFormPage hook error + HMR websocket
+
+------------------------------------------------------------
+A. PublicFormPage – “Rendered more hooks than during previous render”
+------------------------------------------------------------
+Cause  
+`useProofRequest()` is being called conditionally (inside an early-return / if block).  
+React must call hooks in **exactly the same order** on every render.
+
+Fix  
+1. In **src/pages/PublicFormPage.tsx**
+
+   ```tsx
+   // BAD
+   if (!form) { return <Spinner/> }
+   const { proofId } = useProofRequest(...);
+
+   // GOOD
+   const { proofId } = useProofRequest({ publicSlug: slug, enabled: !!form && hasVC });
+   if (!form) return <Spinner/>;
+Always declare all hooks ( useQuery, useProofRequest, etc.) before any conditional returns.
+Let the hook itself accept an enabled flag so it can short-circuit the network call.
+
+Ensure hasVC is calculated after form is fetched but before calling the hook:
+
+tsx
+Copy
+Edit
+const hasVC = React.useMemo(() => form?.metadata?.fields
+    && Object.values(form.metadata.fields).some(f => f.type === 'verified'),
+  [form]);
+
+const {proofId,isLoading:proofLoading}=useProofRequest({publicSlug:slug,enabled:hasVC});
+Remove all remaining conditional hook invocations (search for useState(, useEffect( wrapped in if (...)).
+
+B. Dev-server WebSocket url “wss://localhost:undefined”
+Cause
+Vite’s HMR client reads import.meta.env.DEV_SERVER_PORT but we’re not setting it; the fallback becomes undefined.
+
+Fix
+
+In apps/web/vite.config.ts add:
+
+ts
+Copy
+Edit
+export default defineConfig({
+  // existing config …
+  server: {
+    hmr: {
+      host: process.env.VITE_HMR_HOST || 'localhost',
+      port: Number(process.env.VITE_HMR_PORT) || 5173,
+    },
+  },
+});
+In apps/web/.env (or root .env) add default values used in Replit:
+
+ini
+Copy
+Edit
+VITE_HMR_HOST=localhost
+VITE_HMR_PORT=443
+Vite will now construct wss://localhost:443/... which succeeds in Replit.
+
+C. Sanity-check after patch
+pnpm -r lint && pnpm -r typecheck passes.
+
+Visit:
+
+Preview: /form/:id?preview=1 – shows form, no VerificationPanel
+
+Launch: /launch/:id – form + QR
+
+Public: /f/:slug – form + QR
+
+Browser console is clean (no hook-order error, no websocket error).
+
+QR <img> displays (the earlier fixes for svg/URI remain).
+
+Commit message suggestion
+
+vbnet
+Copy
+Edit
+fix: stabilize PublicFormPage hook order & correct Vite HMR websocket

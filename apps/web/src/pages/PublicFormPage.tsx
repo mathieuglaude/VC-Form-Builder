@@ -117,11 +117,7 @@ export default function PublicFormPage() {
     );
   }
 
-  if (!form) {
-    return null;
-  }
-
-  // Check if form needs verification credentials
+  // Check if form needs verification credentials - must be calculated before hooks
   function formHasVCFields(form: any): boolean {
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
@@ -131,13 +127,18 @@ export default function PublicFormPage() {
     );
   }
 
-  // Initialize proof request using the hook
+  const hasVC = formHasVCFields(form);
+
+  // Initialize proof request using the hook - MUST be called before any conditional returns
   const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
     publicSlug: slug,
-    enabled: !!form && formHasVCFields(form)
+    enabled: !!form && hasVC
   });
 
-  const hasVC = formHasVCFields(form);
+  if (!form) {
+    return null;
+  }
+
   const showPanel = hasVC && proofResponse?.proofId;
 
   return (
