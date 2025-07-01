@@ -31,9 +31,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    hmr: {
-      port: 24678, // Use a different port for HMR to avoid conflicts
-    },
+    hmr: false,
     fs: {
       strict: true,
       deny: ["**/.*"],

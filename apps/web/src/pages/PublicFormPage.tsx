@@ -119,6 +119,11 @@ export default function PublicFormPage() {
 
   // Helper function for checking VC fields
   function formHasVCFields(form: any): boolean {
+    // First try the hasVerifiableCredentials flag if available
+    if (form?.hasVerifiableCredentials !== undefined) {
+      return form.hasVerifiableCredentials;
+    }
+    
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
     
