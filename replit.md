@@ -325,6 +325,12 @@ Changelog:
   - Added spinner placeholders for proof loading states with proper sizing (w-80 to match panel)
   - Fixed VerificationPanel to use correct img attributes with 250px dimensions and proper JSON parsing
   - Updated proof initialization API to handle both formId and publicSlug parameters for flexibility
+- July 1, 2025. Debug: Fixed React hook order violation and duplicate headers
+  - Fixed "Rendered more hooks than during the previous render" error by moving all hooks to top level in FormLaunchPage
+  - Eliminated duplicate form headers by adding showHeader prop to FormPage component
+  - Fixed routing to use FormLaunchPage instead of deprecated FillPage component
+  - Disabled problematic Vite runtime error overlay plugin causing WebSocket connection issues
+  - FormLaunchPage now properly renders single header with embedded FormPage content
 ```
 
 ## User Preferences

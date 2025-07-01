@@ -9,9 +9,10 @@ interface FormPageProps {
   mode: 'preview' | 'launch' | 'public';
   onSubmit?: (formData: Record<string, any>, verifiedFields: Record<string, any>) => void;
   isSubmitting?: boolean;
+  showHeader?: boolean; // Controls whether to show header - false for embedded use
 }
 
-export default function FormPage({ form, mode, onSubmit, isSubmitting = false }: FormPageProps) {
+export default function FormPage({ form, mode, onSubmit, isSubmitting = false, showHeader = true }: FormPageProps) {
   const [location] = useLocation();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
@@ -60,6 +61,33 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false }:
 
   const formSchema = form.formSchema || form.formDefinition;
 
+  // Form content component
+  const formContent = (
+    <Card className="shadow-lg">
+      <CardHeader>
+        <CardTitle className="text-xl text-gray-800">
+          {mode === 'preview' ? 'Form Preview' : 'Complete the Form'}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-6">
+        <FormRenderer
+          formSchema={formSchema}
+          formData={formData}
+          verifiedFields={verifiedFields}
+          onFieldChange={handleFieldChange}
+          onSubmit={mode !== 'preview' ? handleSubmit : undefined}
+          mode={mode}
+          isSubmitting={isSubmitting}
+        />
+      </CardContent>
+    </Card>
+  );
+
+  // Return with or without header/layout based on showHeader prop
+  if (!showHeader) {
+    return formContent;
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -75,27 +103,7 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false }:
           )}
         </div>
 
-        {/* Note: Verification Panel is now handled at the page level (FormLaunchPage) */}
-
-        {/* Form Content */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-xl text-gray-800">
-              {mode === 'preview' ? 'Form Preview' : 'Complete the Form'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-6">
-            <FormRenderer
-              formSchema={formSchema}
-              formData={formData}
-              verifiedFields={verifiedFields}
-              onFieldChange={handleFieldChange}
-              onSubmit={mode !== 'preview' ? handleSubmit : undefined}
-              mode={mode}
-              isSubmitting={isSubmitting}
-            />
-          </CardContent>
-        </Card>
+        {formContent}
       </div>
     </div>
   );

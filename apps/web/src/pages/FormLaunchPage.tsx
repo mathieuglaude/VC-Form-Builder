@@ -167,6 +167,7 @@ export default function FormLaunchPage() {
               mode="launch"
               onSubmit={handleFormSubmit}
               isSubmitting={submitFormMutation.isPending}
+              showHeader={false}
             />
           </div>
 
@@ -175,7 +176,6 @@ export default function FormLaunchPage() {
             <div className="lg:w-80">
               <VerificationPanel 
                 proofId={proofResponse.proofId}
-                isLoading={proofLoading}
               />
             </div>
           )}
