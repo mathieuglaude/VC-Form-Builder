@@ -55,7 +55,7 @@ export const env = envSchema.parse(process.env);
 
 // Export orbit configuration for the VerifierClient
 export const orbit = {
-  base: env.ORBIT_VERIFIER_BASE_URL,
+  baseUrl: env.ORBIT_VERIFIER_BASE_URL,
   lobId: env.ORBIT_LOB_ID,
   apiKey: env.ORBIT_API_KEY,
   useRealOrbit: env.ORBIT_USE_REAL === 'true'

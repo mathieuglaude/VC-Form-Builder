@@ -28,11 +28,43 @@ router.post('/proofs/init', async (req, res) => {
       return res.status(201).json({ proofId: mockProofId });
     }
 
-    // TODO: Real Orbit integration when useRealOrbit is true
-    // For now, return mock even when enabled since API endpoints need fixing
-    const mockProofId = `mock_${Date.now()}`;
-    console.log(`[POST /init] Orbit integration pending - using mock proof ID: ${mockProofId}`);
-    res.status(201).json({ proofId: mockProofId });
+    // Real Orbit integration - create proof request
+    try {
+      const proofResponse = await fetch(`${orbit.baseUrl}/verifier/v1/proof-requests`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${orbit.apiKey}`,
+          'Content-Type': 'application/json',
+          'X-LOB-ID': orbit.lobId
+        },
+        body: JSON.stringify({
+          name: `Form ${identifier} Verification`,
+          version: '1.0',
+          requestedAttributes: [
+            {
+              name: 'given_name',
+              restrictions: [{
+                cred_def_id: 'QzLYGuAebsy3MXQ6b1sFiT:3:CL:20:default'
+              }]
+            }
+          ]
+        })
+      });
+
+      if (!proofResponse.ok) {
+        throw new Error(`Orbit proof request failed: ${proofResponse.status} ${proofResponse.statusText}`);
+      }
+
+      const proofData = await proofResponse.json();
+      const orbitProofId = proofData.id || proofData.proofId || proofData.txId;
+      
+      console.log('[INIT-DEBUG]', orbitProofId);
+      res.status(201).json({ proofId: orbitProofId });
+
+    } catch (error: any) {
+      console.error('[POST /init] Orbit API error:', error.message);
+      throw error;
+    }
 
   } catch (error: any) {
     console.error('[POST /init] Error:', error.message);
@@ -75,6 +107,7 @@ router.get('/proofs/:id/qr', async (req, res) => {
         });
 
         if (!prepareResponse.ok) {
+          console.error('[QR-ERROR]', prepareResponse.status, await prepareResponse.text());
           throw new Error(`Orbit prepare-url failed: ${prepareResponse.status} ${prepareResponse.statusText}`);
         }
 
