@@ -1,0 +1,122 @@
+**Prompt 4a – Introduce External Services layer & migrate Orbit**
+
+----------------------------------------------------------------
+## 0 · Install lightweight HTTP wrapper
+
+```bash
+pnpm -r add ky
+1 · Create shared RestClient base
+packages/external/rest-client.ts
+
+ts
+Copy
+Edit
+import ky from 'ky';
+
+export abstract class RestClient {
+  protected sdk: typeof ky;
+
+  constructor(baseURL: string, apiKey?: string) {
+    this.sdk = ky.create({
+      prefixUrl: baseURL,
+      headers: apiKey ? { 'x-api-key': apiKey } : {},
+      retry: { limit: 2 },
+      timeout: 15_000,
+      hooks: {
+        afterResponse: [
+          (_req, _opt, res) =>
+            console.log(`[${res.status}] ${res.url}`)
+        ]
+      }
+    });
+  }
+}
+2 · Build Orbit client on top of RestClient
+packages/external/orbit/OrbitClient.ts
+
+ts
+Copy
+Edit
+import { RestClient } from '../rest-client';
+
+export class OrbitClient extends RestClient {
+  verifier = {
+    prepareUrl: (defId: string) =>
+      this.sdk
+        .post(`api/proof-request/prepare-url/${defId}`)
+        .json<{ proofRequestId: string; qrCodePng: string }>(),
+
+    status: (reqId: string) =>
+      this.sdk
+        .get(`api/proof-request/${reqId}`)
+        .json<{ status: string; attributes?: any }>()
+  };
+
+  // issuer, connections… can be added later
+}
+packages/external/orbit/index.ts
+
+ts
+Copy
+Edit
+export { OrbitClient } from './OrbitClient';
+3 · Provide singleton for API app
+apps/api/src/deps/orbit.ts
+
+ts
+Copy
+Edit
+import { env } from '@shared/env';
+import { OrbitClient } from '@external/orbit';
+
+export const orbit = new OrbitClient(env.VERIFIER_BASE, env.VERIFIER_API_KEY);
+(Update tsconfig.paths so @external/* resolves to packages/external)
+
+4 · Replace old fetch helpers
+Delete apps/api/src/services/verifier.ts.
+
+Find usages:
+
+bash
+Copy
+Edit
+rg "prepareProofURL" apps | cut -d: -f1 | sort -u
+For each file replace:
+
+ts
+Copy
+Edit
+// before
+const { qrCodePng, proofRequestId } = await prepareProofURL(defId);
+
+// after
+const { qrCodePng, proofRequestId } = await orbit.verifier.prepareUrl(defId);
+Same for status polling:
+
+ts
+Copy
+Edit
+await orbit.verifier.status(reqId);
+5 · Remove stale import & fix build
+pnpm -r exec eslint --fix . to update unused imports.
+
+Run tests / TS check:
+
+bash
+Copy
+Edit
+pnpm --filter api dev
+6 · Success criteria
+npm run dev (or pnpm dev) starts with 0 TypeScript errors.
+
+Hitting POST /api/proofs/init still returns:
+
+json
+Copy
+Edit
+{ "reqId": "abc123", "qr": "<base64-png>" }
+services/verifier.ts no longer exists in the tree.
+
+Ghostwriter
+• Implement exactly as above; modify tsconfig path alias; run ESLint auto-fix; restart dev servers; show console confirming [200] …prepare-url log lines.
+• Commit message: “feat: external-services layer & Orbit client”.
