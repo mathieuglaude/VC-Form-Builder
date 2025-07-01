@@ -154,6 +154,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get published form by public slug
+  app.get('/api/pub-forms/:slug', async (req, res) => {
+    try {
+      const { slug } = req.params;
+      const formConfig = await storage.getFormConfigByPublicSlug(slug);
+      
+      if (!formConfig) {
+        return res.status(404).json({ error: 'Form not found' });
+      }
+      
+      res.json(formConfig);
+    } catch (error) {
+      console.error('Public form lookup error:', error);
+      res.status(500).json({ error: 'Failed to retrieve form' });
+    }
+  });
+
   // Publish form with custom slug
   app.post('/api/forms/:id/publish', async (req, res) => {
     try {
