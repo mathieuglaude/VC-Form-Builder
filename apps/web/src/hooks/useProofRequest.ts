@@ -14,14 +14,19 @@ export const mockProof = {
 
 export function useProofRequest({ formId, publicSlug, enabled = true }: UseProofRequestOpts) {
   const inPreview = new URLSearchParams(location.search).get('preview') === '1';
-  const showPanel = new URLSearchParams(location.search).get('panel') === '1';
+  const shouldMock = inPreview; // only preview => mock
 
-  // DEBUG MODE: When preview mode + panel=1 → return mockProof immediately for testing
-  if (inPreview && showPanel) {
-    console.log('[useProofRequest] returning mock proof for preview debug mode');
-    return { data: mockProof, isSuccess: true, isLoading: false, error: null };
+  if (shouldMock) {
+    console.log('[useProofRequest] PREVIEW mock proof');
+    return { 
+      data: { proofId: 'mock-proof-debug', isMock: true },
+      isSuccess: true,
+      isLoading: false,
+      error: null
+    };
   }
 
+  // Real API call for non-preview mode
   return useQuery({
     queryKey: ['proof', formId || publicSlug],
     queryFn: async () => {
@@ -37,7 +42,8 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
         throw new Error('Failed to initialize proof request');
       }
       
-      return response.json();
+      const result = await response.json();
+      return { proofId: result.proofId, isMock: false };
     },
     enabled: enabled && (!!formId || !!publicSlug),
     retry: 1,

@@ -101,13 +101,13 @@ export default function FormLaunchPage() {
     }
   });
 
-  // TEMPORARILY DISABLE VC LOGIC FOR TESTING
-  const hasVC = false; // formHasVCFields(form);
+  // Re-enable VC logic for testing
+  const hasVC = formHasVCFields(form);
 
   // Initialize proof request hook - MUST be at top level
   const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
     formId: id,
-    enabled: false // !!form && hasVC
+    enabled: !!form && hasVC
   });
 
   const handleFormSubmit = (formData: Record<string, any>, verifiedFields: Record<string, any>) => {
@@ -150,16 +150,20 @@ export default function FormLaunchPage() {
     return null;
   }
 
-  // HARD-LOCKED PREVIEW: Always render form, dev toggle for panel
-  const debugShowPanel = isPreview && urlShowPanel;
+  // HARD-LOCKED PREVIEW: Auto-show panel in preview mode
+  const debugShowPanel = isPreview;
+
+  // Show panel for both preview (mock) and launch (real API) modes
+  const showPanel = (isPreview && hasVC) || (!isPreview && hasVC && proofResponse?.proofId);
 
   // DEBUG LOGGING: Track verification panel decision
   console.log('[FormLaunchPage]', {
     mode: isPreview ? 'preview' : 'launch',
     isPreview,
-    urlShowPanel,
-    debugShowPanel,
-    hasVC: false, // Currently disabled for testing
+    hasVC,
+    proofId: proofResponse?.proofId,
+    showPanel,
+    isMock: proofResponse?.isMock
   });
 
   // Hard-locked return: always render form body
@@ -173,10 +177,10 @@ export default function FormLaunchPage() {
         showHeader={true}
       />
 
-      {/* Dev toggle: add panel when preview=1&panel=1 */}
-      {debugShowPanel && (
+      {/* Show panel for preview (mock) or launch (real) */}
+      {showPanel && (
         <div className="fixed top-4 right-4 w-80 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
-          <VerificationPanel proofId={mockProof.proofId} />
+          <VerificationPanel proofId={proofResponse?.proofId || mockProof.proofId} />
         </div>
       )}
     </>

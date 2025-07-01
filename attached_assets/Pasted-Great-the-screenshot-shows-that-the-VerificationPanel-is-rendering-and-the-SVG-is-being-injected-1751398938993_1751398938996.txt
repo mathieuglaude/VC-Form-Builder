@@ -1,0 +1,51 @@
+Great — the screenshot shows that the <VerificationPanel> is rendering and the SVG is being injected. That means:
+
+the JSX conditional is working (debugShowPanel === true);
+
+the QR code component itself is fine (the black-on-white square you see is coming from the qrcode-svg mock we return).
+
+So the “panel plumbing” is now solid.
+Next we can graduate from always-mock to preview = mock / launch = real, and then turn the real Orbit call back on once that path is clean.
+
+Super-light next prompt for Replit
+text
+Copy
+Edit
+Goal: keep preview in mock-only mode, use **real** /api/proofs/init when preview flag is absent.
+
+1️⃣  apps/web/src/hooks/useProofRequest.ts
+    • Replace the hard-coded mock return with:
+      ```ts
+      const shouldMock = isPreview;          // only preview => mock
+
+      if (shouldMock) {
+        console.log('[useProofRequest] PREVIEW mock proof');
+        return { proofId: 'mock-proof-debug', isMock: true };
+      }
+      // else call backend
+      return await api.post<{ proofId:string }>('/api/proofs/init', { formId }).then(r => ({ proofId:r.proofId, isMock:false }));
+      ```
+
+2️⃣  apps/api/routes/proofs.ts
+    • Change the POST /init handler so it:
+        – if process.env.ORBIT_USE_REAL === 'false'  **→** returns `{ proofId:'mock-api-proof' }`
+        – else calls the real Orbit endpoint (you already have that code scaffolded).
+
+3️⃣  In .env (api):
+       ORBIT_USE_REAL=false      # keep off until real Orbit creds tested
+
+4️⃣  Hard-wire the panel to show automatically in preview:
+      FormLaunchPage →  
+      ```diff
+      - const debugShowPanel = isPreview && urlShowPanel;
+      + const debugShowPanel = isPreview;
+      ```
+
+✅  Expected quick-test matrix
+    /form/13?preview=1        → mock panel visible
+    /form/13                  → (no preview flag) hits backend → receives `{proofId:'mock-api-proof'}` and panel renders
+    Console logs indicate whether call is mock or real.
+
+Once both branches render the panel, flip `ORBIT_USE_REAL=true`, restart the API, and the real Orbit flow should kick in.
+
+(Keep the public/public-slug routes disabled until launch mode works.)
