@@ -7,8 +7,8 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 export default defineConfig({
   plugins: [
     react(),
-    runtimeErrorOverlay(),
-    // Temporarily disabled cartographer plugin due to monorepo compatibility issues
+    // Temporarily disabled runtime overlay and cartographer plugins due to compatibility issues
+    // runtimeErrorOverlay(),
     // ...(process.env.NODE_ENV !== "production" &&
     // process.env.REPL_ID !== undefined
     //   ? [
