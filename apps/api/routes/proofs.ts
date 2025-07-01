@@ -90,6 +90,7 @@ router.get('/proofs/:id/qr', async (req, res) => {
     const responseData = { svg, invitationUrl };
     qrCache.set(id, { svg, expiry });
 
+    console.log(`[QR-DEBUG] proofId:`, id, ' invitationUrl:', responseData.invitationUrl);
     console.log(`[GET /qr] Generated and cached QR for: ${id}`);
 
     res.setHeader('Content-Type', 'application/json');
