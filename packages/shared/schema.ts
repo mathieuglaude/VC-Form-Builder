@@ -83,9 +83,21 @@ export const credentialTemplates = pgTable("credential_templates", {
   walletRestricted: boolean("wallet_restricted").notNull().default(false),
   branding: jsonb("branding").$type<Record<string, any>>().default({}),
   metaOverlay: jsonb("meta_overlay").$type<Record<string, any>>().default({}),
+  ledgerNetwork: text("ledger_network").notNull().default('BCOVRIN_TEST'),
+  primaryColor: text("primary_color").default('#4F46E5'),
+  brandBgUrl: text("brand_bg_url"),
+  brandLogoUrl: text("brand_logo_url"),
   visible: boolean("visible").notNull().default(true),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const credentialAttributes = pgTable("credential_attributes", {
+  id: serial("id").primaryKey(),
+  templateId: integer("template_id").notNull().references(() => credentialTemplates.id, { onDelete: 'cascade' }),
+  name: text("name").notNull(),
+  description: text("description").default(''),
+  pos: integer("pos").notNull().default(0),
 });
 
 // Zod schemas
@@ -139,6 +151,18 @@ export const insertCredentialTemplateSchema = createInsertSchema(credentialTempl
   walletRestricted: true,
   branding: true,
   metaOverlay: true,
+  ledgerNetwork: true,
+  primaryColor: true,
+  brandBgUrl: true,
+  brandLogoUrl: true,
+  governanceUrl: true,
+});
+
+export const insertCredentialAttributeSchema = createInsertSchema(credentialAttributes).pick({
+  templateId: true,
+  name: true,
+  description: true,
+  pos: true,
 });
 
 // Types
@@ -156,6 +180,9 @@ export type InsertCredentialDefinition = z.infer<typeof insertCredentialDefiniti
 
 export type CredentialTemplate = typeof credentialTemplates.$inferSelect;
 export type InsertCredentialTemplate = z.infer<typeof insertCredentialTemplateSchema>;
+
+export type CredentialAttribute = typeof credentialAttributes.$inferSelect;
+export type InsertCredentialAttribute = z.infer<typeof insertCredentialAttributeSchema>;
 
 // Extended types for VC integration
 export interface DataSourceMetadata {

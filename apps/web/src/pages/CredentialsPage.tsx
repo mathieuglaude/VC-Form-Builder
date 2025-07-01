@@ -7,18 +7,20 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { ExternalLink, Filter, X, ChevronRight } from "lucide-react";
+import { ExternalLink, Filter, X, ChevronRight, Plus } from "lucide-react";
 import type { CredentialTemplate } from "@shared/schema";
 import BannerBottomCard from "@/components/BannerBottomCard";
 import DefaultCard from "@/components/DefaultCard";
+import ImportCredentialModal from "@/components/admin/ImportCredentialModal";
 
 export default function CredentialsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [ecosystemFilter, setEcosystemFilter] = useState<string>("all");
   const [interopFilter, setInteropFilter] = useState<string>("all");
+  const [showImportModal, setShowImportModal] = useState(false);
 
-  const { data: templates = [], isLoading } = useQuery({
+  const { data: templates = [], isLoading, refetch } = useQuery({
     queryKey: ['/api/cred-lib'],
     queryFn: async () => {
       const response = await fetch('/api/cred-lib');
@@ -26,6 +28,18 @@ export default function CredentialsPage() {
       return response.json();
     }
   });
+
+  // Get current user for admin check
+  const { data: user } = useQuery({
+    queryKey: ['/api/auth/user'],
+    queryFn: async () => {
+      const response = await fetch('/api/auth/user');
+      if (!response.ok) throw new Error('Failed to fetch user');
+      return response.json();
+    }
+  });
+
+  const isAdmin = user?.role === 'super_admin';
 
   // Extract unique ecosystems and interop profiles for filter dropdowns
   const uniqueEcosystems = useMemo(() => {
@@ -88,6 +102,15 @@ export default function CredentialsPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {isAdmin && (
+            <Button 
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Import Credential
+            </Button>
+          )}
           <Button 
             variant="outline" 
             onClick={() => setShowFilters(!showFilters)}
@@ -208,6 +231,15 @@ export default function CredentialsPage() {
           </div>
         )}
       </div>
+
+      {/* Import Credential Modal */}
+      <ImportCredentialModal 
+        isOpen={showImportModal}
+        onClose={() => {
+          setShowImportModal(false);
+          refetch(); // Refresh the credential list after import
+        }}
+      />
     </div>
   );
 }

@@ -5,9 +5,12 @@ import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
-import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema } from "../../packages/shared/schema";
+import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
+import { downloadAsset, fetchOCABundle } from "./ocaAssets";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -690,6 +693,265 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: 'Verification simulation started' });
     } catch (error) {
       res.status(500).json({ error: 'Failed to simulate verification' });
+    }
+  });
+
+  // Credential Template Import
+  app.post('/api/cred-templates/import', async (req, res) => {
+    try {
+      // Validation schema for import
+      const importCredentialSchema = z.object({
+        label: z.string().min(1, 'Label is required'),
+        version: z.string().min(1, 'Version is required'),
+        issuerName: z.string().min(1, 'Issuer name is required'),
+        issuerDid: z.string().min(1, 'Issuer DID is required'),
+        ledgerNetwork: z.string().default('BCOVRIN_TEST'),
+        schemaId: z.string().min(1, 'Schema ID is required'),
+        credDefId: z.string().min(1, 'Credential Definition ID is required'),
+        attributes: z.array(z.string()).min(1, 'At least one attribute is required'),
+        bundleUrl: z.string().optional(),
+        governanceUrl: z.string().optional(),
+        primaryColor: z.string().default('#4F46E5'),
+      });
+
+      // Validate input
+      const validatedDto = importCredentialSchema.parse(req.body);
+
+      // Check if label already exists
+      const existing = await db
+        .select()
+        .from(credentialTemplates)
+        .where(eq(credentialTemplates.label, validatedDto.label))
+        .limit(1);
+
+      if (existing.length > 0) {
+        return res.status(409).json({ error: `Credential template with label "${validatedDto.label}" already exists` });
+      }
+
+      // Process OCA bundle if provided
+      let branding = {};
+      let metaOverlay = {};
+      let brandBgUrl = null;
+      let brandLogoUrl = null;
+
+      if (validatedDto.bundleUrl) {
+        try {
+          const ocaData = await fetchOCABundle(validatedDto.bundleUrl);
+          
+          // Download and cache assets
+          if (ocaData.logoUrl) {
+            brandLogoUrl = await downloadAsset(ocaData.logoUrl);
+          }
+          if (ocaData.backgroundImageUrl) {
+            brandBgUrl = await downloadAsset(ocaData.backgroundImageUrl);
+          }
+
+          branding = ocaData.branding || {};
+          metaOverlay = ocaData.meta || {};
+        } catch (error) {
+          console.error('Failed to process OCA bundle:', error);
+          // Continue without OCA data - it's optional
+        }
+      }
+
+      // Prepare attributes with descriptions
+      const attributeData = validatedDto.attributes.map((name, index) => ({
+        name: name.trim(),
+        description: `${name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} attribute`,
+      }));
+
+      // Insert credential template
+      const [template] = await db
+        .insert(credentialTemplates)
+        .values({
+          label: validatedDto.label,
+          version: validatedDto.version,
+          schemaId: validatedDto.schemaId,
+          credDefId: validatedDto.credDefId,
+          issuerDid: validatedDto.issuerDid,
+          overlays: [],
+          governanceUrl: validatedDto.governanceUrl || null,
+          attributes: attributeData,
+          isPredefined: false,
+          ecosystem: 'Custom Import',
+          interopProfile: 'AIP 2.0',
+          compatibleWallets: [],
+          walletRestricted: false,
+          branding,
+          metaOverlay,
+          ledgerNetwork: validatedDto.ledgerNetwork,
+          primaryColor: validatedDto.primaryColor,
+          brandBgUrl,
+          brandLogoUrl,
+          visible: true,
+        })
+        .returning();
+
+      // Insert normalized attributes
+      if (attributeData.length > 0) {
+        await db.insert(credentialAttributes).values(
+          attributeData.map((attr, index) => ({
+            templateId: template.id,
+            name: attr.name,
+            description: attr.description,
+            pos: index,
+          }))
+        );
+      }
+
+      res.json(template);
+    } catch (error: any) {
+      console.error('Credential import error:', error);
+      res.status(400).json({ error: error.message || 'Failed to import credential' });
+    }
+  });
+
+  // Delete Credential Template
+  app.delete('/api/cred-templates/:id', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      // Check if template is predefined (protected)
+      const template = await db
+        .select({ isPredefined: credentialTemplates.isPredefined })
+        .from(credentialTemplates)
+        .where(eq(credentialTemplates.id, id))
+        .limit(1);
+
+      if (template.length === 0) {
+        return res.status(404).json({ error: 'Template not found' });
+      }
+
+      if (template[0].isPredefined) {
+        return res.status(403).json({ error: 'Cannot delete predefined template' });
+      }
+
+      // Delete template (attributes will be deleted by cascade)
+      await db
+        .delete(credentialTemplates)
+        .where(eq(credentialTemplates.id, id));
+
+      res.json({ success: true });
+    } catch (error: any) {
+      console.error('Credential delete error:', error);
+      res.status(400).json({ error: error.message || 'Failed to delete credential' });
+    }
+  });
+
+  // Import credential template (for ImportCredentialModal)
+  app.post('/api/cred-templates/import', async (req, res) => {
+    try {
+      const {
+        label,
+        version,
+        issuerName,
+        issuerDid,
+        ledgerNetwork,
+        schemaId,
+        credDefId,
+        attributes,
+        bundleUrl,
+        governanceUrl,
+        primaryColor
+      } = req.body;
+
+      // Validate required fields
+      if (!label || !version || !issuerDid || !schemaId || !credDefId || !attributes) {
+        return res.status(400).json({ error: 'Missing required fields' });
+      }
+
+      // Parse attributes if it's a string
+      let parsedAttributes;
+      if (typeof attributes === 'string') {
+        parsedAttributes = attributes.split(',').map(attr => ({
+          name: attr.trim(),
+          description: attr.trim()
+        }));
+      } else if (Array.isArray(attributes)) {
+        parsedAttributes = attributes.map(attr => ({
+          name: typeof attr === 'string' ? attr : attr.name,
+          description: typeof attr === 'string' ? attr : (attr.description || attr.name)
+        }));
+      } else {
+        return res.status(400).json({ error: 'Invalid attributes format' });
+      }
+
+      // Create overlays structure
+      const overlays = [];
+
+      // Add meta overlay
+      overlays.push({
+        type: 'meta/1.0',
+        data: {
+          issuer: issuerName || issuerDid,
+          issuer_name: issuerName || issuerDid,
+          issuer_url: '',
+          description: `${label} credential`,
+          credential_type: label,
+          ledger_network: ledgerNetwork
+        }
+      });
+
+      // Add branding overlay with primary color
+      overlays.push({
+        type: 'branding/1.0',
+        data: {
+          primary_color: primaryColor || '#4F46E5',
+          secondary_color: '#6B7280',
+          layout: 'default'
+        }
+      });
+
+      // Add capture base overlay if we have attributes
+      if (parsedAttributes.length > 0) {
+        const attributesObj = {};
+        parsedAttributes.forEach(attr => {
+          attributesObj[attr.name] = {
+            description: attr.description,
+            type: 'text'
+          };
+        });
+
+        overlays.push({
+          type: 'capture_base/1.0',
+          data: {
+            attributes: attributesObj
+          }
+        });
+      }
+
+      // Insert the credential template
+      const [template] = await db
+        .insert(credentialTemplates)
+        .values({
+          issuerDid,
+          label,
+          version,
+          schemaId,
+          credDefId,
+          attributes: parsedAttributes,
+          governanceUrl: governanceUrl || null,
+          schemaUrl: null,
+          ecosystem: 'Generic',
+          interopProfile: 'AIP 2.0',
+          ledgerNetwork: ledgerNetwork || 'BCOVRIN_TEST',
+          isPredefined: false,
+          compatibleWallets: ['generic'],
+          walletRestricted: false,
+          visible: true,
+          overlays: overlays,
+          issuer: issuerName || issuerDid,
+          issuerUrl: null,
+          brandColor: primaryColor || '#4F46E5',
+          brandSecondaryColor: '#6B7280',
+          brandLogoUrl: null
+        })
+        .returning();
+
+      res.status(201).json(template);
+    } catch (error: any) {
+      console.error('Credential import error:', error);
+      res.status(400).json({ error: error.message || 'Failed to import credential' });
     }
   });
 
