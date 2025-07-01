@@ -117,7 +117,7 @@ export default function PublicFormPage() {
     );
   }
 
-  // Check if form needs verification credentials - must be calculated before hooks
+  // Helper function for checking VC fields
   function formHasVCFields(form: any): boolean {
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
@@ -127,14 +127,16 @@ export default function PublicFormPage() {
     );
   }
 
-  const hasVC = formHasVCFields(form);
+  // Calculate hasVC (safe even if form is undefined)
+  const hasVC = form ? formHasVCFields(form) : false;
 
-  // Initialize proof request using the hook - MUST be called before any conditional returns
+  // Initialize proof request using the hook - MUST be called unconditionally at top level
   const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
     publicSlug: slug,
     enabled: !!form && hasVC
   });
 
+  // Now safe to do conditional returns after all hooks
   if (!form) {
     return null;
   }

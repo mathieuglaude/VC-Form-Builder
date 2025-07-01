@@ -31,7 +31,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    hmr: false, // Disable Hot Module Reload to fix WebSocket wss://localhost:undefined errors
+    hmr: {
+      port: 24678, // Use a different port for HMR to avoid conflicts
+    },
     fs: {
       strict: true,
       deny: ["**/.*"],
