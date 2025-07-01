@@ -52,7 +52,7 @@ export default function Navigation() {
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-white shadow-sm border-b">
+    <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         {/* Brand */}
         <Link href="/">

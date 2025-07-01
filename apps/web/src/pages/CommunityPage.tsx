@@ -178,7 +178,7 @@ export default function CommunityPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredForms.map((form) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow">
+              <Card key={form.id} className="card card-hover flex flex-col">
                 <CardContent className="p-0">
                   {/* Form Header */}
                   <div className="h-32 bg-gradient-to-br from-green-50 to-emerald-100 rounded-t-lg p-4 flex items-center justify-center">

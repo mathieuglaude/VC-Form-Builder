@@ -11,7 +11,7 @@ export default function BannerBottomCard({ credential }: BannerBottomCardProps) 
   
   return (
     <div 
-      className="rounded-lg shadow-md overflow-hidden bg-white border flex-shrink-0" 
+      className="card card-hover overflow-hidden flex-shrink-0" 
       style={{ 
         width: '420px', 
         height: '236px'

@@ -101,7 +101,7 @@ export default function CredentialsPage() {
 
       {/* Filter Panel */}
       {showFilters && (
-        <Card className="mb-6">
+        <Card className="card mb-6">
           <CardContent className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>

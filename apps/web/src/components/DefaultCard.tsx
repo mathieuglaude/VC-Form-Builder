@@ -9,7 +9,7 @@ interface DefaultCardProps {
 export default function DefaultCard({ credential }: DefaultCardProps) {
   return (
     <div 
-      className="relative rounded-lg shadow-md overflow-hidden bg-white border" 
+      className="card card-hover relative overflow-hidden" 
       style={{ width: '100%', maxWidth: '420px', height: '236px' }}
     >
       {/* Header */}

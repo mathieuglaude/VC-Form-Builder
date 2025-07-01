@@ -92,7 +92,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Create New Form Card */}
             <Card 
-              className="border-dashed border-2 border-gray-300 hover:border-blue-400 hover:bg-blue-50 transition-colors cursor-pointer"
+              className="card card-hover border-2 border-dashed border-blue-200 cursor-pointer"
               onClick={(e) => {
                 e.preventDefault();
                 window.location.href = '/builder/new';
@@ -114,7 +114,7 @@ export default function HomePage() {
 
             {/* Existing Personal Forms */}
             {formsFiltered.map((form: any) => (
-              <Card key={form.id} className="hover:shadow-lg transition-shadow">
+              <Card key={form.id} className="card card-hover flex flex-col">
                 <CardContent className="p-0">
                   {/* Form Header with Logo */}
                   <div className="h-32 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg p-4 flex items-center justify-center">

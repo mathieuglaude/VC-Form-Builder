@@ -1,0 +1,100 @@
+**Task – soften UI without large re-writes**
+
+----------------------------------------------------------------
+## 1 · Add a reusable “card” component style via Tailwind layers
+
+`apps/web/src/index.css`  (after the Tailwind directives)
+
+```css
+@layer components {
+  .card {
+    @apply rounded-xl bg-white shadow-sm ring-1 ring-gray-200;
+  }
+  .card-hover:hover {
+    @apply shadow-md ring-gray-300 transition-shadow;
+  }
+}
+2 · Replace hard borders in three card components
+FormCard.tsx
+
+CredentialCard.tsx
+
+CommunityFormCard.tsx
+
+Change outer div className:
+
+tsx
+Copy
+Edit
+// before
+<div className="border border-black ..."> ...
+
+// after
+<div className="card card-hover flex flex-col ..."> ...
+Remove any explicit border, border-black, border-2 classes inside headers; rely on spacing + typography instead.
+
+3 · Make dashed “Create New Form” tile match style
+tsx
+Copy
+Edit
+<div className="card card-hover border-2 border-dashed border-blue-200 ...">
+(keeps the dotted outline but still rounded & shadowed).
+
+4 · Lighten the top nav
+apps/web/src/components/NavBar.tsx (or equivalent)
+
+tsx
+Copy
+Edit
+<header className="sticky top-0 z-50 flex items-center gap-6
+                   bg-white/80 backdrop-blur-md shadow-sm px-6 py-3">
+Remove the old border-b border-black.
+
+5 · Remove explicit border on Credential Library grid cells
+If a cell still needs separation, use:
+
+tsx
+Copy
+Edit
+<div className="ring-1 ring-inset ring-gray-200 card-hover ...">
+6 · Global default border color (optional)
+tailwind.config.cjs
+
+js
+Copy
+Edit
+theme: {
+  extend: {
+    colors: {
+      border: 'var(--tw-ring-color)'   // let ring + border look identical
+    }
+  }
+}
+7 · Compile test
+bash
+Copy
+Edit
+pnpm --filter web dev
+Checklist:
+
+Cards now have light gray ring + soft shadow.
+
+Nav bar shows slight blur and no dark line.
+
+Hover raises card slightly.
+
+No runtime or TypeScript errors.
+
+Ghostwriter instructions
+• Add @layer components styles, update three card files, navbar, dashed tile, remove black borders.
+• Do not touch logic.
+• Run prettier / eslint-fix, restart dev.
+• Commit: “style: soften borders, add card component”.
+
+pgsql
+Copy
+Edit
+
+---
+
+This prompt touches only CSS utility classes and a few wrapper divs, so it’s low-risk but gives the who
