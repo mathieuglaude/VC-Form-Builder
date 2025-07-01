@@ -8,12 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@tanstack/react-query':
-        specifier: ^5.60.5
-        version: 5.81.5(react@18.3.1)
-      formiojs:
-        specifier: ^4.21.4
-        version: 4.21.7
       ky:
         specifier: ^1.8.1
         version: 1.8.1
@@ -61,7 +55,7 @@ importers:
         specifier: ^4.8.1
         version: 4.8.1
       ws:
-        specifier: ^8.18.0
+        specifier: ^8.18.3
         version: 8.18.3
       zod:
         specifier: ^3.24.1
@@ -89,7 +83,7 @@ importers:
         specifier: ^1.0.38
         version: 1.0.38
       '@types/ws':
-        specifier: ^8.5.13
+        specifier: ^8.18.1
         version: 8.18.1
       drizzle-kit:
         specifier: ^0.30.0
