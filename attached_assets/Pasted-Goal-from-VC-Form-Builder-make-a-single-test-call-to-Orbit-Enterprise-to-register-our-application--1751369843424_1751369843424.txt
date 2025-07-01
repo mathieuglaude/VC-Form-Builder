@@ -1,0 +1,123 @@
+Goal – from VC Form Builder make a single test call to Orbit Enterprise to register our application as a Line of Business (LOB) against the dev LOB server (https://devapi-lob.nborbit.ca). Return the Orbit JSON (success / error) to the terminal so I can verify it worked.
+References – see the “Register LOB” open-api block and the Postman walk-through in the GitBook docs you imported .
+Steps
+
+Install helper
+
+bash
+Copy
+Edit
+pnpm i -w ky
+External services layer
+
+packages/external/orbit/LobClient.ts
+
+ts
+Copy
+Edit
+import ky from 'ky';
+export interface RegisterLobDto {
+  lobDisplayName: string;
+  lobEmail: string;
+  lobOrganizationName: string;
+  lobRole: 'ISSUER' | 'VERIFIER' | 'HOLDER';
+  lobTenancy: 'SINGLE' | 'MULTI';
+  didMethod: 'did:sov' | 'did:web';
+  lobProtocol: 'AIP2_0';
+  writeLedgerId: number;          // 1 = BCovrin test
+  credentialFormat: 'ANONCRED';
+  lobTrustUrl: string;
+  lobTrustAPIKey: string;
+  lobExternalEndorser: boolean;
+  endorserDetails?: {
+    endorserDid?: string;
+    endorserName: string;
+  };
+}
+export class LobClient {
+  private base = process.env.ORBIT_LOB_BASE_URL ??
+    'https://devapi-lob.nborbit.ca';
+  async register(body: RegisterLobDto) {
+    return ky.post(`${this.base}/api/lob/register`, { json: body })
+            .json<Record<string, unknown>>();
+  }
+}
+packages/external/orbit/index.ts
+
+ts
+Copy
+Edit
+export * from './LobClient';
+API-side singleton
+apps/api/src/deps/orbit.ts
+
+ts
+Copy
+Edit
+import { LobClient } from '@external/orbit';
+export const lob = new LobClient();
+Quick test script
+apps/api/scripts/registerLobTest.ts
+
+ts
+Copy
+Edit
+import { lob } from '../src/deps/orbit';
+(async () => {
+  const res = await lob.register({
+    lobDisplayName: 'VC Form Builder QA',
+    lobEmail:       'noreply@vc-forms.example',
+    lobOrganizationName: 'VC Form Builder Inc.',
+    lobRole:        'VERIFIER',
+    lobTenancy:     'SINGLE',
+    didMethod:      'did:sov',
+    lobProtocol:    'AIP2_0',
+    writeLedgerId:  1,
+    credentialFormat: 'ANONCRED',
+    lobTrustUrl:    'https://iata-api.trustregistry.nborbit.io',
+    lobTrustAPIKey: 'DUMMY-PLACEHOLDER-KEY',
+    lobExternalEndorser: false
+  });
+  console.log(JSON.stringify(res, null, 2));
+})().catch(e => { console.error(e); process.exit(1); });
+Add npm script in root package.json:
+
+json
+Copy
+Edit
+"scripts": {
+  "orbit:register": "tsx apps/api/scripts/registerLobTest.ts"
+}
+Env sample
+Extend .env.example:
+
+ini
+Copy
+Edit
+# Orbit LOB registration
+ORBIT_LOB_BASE_URL=https://devapi-lob.nborbit.ca
+Run & verify
+
+bash
+Copy
+Edit
+pnpm orbit:register
+You should see something like:
+
+json
+Copy
+Edit
+{
+  "success": true,
+  "message": "LOB registered successfully.",
+  "data": {
+    "responseDetails":
+      "Your request was successfully created. You will receive confirmation over registered email."
+  }
+}
+No TS errors – pnpm -r tsc --noEmit must pass.
+
+Important – use only dummy trust-registry API keys and emails in the repository; real secrets go into the local .env.
+
+Feed that prompt to Replit, then run pnpm orbit:register.
+If you get the success JSON, your VC Form Builder LOB request was accepted and you’ll shortly receive the confirmation email from Orbit Enterprise.
