@@ -5,6 +5,7 @@ import NotFound from "@/pages/not-found";
 import HomePage from "@/pages/HomePage";
 import BuilderPage from "@/pages/BuilderPage";
 import FillPage from "@/pages/FillPage";
+import FormLaunchPage from "@/pages/FormLaunchPage";
 import CredentialsPage from "@/pages/CredentialsPage";
 import CredentialDetailPage from "@/pages/CredentialDetailPage";
 import WalletLibraryPage from "@/pages/WalletLibraryPage";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/" component={HomePage} />
       <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
       <Route path="/builder/:id" component={BuilderPage} />
+      <Route path="/launch/:id" component={FormLaunchPage} />
       <Route path="/form/:id" component={FillPage} />
       <Route path="/f/:slug" component={PublicFormPage} />
       <Route path="/community" component={CommunityPage} />

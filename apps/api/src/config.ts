@@ -5,17 +5,31 @@ import path from 'path';
 // Simple .env file loader
 function loadEnvFile() {
   try {
-    const envPath = path.resolve('.env');
-    const envFile = fs.readFileSync(envPath, 'utf8');
+    // Try both root .env and API-specific .env
+    const envPaths = [
+      path.resolve('.env'),
+      path.resolve(process.cwd(), '.env')
+    ];
     
-    for (const line of envFile.split('\n')) {
-      const trimmed = line.trim();
-      if (trimmed && !trimmed.startsWith('#')) {
-        const [key, ...valueParts] = trimmed.split('=');
-        if (key && valueParts.length > 0) {
-          const value = valueParts.join('=');
-          process.env[key] = value;
+    for (const envPath of envPaths) {
+      try {
+        const envFile = fs.readFileSync(envPath, 'utf8');
+        console.log('Loading env from:', envPath);
+        
+        for (const line of envFile.split('\n')) {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('#')) {
+            const [key, ...valueParts] = trimmed.split('=');
+            if (key && valueParts.length > 0) {
+              const value = valueParts.join('=');
+              if (!process.env[key]) { // Don't override existing env vars
+                process.env[key] = value;
+              }
+            }
+          }
         }
+      } catch (err) {
+        // Continue to next path
       }
     }
   } catch (error) {
@@ -30,6 +44,8 @@ const envSchema = z.object({
   PORT: z.string().default('5000'),
   ORBIT_BASE: z.string().url(),
   ORBIT_API_KEY: z.string(),
+  ORBIT_VERIFIER_BASE_URL: z.string().url().default('https://testapi-verifier.nborbit.ca'),
+  ORBIT_LOB_ID: z.string(),
   VERIFIER_BASE: z.string().url().default('https://testapi-verifier.nborbit.ca'),
   VERIFIER_API_KEY: z.string().default('demo-key')
 });

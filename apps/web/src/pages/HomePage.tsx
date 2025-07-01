@@ -140,7 +140,7 @@ export default function HomePage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => window.open(`/form/${form.id}`, '_blank')}
+                          onClick={() => window.open(`/launch/${form.id}`, '_blank')}
                         >
                           <ExternalLink className="w-4 h-4" />
                         </Button>
