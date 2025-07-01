@@ -139,4 +139,39 @@ router.post('/init', async (req, res) => {
   }
 });
 
+// QR code cache with 5-minute TTL
+const cache = new Map<string, { qrSvg: string; inviteUrl: string; ts: number }>();
+const TTL = 5 * 60 * 1000; // 5 minutes
+
+// Get QR code for proof request
+router.get('/:id/qr', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Check cache first
+    const cached = cache.get(id);
+    if (cached && Date.now() - cached.ts < TTL) {
+      console.log(`Returning cached QR for proof request: ${id}`);
+      return res.json({ qrSvg: cached.qrSvg, inviteUrl: cached.inviteUrl });
+    }
+
+    // Call Orbit to prepare URL and get QR code
+    console.log(`Generating QR for proof request: ${id}`);
+    const qr = await verifier.prepareUrl(id);
+    
+    // Cache the result
+    cache.set(id, { ...qr, ts: Date.now() });
+    
+    res.json(qr);
+  } catch (error: any) {
+    console.error('Prepare URL error:', error.response?.status, await error.response?.text?.());
+    
+    if (error.response?.status === 404) {
+      return res.status(404).json({ error: 'Proof request expired or not found' });
+    }
+    
+    res.status(502).json({ error: 'Orbit prepare-url failed' });
+  }
+});
+
 export default router;

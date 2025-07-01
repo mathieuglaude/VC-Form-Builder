@@ -23,6 +23,11 @@ interface ProofRequest {
   proofRequestId: string;
 }
 
+interface QRCodeData {
+  qrSvg: string;
+  inviteUrl: string;
+}
+
 function FormLaunchPage() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
@@ -65,6 +70,22 @@ function FormLaunchPage() {
     onError: (error) => {
       console.error('Failed to initialize proof request:', error);
     }
+  });
+
+  // Fetch QR code for proof request
+  const { data: qrData, isLoading: qrLoading, error: qrError } = useQuery<QRCodeData>({
+    queryKey: ['/api/proofs', proofRequestId, 'qr'],
+    queryFn: async () => {
+      const response = await fetch(`/api/proofs/${proofRequestId}/qr`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to generate QR code');
+      }
+      return response.json();
+    },
+    enabled: !!proofRequestId,
+    staleTime: 5 * 60 * 1000, // 5 minutes to match backend cache TTL
+    refetchOnWindowFocus: false
   });
 
   // Auto-initialize proof request when form loads and has VC requirements
@@ -209,31 +230,60 @@ function FormLaunchPage() {
                         Scan the QR code with your wallet app or use the direct link below:
                       </p>
                       
-                      {/* Mock QR Code Placeholder */}
+                      {/* QR Code Display */}
                       <div className="flex justify-center">
-                        <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
-                          <div className="text-center">
-                            <QrCode className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-500">QR Code</p>
-                            <p className="text-xs text-gray-400">
-                              {proofRequestId}
-                            </p>
+                        {qrLoading && (
+                          <div className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                              <Loader2 className="h-8 w-8 mx-auto text-blue-600 animate-spin mb-2" />
+                              <p className="text-sm text-gray-600">Generating QR...</p>
+                            </div>
                           </div>
-                        </div>
+                        )}
+                        
+                        {qrError && (
+                          <div className="w-48 h-48 bg-red-50 border-2 border-red-200 rounded-lg flex items-center justify-center">
+                            <div className="text-center">
+                              <QrCode className="h-12 w-12 mx-auto text-red-400 mb-2" />
+                              <p className="text-sm text-red-600">QR Generation Failed</p>
+                              <p className="text-xs text-red-500">
+                                {qrError.message || 'Unknown error'}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {qrData && (
+                          <div 
+                            className="w-48 h-48 bg-white border-2 border-gray-300 rounded-lg flex items-center justify-center"
+                            dangerouslySetInnerHTML={{ __html: qrData.qrSvg }}
+                          />
+                        )}
                       </div>
 
                       {/* Action Buttons */}
                       <div className="flex space-x-3">
                         <Button 
-                          className="flex-1" 
-                          onClick={() => {
-                            // Mock verification completion for demo
-                            setVerificationComplete(true);
-                            setTimeout(() => handleProceedToForm(), 1000);
-                          }}
+                          className="flex-1"
+                          disabled={!qrData}
+                          asChild={!!qrData}
                         >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          Open in Wallet
+                          {qrData ? (
+                            <a
+                              href={qrData.inviteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center"
+                            >
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Open in Wallet
+                            </a>
+                          ) : (
+                            <>
+                              <ExternalLink className="h-4 w-4 mr-2" />
+                              Open in Wallet
+                            </>
+                          )}
                         </Button>
                         <Button 
                           variant="outline" 

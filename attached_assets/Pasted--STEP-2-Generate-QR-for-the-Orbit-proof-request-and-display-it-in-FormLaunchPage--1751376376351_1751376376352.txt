@@ -1,0 +1,143 @@
+🟦  STEP 2 — Generate QR for the Orbit proof request and display it in FormLaunchPage
+================================================================================================
+
+What we have so far  (from Step 1)
+----------------------------------
+• POST /api/proofs/init                               ⟶  { proofRequestId }        ✅  
+  – creates a proof definition in Orbit Verifier.
+
+Goal of this step
+-----------------
+1. Call Orbit **Prepare URL for Proof Request**:
+
+   `POST  /verifier/v1/proof-requests/{id}/prepare-url`
+
+   Headers *(same as before)*  
+lobId: ${ORBIT_LOB_ID}
+apiKey: ${ORBIT_API_KEY}
+
+pgsql
+Copy
+Edit
+
+Response (dev server)  
+```json
+{
+  "qrSvg"   : "<svg …>",
+  "inviteUrl": "https://.../didcomm_invite..."
+}
+Add /api/proofs/:id/qr that:
+• checks cache (simple in-memory Map) — if QR exists & not older than 5 min, reuse.
+• otherwise calls Orbit and stores { qrSvg, inviteUrl }.
+
+In FormLaunchPage (or VCModal) when proofRequestId is set:
+• GET /api/proofs/{id}/qr
+• show the returned qrSvg (inline <div dangerouslySetInnerHTML> is fine).
+• Provide an “Open in Wallet” link using inviteUrl (target=_blank).
+
+Add loading/error states; if Orbit returns 404, show “Proof request expired”.
+
+Implementation instructions
+🔸 packages/external/orbit/VerifierClient.ts
+
+ts
+Copy
+Edit
+export class VerifierClient {
+  /* existing code … */
+
+  async prepareUrl(id: string) {
+    return this.api
+      .post(`verifier/v1/proof-requests/${id}/prepare-url`)
+      .json<{ qrSvg: string; inviteUrl: string }>();
+  }
+}
+🔸 apps/api/src/routes/proofs.ts
+
+ts
+Copy
+Edit
+import { verifier } from '@/deps/orbit';
+const cache = new Map<string,{ qrSvg:string; inviteUrl:string; ts:number }>();
+const TTL = 5 * 60 * 1000;   // 5 minutes
+
+router.get('/:id/qr', async (req, res) => {
+  const { id } = req.params;
+  const cached = cache.get(id);
+  if (cached && Date.now() - cached.ts < TTL) return res.json(cached);
+
+  try {
+    const qr = await verifier.prepareUrl(id);
+    cache.set(id, { ...qr, ts: Date.now() });
+    return res.json(qr);
+  } catch (e:any) {
+    console.error('prepare-url error', e.response?.status, await e.response?.text());
+    return res.status(502).json({ error: 'Orbit prepare-url failed' });
+  }
+});
+🔸 apps/web/src/pages/FormLaunchPage.tsx (simplified pseudo-diff)
+
+tsx
+Copy
+Edit
+const { proofRequestId } = useProofState();   // already set in Step 1
+
+const { data: qr, isLoading } = useQuery(
+  ['qr', proofRequestId],
+  () => api.get(`/api/proofs/${proofRequestId}/qr`).then(r=>r.data),
+  { enabled: !!proofRequestId }
+);
+
+return (
+  <>
+    {/* left column: form intro … */}
+    <div className="w-96 p-6 border rounded-lg ml-8">
+      <h3 className="text-lg font-semibold mb-4">Scan with BC Wallet</h3>
+
+      {isLoading && <p>Generating QR…</p>}
+
+      {qr && (
+        <>
+          <div
+            className="w-56 h-56 mx-auto"
+            dangerouslySetInnerHTML={{ __html: qr.qrSvg }}
+          />
+          <a
+            href={qr.inviteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-center mt-4 text-blue-600 underline"
+          >
+            Open in Wallet
+          </a>
+        </>
+      )}
+    </div>
+  </>
+);
+🔸 env (already present)
+
+ini
+Copy
+Edit
+ORBIT_VERIFIER_BASE_URL=https://devapi-verifier.nborbit.ca
+ORBIT_LOB_ID=a03f92ac-5ce7-4037-b8b5-79ff821b0878
+ORBIT_API_KEY=MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et
+Testing
+pnpm dev
+
+Home → click Launch on KYC TEST (or any form with VC fields).
+
+Observe:
+• Spinner → QR appears on right pane.
+• Network: GET /api/proofs/<id>/qr → 200.
+• Server logs: POST /verifier/v1/proof-requests/<id>/prepare-url 200.
+
+Scan QR with BC Wallet → you should receive the proof request (presentation step to be handled in Step 3).
+
+Deliverable
+Working /api/proofs/:id/qr endpoint with 5-minute cache.
+
+QR + “Open in Wallet” rendered in UI.
+
+No lint / TS errors, existing tests pass.
