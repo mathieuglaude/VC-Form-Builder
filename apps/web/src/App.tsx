@@ -22,19 +22,21 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={HomePage} />
-      <Route path="/builder" component={() => { window.location.href = "/"; return null; }} />
-      <Route path="/builder/:id" component={BuilderPage} />
-      <Route path="/launch/:id" component={FormLaunchPage} />
-      <Route path="/form/:id" component={FillPage} />
-      <Route path="/f/:slug" component={PublicFormPage} />
-      <Route path="/community" component={CommunityPage} />
-      <Route path="/credentials" component={CredentialsPage} />
-      <Route path="/credentials/:id" component={CredentialDetailPage} />
-      <Route path="/wallets" component={WalletLibraryPage} />
-      <Route path="/account" component={AccountPage} />
-      <Route path="/admin/credentials" component={CredentialsAdminPage} />
-      <Route component={NotFound} />
+      <Route path="/"><HomePage /></Route>
+      <Route path="/builder">
+        {() => { window.location.href = "/"; return null; }}
+      </Route>
+      <Route path="/builder/:id"><BuilderPage /></Route>
+      <Route path="/launch/:id"><FormLaunchPage /></Route>
+      <Route path="/form/:id"><FillPage /></Route>
+      <Route path="/f/:slug"><PublicFormPage /></Route>
+      <Route path="/community"><CommunityPage /></Route>
+      <Route path="/credentials"><CredentialsPage /></Route>
+      <Route path="/credentials/:id"><CredentialDetailPage /></Route>
+      <Route path="/wallets"><WalletLibraryPage /></Route>
+      <Route path="/account"><AccountPage /></Route>
+      <Route path="/admin/credentials"><CredentialsAdminPage /></Route>
+      <Route><NotFound /></Route>
     </Switch>
   );
 }
