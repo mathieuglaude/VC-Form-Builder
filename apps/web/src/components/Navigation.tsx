@@ -55,14 +55,22 @@ export default function Navigation() {
     console.log("Logout clicked");
   };
 
+  // VC Logo Component
+  const VCLogo = () => (
+    <svg width="24" height="24" fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="3"/>
+      <path d="M9 8h6M9 12h6M9 16h3"/>
+    </svg>
+  );
+
   return (
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         {/* Brand */}
         <Link href="/">
-          <div className="flex items-center gap-2 text-xl font-semibold cursor-pointer">
-            <FileText className="h-6 w-6 text-blue-600" />
-            <span className="text-gray-900">Form Builder</span>
+          <div className="flex items-center gap-2 text-lg font-semibold cursor-pointer">
+            <VCLogo />
+            <span className="text-gray-900">VC&nbsp;Form&nbsp;Builder</span>
           </div>
         </Link>
 
