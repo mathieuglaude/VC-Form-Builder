@@ -9,12 +9,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ShieldCheck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { DataSource } from "@shared/schema";
+
+interface VCMapping {
+  credentialType: string;
+  attributeName: string;
+}
+
+interface FieldConfig {
+  label: string;
+  placeholder: string;
+  description: string;
+  required: boolean;
+  dataSource: DataSource | 'freetext' | 'picklist'; // Legacy support
+  credentialMode: 'optional' | 'required';
+  options: string;
+  vcMapping: VCMapping;
+}
 
 interface FieldConfigModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (config: any) => void;
-  initialConfig?: any;
+  onSave: (config: FieldConfig) => void;
+  initialConfig?: Partial<FieldConfig> & { properties?: Record<string, unknown> };
 }
 
 export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfig }: FieldConfigModalProps) {

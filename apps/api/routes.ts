@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { Router } from "express";
 import { WebSocketServer, WebSocket } from "ws";
+import './types/express'; // Load Express type extensions
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
@@ -36,7 +37,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Broadcast verification result to specific client
-  function notifyClient(clientId: string, data: any) {
+  function notifyClient(clientId: string, data: Record<string, unknown>) {
     const client = clients.get(clientId);
     if (client && client.readyState === WebSocket.OPEN) {
       client.send(JSON.stringify(data));
@@ -198,9 +199,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(publishedForm);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Form publish error:', error);
-      res.status(500).json({ error: 'Failed to publish form', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to publish form', details: errorMessage });
     }
   });
 
@@ -221,9 +223,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json({ slug: publishedForm.publicSlug });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Form publish error:', error);
-      res.status(500).json({ error: 'Failed to publish form', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to publish form', details: errorMessage });
     }
   });
 
@@ -373,8 +376,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const clonedForm = await storage.cloneFormConfig(id, authorId, authorName);
       res.json(clonedForm);
-    } catch (error: any) {
-      if (error.message === 'Form not found') {
+    } catch (error: unknown) {
+      if (error instanceof Error && error.message === 'Form not found') {
         res.status(404).json({ error: 'Form not found' });
       } else {
         res.status(500).json({ error: 'Failed to clone form' });
@@ -411,8 +414,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Check if form has credential issuance action configured
       const formConfig = await storage.getFormConfig(formConfigId);
-      const metadata = formConfig?.metadata as any;
-      const issuanceActions = metadata?.issuanceActions;
+      const metadata = formConfig?.metadata as Record<string, unknown>;
+      const issuanceActions = Array.isArray(metadata?.issuanceActions) ? metadata.issuanceActions : [];
       
       if (issuanceActions && issuanceActions.length > 0) {
         // Process each issuance action
@@ -422,26 +425,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.json(submission);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Form submission error:', error);
-      res.status(400).json({ error: 'Invalid submission data', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: 'Invalid submission data', details: errorMessage });
     }
   });
 
   // Helper function to process credential issuance actions
-  async function processIssuanceAction(action: any, submission: any, holderDid?: string) {
+  async function processIssuanceAction(action: Record<string, unknown>, submission: Record<string, unknown>, holderDid?: string) {
     try {
       if (!holderDid) {
         console.warn('No holder DID provided for credential issuance');
         return;
       }
 
-      const { credDefId, attributeMapping } = action;
+      const credDefId = action.credDefId as string;
+      const attributeMapping = action.attributeMapping as Record<string, string>;
+      
+      if (!credDefId || !attributeMapping) {
+        console.warn('Invalid issuance action configuration');
+        return;
+      }
       
       // Map form submission data to credential attributes
-      const attributes: Record<string, any> = {};
+      const attributes: Record<string, unknown> = {};
+      const submissionData = submission.submissionData as Record<string, unknown>;
+      
       for (const [credAttr, formField] of Object.entries(attributeMapping)) {
-        const value = submission.submissionData[formField as string];
+        const value = submissionData[formField];
         if (value !== undefined && value !== null) {
           attributes[credAttr] = value;
         }
@@ -510,9 +522,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attributes: (() => {
             const captureBase = tpl.overlays.find(o => o.type.includes('capture_base'));
             if (captureBase?.data?.attributes) {
-              return Object.entries(captureBase.data.attributes).map(([name, config]: [string, any]) => ({
+              return Object.entries(captureBase.data.attributes).map(([name, config]) => ({
                 name,
-                description: config.description || name
+                description: (config as Record<string, unknown>)?.description || name
               }));
             }
             return [];
@@ -636,9 +648,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // TODO: Re-enable credential issuance webhook after core proof flow works
 
       res.json({ status: 'processed' });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Orbit webhook error:', error);
-      res.status(500).json({ error: 'Failed to process webhook', details: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to process webhook', details: errorMessage });
     }
   });
 
@@ -809,9 +822,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json(template);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Credential import error:', error);
-      res.status(400).json({ error: error.message || 'Failed to import credential' });
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to import credential' });
     }
   });
 
@@ -841,9 +854,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .where(eq(credentialTemplates.id, id));
 
       res.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Credential delete error:', error);
-      res.status(400).json({ error: error.message || 'Failed to delete credential' });
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to delete credential' });
     }
   });
 
@@ -958,9 +971,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .returning();
 
       res.status(201).json(template);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Credential import error:', error);
-      res.status(400).json({ error: error.message || 'Failed to import credential' });
+      res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to import credential' });
     }
   });
 

@@ -2,6 +2,9 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp, index } from
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Type-safe data source types
+export type DataSource = 'verified' | 'manual';
+
 export interface AttributeDef {
   name: string;
   description: string;
