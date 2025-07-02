@@ -80,12 +80,14 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
         }
         
         const result = await response.json();
-        return { 
+        const data = { 
           proofId: result.proofId, 
           invitationUrl: result.invitationUrl,
           svg: result.svg,
           isMock: false 
         };
+        console.log('[trace] real?', forceReal, 'resp', data);
+        return data;
       }
 
       // Standard API call for non-real mode

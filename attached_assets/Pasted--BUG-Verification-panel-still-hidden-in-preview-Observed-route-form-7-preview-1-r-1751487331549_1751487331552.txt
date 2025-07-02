@@ -1,0 +1,103 @@
+### 🐛  BUG • Verification panel still hidden in preview
+
+**Observed route:**  
+`/form/7?preview=1&real=1&panel=1`  
+UI shows no panel.  Console shows  
+[hook] hitting /api/proofs/init-form/7 ✅ good
+GET /api/proofs/init-form/7 500 ❌ bad
+(no VerificationPanel render)
+
+pgsql
+Copy
+Edit
+
+────────────────────────────────────────
+🧭  Debug-/Fix plan  (follow in order)
+────────────────────────────────────────
+1. **Backend 200 check**
+   ```bash
+   curl -s -w '\n%{http_code}\n' \
+     -H 'Content-Type: application/json' \
+     -X POST http://localhost:5000/api/proofs/init-form/7 \
+     --data '{}'
+If status ≠ 200 print full body.
+
+Ensure body has { svg, invitationUrl, status }.
+
+useProofRequest trace
+
+In useProofRequest.ts add:
+
+ts
+Copy
+Edit
+console.log('[trace] real?', forceReal, 'resp', data);
+Confirm data.svg non-empty when backend 200.
+
+showPanel gating
+
+In FormLaunchPage.tsx just before render:
+
+ts
+Copy
+Edit
+console.log('[trace] hasVC', hasVC,' showPanel', showPanel);
+showPanel must be true whenever panel=1 or data.svg.
+
+VerificationPanel render
+
+Ensure <VerificationPanel svg={data.svg} url={data.invitationUrl} />
+receives props.
+
+Inside component add:
+
+ts
+Copy
+Edit
+console.log('[trace panel] props', props);
+If props.svg truthy, but nothing renders, fix JSX:
+
+tsx
+Copy
+Edit
+return (
+  <Dialog open>
+    <div className="verification-panel">
+      <div dangerouslySetInnerHTML={{__html: svg}} />
+      …
+    </div>
+  </Dialog>
+);
+CSS / layout
+
+.verification-panel should have fixed width (e.g. 320 px) and
+parent grid grid-template-columns: 1fr auto.
+
+Return a 200 even on Orbit error
+
+If backend occasionally 500s, wrap Orbit call in try/catch; on error
+return { status:'fallback', svg:mockSvg, invitationUrl:'#' }
+so panel still shows (and logs error).
+
+🔒 Regression tests
+
+unit: tests/unit/useProofRequest.real.test.ts
+
+Mock fetch → 200 {svg:'<svg ...>', invitationUrl:'X'}
+expect hook returns same & showPanel=true.
+
+e2e: tests/e2e/verifyPanel.e2e.ts
+
+Spin up web, hit preview URL, assert svg present in DOM.
+
+Update pnpm test in CI to run both suites.
+
+Commit
+
+csharp
+Copy
+Edit
+chore: fix verification panel render & add tests
+All tests must pass before push.
+
+Please execute these steps and paste the [trace] logs + results so we can confirm the panel is reliably displayed.

@@ -153,14 +153,19 @@ export default function FormLaunchPage() {
   // HARD-LOCKED PREVIEW: Auto-show panel in preview mode
   const debugShowPanel = isPreview;
 
-  // Show panel for both preview (mock) and launch (real API) modes  
-  const showPanel = urlShowPanel || (!isPreview && hasVC);
+  // Show panel when:
+  // 1. panel=1 parameter is explicitly set, OR
+  // 2. Not in preview mode and form has VC fields, OR  
+  // 3. In preview mode but with real=1 and has VC fields and valid proof response
+  const showPanel = urlShowPanel || (!isPreview && hasVC) || (isPreview && hasVC && proofResponse?.svg);
 
   // DEBUG LOGGING: Track verification panel decision
+  console.log('[trace] hasVC', hasVC, ' showPanel', showPanel);
   console.log('[FormLaunchPage]', {
     mode: isPreview ? 'preview' : 'launch',
     isPreview,
     hasVC,
+    urlShowPanel,
     proofId: proofResponse?.proofId,
     showPanel,
     isMock: proofResponse?.isMock
@@ -181,7 +186,7 @@ export default function FormLaunchPage() {
       </div>
 
       {/* Right column - Verification Panel */}
-      {urlShowPanel && proofResponse?.svg && (
+      {showPanel && proofResponse?.svg && (
         <VerificationPanel 
           svg={proofResponse.svg} 
           url={proofResponse.invitationUrl || '#'} 
