@@ -153,8 +153,8 @@ export default function FormLaunchPage() {
   // HARD-LOCKED PREVIEW: Auto-show panel in preview mode
   const debugShowPanel = isPreview;
 
-  // Show panel for both preview (mock) and launch (real API) modes
-  const showPanel = urlShowPanel || (isPreview && hasVC) || (!isPreview && hasVC && proofResponse?.proofId);
+  // Show panel for both preview (mock) and launch (real API) modes  
+  const showPanel = urlShowPanel || (!isPreview && hasVC);
 
   // DEBUG LOGGING: Track verification panel decision
   console.log('[FormLaunchPage]', {

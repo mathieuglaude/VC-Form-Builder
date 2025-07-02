@@ -45,7 +45,7 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
     ? `/api/proofs/init-form/${formId}`
     : '/api/proofs/init';
   
-  console.log('[hook] hitting', endpoint);
+  console.log('[hook] →', endpoint);
 
   // Real API call for non-preview mode  
   return useQuery({
