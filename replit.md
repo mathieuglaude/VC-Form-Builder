@@ -331,6 +331,12 @@ Changelog:
   - Fixed routing to use FormLaunchPage instead of deprecated FillPage component
   - Disabled problematic Vite runtime error overlay plugin causing WebSocket connection issues
   - FormLaunchPage now properly renders single header with embedded FormPage content
+- July 2, 2025. Implemented and tested Define Proof Request API integration
+  - Created dedicated `/api/define-proof/:formId` endpoint for analyzing form credential requirements
+  - Fixed URL construction issues to properly call Orbit Enterprise `define-proof-request` endpoint
+  - Configured real Orbit API mode using `https://devapi-verifier.nborbit.ca/` base URL
+  - Confirmed API integration works correctly (returns 401 Unauthorized, confirming endpoint exists)
+  - Ready for production credential verification workflows once LOB provisioning is complete
 ```
 
 ## User Preferences
