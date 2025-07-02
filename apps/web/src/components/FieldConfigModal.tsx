@@ -17,6 +17,11 @@ interface FieldConfigModalProps {
 }
 
 export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfig }: FieldConfigModalProps) {
+  console.log('[config-modal] props.field', initialConfig);
+  console.log('[config-modal] vcMapping', initialConfig?.properties?.vcMapping);
+  console.log('[config-modal] dataSource', initialConfig?.properties?.dataSource);
+  console.log('[config-modal] credentialMode', initialConfig?.properties?.credentialMode);
+  
   const [config, setConfig] = useState({
     label: '',
     placeholder: '',
