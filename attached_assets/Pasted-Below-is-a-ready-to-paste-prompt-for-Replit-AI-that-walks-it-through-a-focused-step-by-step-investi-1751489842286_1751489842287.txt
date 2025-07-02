@@ -1,0 +1,126 @@
+Below is a ready-to-paste prompt for Replit AI that walks it through a focused, step-by-step investigation of the invitation URL coming back from Orbit Enterprise and makes sure the QR that’s rendered is exactly what BC Wallet expects.
+
+The flow:
+
+Sniff the Orbit response after /proof-request/{id} (or /prepare-url) – confirm we’re getting a shortUrl / longUrl or an out-of-band invitation.
+
+Validate that the URL is one of the formats BC Wallet can open (didcomm://, https://<walletdomain>/?d_m=, or https://msghandler/ssi?oob=).
+
+Fix the backend so we always embed that wallet-friendly URL in the QR SVG (instead of the raw API endpoint).
+
+Add unit + e2e tests that break the build if the invitation is malformed in the future.
+
+nginx
+Copy
+Edit
+### 🔍  QR **still** not scannable – the URL inside the code is an API endpoint, not a wallet invitation
+
+Symptom  
+• VerificationPanel debug shows  
+URL: https://devapi-verifier.nborbit.ca/api/lob/<lob_id>/proof-request/1751489642033
+Protocol: HTTPS
+
+pgsql
+Copy
+Edit
+• BC Wallet ignores the QR (expects didcomm or a special https share link).
+
+Goal  
+→ Grab the *actual* invitation link that Orbit creates (shortUrl | longUrl | oob) and embed **that** in the QR, not the raw API URL.
+
+---
+
+#### **Step 1 – Inspect Orbit “Prepare URL” response**
+1. Add a one-off script `scripts/dumpProofUrl.ts`:
+ ```ts
+ import fetch from 'node-fetch';
+ import { orbit } from '../src/config';
+ (async () => {
+   const proofDefineId = process.argv[2];
+   const url = `${orbit.baseUrl}/proof/url?connectionless=true`;
+   const res = await fetch(url, {
+     method: 'POST',
+     headers: { 'api-key': orbit.apiKey, 'lobId': orbit.lobId, 'content-type': 'application/json' },
+     body: JSON.stringify({ proofDefineId, messageProtocol:'AIP2_0', proofAutoVerify:false })
+   });
+   console.log('HTTP', res.status);
+   console.log(await res.text());
+ })();
+and run it with a real proofDefineId you log in initFormProof.ts.
+
+Verify the JSON contains either:
+
+shortUrl or longUrl
+
+or a nested oobInvitation.url.
+
+Step 2 – Tighten backend
+In packages/shared/src/proof.ts create a helper
+
+ts
+Copy
+Edit
+export function extractInvitationUrl(res: any): string | null {
+    if (res?.shortUrl) return res.shortUrl;
+    if (res?.longUrl)  return res.longUrl;
+    if (res?.oobInvitation?.url) return res.oobInvitation.url;
+    return null;
+}
+In apps/api/routes/initFormProof.ts
+
+After calling the proof/url endpoint call extractInvitationUrl.
+
+If it returns null, fall back to old behaviour and log [INVITE-ERROR] No invitation url in response.
+
+Pass the final invitation URL to verifier.generateQrSvg(url) and never the API path.
+
+Remove the temporary validation that 502’d requests – keep it behind QR_VALIDATE.
+
+Step 3 – Front-end
+In VerificationPanel change:
+
+tsx
+Copy
+Edit
+<img src={`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`} … />
+and store invitationUrl in a hidden <a data-testid="inv-url">.
+
+Step 4 – Tests
+tests/unit/invite.extract.test.ts
+
+ts
+Copy
+Edit
+import { extractInvitationUrl } from 'packages/shared/src/proof';
+test('extracts url variants', () => {
+  expect(extractInvitationUrl({shortUrl:'https://x'})).toBe('https://x');
+  expect(extractInvitationUrl({longUrl :'https://y'})).toBe('https://y');
+  expect(extractInvitationUrl({oobInvitation:{url:'didcomm://z'}})).toBe('didcomm://z');
+  expect(extractInvitationUrl({})).toBeNull();
+});
+tests/e2e/qrLoads.e2e.ts
+
+visit /form/7
+
+wait for img[data-testid="qr-svg"]
+
+read the hidden link a[data-testid="inv-url"]
+
+assert it starts with didcomm: or https://
+
+Step 5 – CI guard
+Add to pre-push hook:
+
+bash
+Copy
+Edit
+pnpm vitest run && pnpm playwright test || { echo "❌ Tests failed"; exit 1; }
+✅ Expected outcome
+
+Backend now replies 200 with { svg, invitationUrl } where invitationUrl is wallet-friendly.
+
+BC Wallet camera immediately recognises and processes the QR.
+
+Any future PR that re-introduces an invalid URL fails unit + e2e tests and blocks the push.
+
+Please implement exactly as above, then run /form/7 and confirm BC Wallet scans successfully. Afterwards, run the full test suite to show green.

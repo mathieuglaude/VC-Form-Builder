@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage.js';
-import { extractMappings, buildDefinePayload } from '../../../packages/shared/src/proof.js';
+import { extractMappings, buildDefinePayload, extractInvitationUrl } from '../../../packages/shared/src/proof.js';
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { VerifierService } from '../../../packages/external/orbit/VerifierService.js';
 import crypto from 'crypto';
@@ -53,16 +53,24 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
 
     try {
       const { proofDefineId } = await verifier.defineProof(orbitPayload);
+      console.log('[DUMP-CMD] To debug this proof: cd apps/api && npx tsx scripts/dumpProofUrl.ts', proofDefineId);
       const urlResponse = await verifier.createProofUrl({ proofDefineId });
       console.info('[ORBIT ⬅] prepare-url response', urlResponse);
-      const { shortUrl } = urlResponse;
-      console.info('[QR-DEBUG] invitationUrl', shortUrl?.slice(0, 120));
-      console.info('[QR-DEBUG] QR_VALIDATE env var:', !!process.env.QR_VALIDATE);
-      console.info('[QR-DEBUG] shortUrl exists:', !!shortUrl);
       
+      // Extract wallet-friendly invitation URL from response
+      const invitationUrl = extractInvitationUrl(urlResponse);
+      console.info('[QR-DEBUG] extracted invitationUrl', invitationUrl?.slice(0, 120));
+      console.info('[QR-DEBUG] QR_VALIDATE env var:', !!process.env.QR_VALIDATE);
+      console.info('[QR-DEBUG] invitationUrl exists:', !!invitationUrl);
+      
+      // Ensure we have a valid invitation URL
+      if (!invitationUrl) {
+        throw new Error('No invitation URL could be extracted from Orbit response');
+      }
+
       // Optional validation behind environment flag
-      if (process.env.QR_VALIDATE && (!shortUrl || (!shortUrl.startsWith('didcomm://') && !shortUrl.startsWith('https://')))) {
-        console.error('[QR-INVALID] Invalid invitation URL format:', shortUrl);
+      if (process.env.QR_VALIDATE && (!invitationUrl.startsWith('didcomm://') && !invitationUrl.startsWith('https://'))) {
+        console.error('[QR-INVALID] Invalid invitation URL format:', invitationUrl);
         return res.status(502).json({ 
           status: 'invalid-invitation',
           error: 'Invalid invitation URL format received from Orbit'
@@ -71,8 +79,8 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       
       res.json(ProofInitResponseSchema.parse({
         proofId: crypto.randomUUID(),
-        invitationUrl: shortUrl,
-        svg: verifier.generateQrSvg(shortUrl),
+        invitationUrl: invitationUrl,
+        svg: verifier.generateQrSvg(invitationUrl),
         status: 'ok'
       }));
 

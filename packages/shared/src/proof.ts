@@ -141,3 +141,14 @@ export function buildDefinePayload(mappings: VCMapping[], formName: string = "Fo
     requestedPredicates: []
   };
 }
+
+/**
+ * Extracts the actual wallet-friendly invitation URL from Orbit API response
+ * Checks for shortUrl, longUrl, or nested oobInvitation.url
+ */
+export function extractInvitationUrl(response: any): string | null {
+  if (response?.shortUrl) return response.shortUrl;
+  if (response?.longUrl) return response.longUrl;
+  if (response?.oobInvitation?.url) return response.oobInvitation.url;
+  return null;
+}
