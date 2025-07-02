@@ -47,7 +47,7 @@ router.post('/define-proof/:formId', async (req, res) => {
       ]
     };
 
-    const response = await fetch(`${orbit.baseUrl}/api/lob/${orbit.lobId}/define-proof-request`, {
+    const response = await fetch(`${orbit.baseUrl}api/lob/${orbit.lobId}/define-proof-request`, {
       method: 'POST',
       headers: {
         'apiKey': orbit.apiKey,
