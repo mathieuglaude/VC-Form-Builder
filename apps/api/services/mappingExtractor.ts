@@ -42,6 +42,10 @@ const CRED_MAP: { [key: string]: { schemaId: string; credDefId: string } } = {
   'BC Digital Business Card v1': { 
     schemaId: 'L6ASjmDDbDH7yPL1t2yFj9:2:business_card:1.0',
     credDefId: 'L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card'
+  },
+  'Unverified Person': { 
+    schemaId: 'GgX45mqJXGCxoWt1vQTkDZ:2:Person:1.0',
+    credDefId: 'GgX45mqJXGCxoWt1vQTkDZ:3:CL:2757639:default'
   }
 };
 

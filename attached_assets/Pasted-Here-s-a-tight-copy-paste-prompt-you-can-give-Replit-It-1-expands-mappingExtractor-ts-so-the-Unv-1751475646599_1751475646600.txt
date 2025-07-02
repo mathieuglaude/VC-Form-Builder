@@ -1,0 +1,68 @@
+Here’s a tight, copy-paste prompt you can give Replit.
+It (1) expands mappingExtractor.ts so the Unverified Person → birthdate_dateint mapping is picked up, (2) tests the back-end end-to-end, and (3) lets you preview the form with the real QR panel:
+
+md
+Copy
+Edit
+### 🛠 TASK — wire the “Unverified Person / birthdate_dateint” field
+
+**1.  Update mappingExtractor**
+
+```ts
+// apps/api/services/mappingExtractor.ts
+// ❶ Add to CRED_MAP
+"Unverified Person": {
+  anoncredsCredDefId: "<PUT_REAL_CRED_DEF_ID_HERE>",
+  anoncredsSchemaId: "<PUT_REAL_SCHEMA_ID_HERE>",
+  anoncredsSchemaIssuerDid: "<DID_FROM_SCHEMA>",
+  anoncredsSchemaName: "unverified_person",
+  anoncredsSchemaVersion: "1.0",
+  anoncredsIssuerDid: "<DID_FROM_SCHEMA>"
+},
+Grab the real IDs with:
+curl -s http://localhost:5000/api/cred-lib | jq '.[] | select(.label=="Unverified Person")'
+
+2. Include the attribute in buildDefineProofPayload
+
+ts
+Copy
+Edit
+// inside requestedAttributes loop
+if (m.credentialType === "Unverified Person") {
+  requestedAttributes.push({
+    name: m.attributeName,                 // "birthdate_dateint"
+    restrictions: [CRED_MAP[m.credentialType]]
+  });
+}
+requestedPredicates can stay [] for now.
+
+3. Hard-test end-to-end
+
+bash
+Copy
+Edit
+# restart api, then:
+curl -v -X POST http://localhost:5000/api/proofs/init-form/7 -H "Content-Type: application/json"
+# expect: 201 define-proof, 200 proof/url _or_ fallback QR with svg
+4. Front-end smoke
+
+Open:
+/form/7?preview=1&real=1&panel=1
+
+Watch console:
+
+[DEFINE-PAYLOAD] contains "birthdate_dateint"
+
+[panel] mounted shows { svg: "...", url: "..." }
+QR should show; wallet should open the invitation.
+
+No layout changes needed (flex layout already works).
+Once this passes we’ll remove panel=1 and wire the “has VC field” detection back.
+
+vbnet
+Copy
+Edit
+
+*(If you don’t know the credDefId / schemaId yet, ask Replit to fetch them from `/api/cred-lib` and plug them in.)*
+
+That’s it—this single prompt will: update the mapping, hit Orbit, and let you preview the QR based on the new “birthdate_dateint” field.
