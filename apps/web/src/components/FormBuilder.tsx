@@ -68,10 +68,14 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
 
   // Restore VC mapping data from metadata when loading existing form
   useEffect(() => {
+    console.log('[hydrate] incoming initialForm', initialForm?.metadata?.fields);
+    console.log('[hydrate] incoming components', initialForm?.formSchema?.components);
+    
     if (initialForm?.metadata?.fields && initialForm?.formSchema?.components) {
       const restoredComponents = initialForm.formSchema.components.map((comp: any) => {
         const fieldMeta = initialForm.metadata.fields[comp.key];
         if (fieldMeta) {
+          console.log(`[hydrate] restoring ${comp.key}:`, fieldMeta);
           return {
             ...comp,
             properties: {
@@ -86,6 +90,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
         }
         return comp;
       });
+      console.log('[hydrate] components after merge', restoredComponents);
       setComponents(restoredComponents);
     }
   }, [initialForm]);
