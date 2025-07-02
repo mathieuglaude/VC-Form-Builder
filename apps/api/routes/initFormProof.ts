@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage.js';
 import { extractMappings, buildDefineProofPayload } from '../services/mappingExtractor.js';
+import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const QRCode = require('qrcode-svg');
@@ -107,13 +108,17 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       const qrSvg = qr.svg();
       
       console.log('[ORBIT] Fallback QR generated for proofDefineId:', proofDefineId);
-      return res.json({
+      const response: ProofInitResponse = {
         proofId: credProofId,
         invitationUrl: fallbackUrl,
         svg: qrSvg,
-        status: 'fallback', // Indicate this is a fallback response
+        status: 'fallback',
         error: `Orbit proof/url failed: ${errorText}`
-      });
+      };
+      
+      // Validate before sending
+      const validatedResponse = ProofInitResponseSchema.parse(response);
+      return res.json(validatedResponse);
     }
 
     const requestResult = await requestResponse.json();
@@ -137,13 +142,16 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       
       const qrSvg = qr.svg();
       
-      return res.json({
+      const response: ProofInitResponse = {
         proofId: credProofId,
         invitationUrl: fallbackUrl,
         svg: qrSvg,
         status: 'fallback',
         error: 'No shortUrl in response'
-      });
+      };
+      
+      const validatedResponse = ProofInitResponseSchema.parse(response);
+      return res.json(validatedResponse);
     }
 
     // Step 3: Generate QR code from shortUrl
@@ -163,12 +171,15 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
 
     // Return complete proof initialization data
     console.log('[ORBIT] Successfully completed proof initialization');
-    res.json({
+    const response: ProofInitResponse = {
       proofId: returnedCredProofId,
       invitationUrl: shortUrl,
       svg: qrSvg,
-      status: 'success'
-    });
+      status: 'ok'
+    };
+    
+    const validatedResponse = ProofInitResponseSchema.parse(response);
+    res.json(validatedResponse);
 
   } catch (error) {
     console.error('[ORBIT] Exception in initFormProof:', error);

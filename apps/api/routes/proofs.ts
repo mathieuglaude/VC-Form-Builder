@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { orbit } from '../src/config';
+import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const QRCode = require('qrcode-svg');

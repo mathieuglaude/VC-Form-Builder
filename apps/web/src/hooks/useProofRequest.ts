@@ -1,5 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 
+// Inline API helper
+const getProofInitUrl = (opts: { formId?: number; real?: boolean }) => 
+  opts.real && opts.formId
+    ? `/api/proofs/init-form/${opts.formId}`
+    : `/api/proofs/init`;
+
+// Inline typed response
+interface ProofInitResponse {
+  proofId: string;
+  svg: string;
+  invitationUrl: string;
+  status: 'ok' | 'fallback';
+  error?: string;
+}
+
 interface UseProofRequestOpts {
   formId?: string;
   publicSlug?: string;
@@ -40,10 +55,11 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
     console.log('[useProofRequest] real backend call (preview + real=1 or panel=1)');
   }
 
-  // Determine endpoint based on mode
-  const endpoint = (forceReal || panelFlag) && formId
-    ? `/api/proofs/init-form/${formId}`
-    : '/api/proofs/init';
+  // Use typed helper to determine endpoint
+  const endpoint = getProofInitUrl({ 
+    formId: formId ? parseInt(formId) : undefined, 
+    real: forceReal || panelFlag 
+  });
   
   console.log('[hook] →', endpoint);
 
@@ -54,7 +70,7 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
       // Use new Orbit integration endpoint when in real mode with formId
       if ((forceReal || panelFlag) && formId) {
         console.log('[useProofRequest] Using real Orbit integration endpoint');
-        const response = await fetch(`/api/proofs/init-form/${formId}`, {
+        const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' }
         });
@@ -75,7 +91,7 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
       // Standard API call for non-real mode
       const body = formId ? { formId: parseInt(formId) } : { publicSlug };
       
-      const response = await fetch('/api/proofs/init', {
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
