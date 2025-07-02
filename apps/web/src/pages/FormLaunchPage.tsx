@@ -154,7 +154,7 @@ export default function FormLaunchPage() {
   const debugShowPanel = isPreview;
 
   // Show panel for both preview (mock) and launch (real API) modes
-  const showPanel = (isPreview && hasVC) || (!isPreview && hasVC && proofResponse?.proofId);
+  const showPanel = urlShowPanel || (isPreview && hasVC) || (!isPreview && hasVC && proofResponse?.proofId);
 
   // DEBUG LOGGING: Track verification panel decision
   console.log('[FormLaunchPage]', {
@@ -179,7 +179,7 @@ export default function FormLaunchPage() {
 
       {/* Show panel for preview (mock) or launch (real) */}
       {showPanel && (
-        <div className="fixed top-4 right-4 w-80 bg-white rounded-lg shadow-lg p-4 border border-gray-200">
+        <div style={{ border:'2px solid red', position:'fixed', top:0, right:0, zIndex:9999 }}>
           <VerificationPanel proofId={proofResponse?.proofId || mockProof.proofId} />
         </div>
       )}

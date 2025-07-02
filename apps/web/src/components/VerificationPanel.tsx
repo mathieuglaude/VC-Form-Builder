@@ -11,6 +11,7 @@ interface VerificationPanelProps {
 }
 
 export default function VerificationPanel({ proofId, onCancel }: VerificationPanelProps) {
+  console.log('[panel] props', { proofId });
   const [isVisible, setIsVisible] = useState(true);
 
   // Fetch QR code SVG and invitation URL

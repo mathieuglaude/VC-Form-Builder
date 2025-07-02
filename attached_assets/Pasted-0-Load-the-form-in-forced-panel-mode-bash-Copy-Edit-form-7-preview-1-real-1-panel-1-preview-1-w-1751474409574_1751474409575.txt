@@ -1,0 +1,87 @@
+0 – Load the form in forced panel mode
+bash
+Copy
+Edit
+/form/7?preview=1&real=1&panel=1
+preview=1 → we stay in the builder flow
+
+real=1 → hook should call /api/proofs/init-form/7
+
+panel=1 → our own debug flag that bypasses all “showPanel” logic
+
+Open DevTools → Network (XHR) and Console.
+
+1 – Check the hook fires
+ts
+Copy
+Edit
+// apps/web/src/hooks/useProofRequest.ts
+useEffect(() => {
+  console.log('[hook] params', { isPreview, forceReal, panelFlag });
+  // existing logic…
+});
+Expect in console:
+
+yaml
+Copy
+Edit
+[hook] params  { isPreview: true, forceReal: true, panelFlag: true }
+If you don’t see the POST to /api/proofs/init-form/7, the hook exit-condition is still wrong (probably thinks we’re in pure preview).
+→ Make it run whenever forceReal || panelFlag.
+
+2 – Confirm the backend gives us the SVG
+In the same Network tab click the POST /api/proofs/init-form/7 response.
+We need to see:
+
+json
+Copy
+Edit
+{
+  "proofId": "…",
+  "invitationUrl": "https://…",
+  "svg": "<svg …>",          <- MUST NOT be empty
+  "status": "ok | fallback"
+}
+If svg is missing the panel will stay blank → fix backend first (we already generate fallback SVG, make sure it’s attached to the JSON).
+
+3 – Wire the panel props
+ts
+Copy
+Edit
+// apps/web/src/components/VerificationPanel.tsx
+console.log('[panel] props', proof);   // proof = useProofRequest()
+
+if (!proof?.svg) return null;         // current early-return
+With panelFlag=1 we should at least reach this log.
+If the log appears but nothing renders, the Radix <Dialog> is probably conditionally hidden. Remove any guard like:
+
+ts
+Copy
+Edit
+{showPanel && (
+  <VerificationPanel … />
+)}
+and hard-mount it until we finish debugging.
+
+4 – Styling sanity
+If <VerificationPanel> mounts but is invisible, it’s usually tailwind/clsx
+e.g. hidden md:block. Temporarily wrap it with a red outline:
+
+tsx
+Copy
+Edit
+<div style={{ border:'2px solid red', position:'fixed', top:0, right:0, zIndex:9999 }}>
+  <VerificationPanel … />
+</div>
+Deliver this prompt to Replit
+pgsql
+Copy
+Edit
+The panel is still invisible.  
+1. Load `/form/7?preview=1&real=1&panel=1` and watch Network/Console.  
+2. Add `console.log('[hook] params', …)` inside useProofRequest; it MUST fire and hit /api/proofs/init-form/7.  
+3. Ensure that endpoint’s JSON includes `svg`.  If not, attach the fallback svg before res.json.  
+4. In VerificationPanel log props; hard-mount it (ignore showPanel) and wrap it in a fixed red div so we can see it irrespective of CSS.  
+
+Goal of this round: **the QR SVG becomes visible in the browser even if it’s the fallback.**  Once we can see any QR we can refine the Orbit payload next.
+Once they push these tweaks you’ll immediately know which layer is still blocking the display.

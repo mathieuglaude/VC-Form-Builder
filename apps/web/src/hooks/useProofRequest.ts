@@ -16,7 +16,10 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
   const searchParams = new URLSearchParams(location.search);
   const inPreview = searchParams.get('preview') === '1';
   const forceReal = !!searchParams.get('real');
-  const shouldMock = inPreview && !forceReal; // preview => mock, unless real=1
+  const panelFlag = !!searchParams.get('panel');
+  const shouldMock = inPreview && !forceReal && !panelFlag; // preview => mock, unless real=1 or panel=1
+  
+  console.log('[hook] params', { inPreview, forceReal, panelFlag });
 
   if (shouldMock) {
     console.log('[useProofRequest] PREVIEW mock proof');
@@ -28,16 +31,16 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
     };
   }
 
-  if (inPreview && forceReal) {
-    console.log('[useProofRequest] real backend call (preview + real=1)');
+  if (inPreview && (forceReal || panelFlag)) {
+    console.log('[useProofRequest] real backend call (preview + real=1 or panel=1)');
   }
 
   // Real API call for non-preview mode  
   return useQuery({
-    queryKey: ['proof', formId || publicSlug, forceReal ? 'real' : 'standard'],
+    queryKey: ['proof', formId || publicSlug, (forceReal || panelFlag) ? 'real' : 'standard'],
     queryFn: async () => {
       // Use new Orbit integration endpoint when in real mode with formId
-      if (forceReal && formId) {
+      if ((forceReal || panelFlag) && formId) {
         console.log('[useProofRequest] Using real Orbit integration endpoint');
         const response = await fetch(`/api/proofs/init-form/${formId}`, {
           method: 'POST',
