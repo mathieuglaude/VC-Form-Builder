@@ -29,6 +29,7 @@ export default function FormLaunchPage() {
   const qs = new URLSearchParams(location.search);
   const isPreview = qs.get('preview') === '1';
   const urlShowPanel = qs.get('panel') === '1';
+  const forceReal = qs.get('real') === '1';
 
   // Helper function - not a hook
   function formHasVCFields(form: any): boolean {
@@ -154,12 +155,16 @@ export default function FormLaunchPage() {
   const debugShowPanel = isPreview;
 
   // Show panel when:
-  // 1. panel=1 parameter is explicitly set, OR
-  // 2. Not in preview mode and form has VC fields, OR  
-  // 3. In preview mode but with real=1 and has VC fields and valid proof response
-  const showPanel = urlShowPanel || (!isPreview && hasVC) || (isPreview && hasVC && proofResponse?.svg);
+  // 1. panel=1 parameter is explicitly set (dev override), OR
+  // 2. Preview mode auto-open: preview mode AND form has VC fields, OR  
+  // 3. Launch page: not in preview mode AND form has VC fields
+  const showPanel = 
+    urlShowPanel ||                       // explicit dev flag
+    (isPreview  && hasVC) ||              // preview auto-open
+    (!isPreview && hasVC);                // launch page
 
   // DEBUG LOGGING: Track verification panel decision
+  console.log('[trace] isPreview', isPreview, 'hasVC', hasVC, 'panelFlag', urlShowPanel, 'forceReal', forceReal);
   console.log('[trace] hasVC', hasVC, ' showPanel', showPanel);
   console.log('[FormLaunchPage]', {
     mode: isPreview ? 'preview' : 'launch',

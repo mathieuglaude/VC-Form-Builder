@@ -1,0 +1,94 @@
+### 🐞  BUG • Verification panel only shows when &panel=1 is appended
+**Desired UX**
+
+*   Preview mode (`?preview=1`)  
+    → If form contains ≥1 VC-mapped field, panel must open automatically (no extra params).
+*   Preview + “real switch” (`?preview=1&real=1`)  
+    → same behaviour, but fetches real proof.
+*   “panel=1” remains a dev override.
+
+────────────────────────────────────────
+🔧  FIX STEPS
+────────────────────────────────────────
+1. **Unit-trace the flags**
+   Add once-off console logs in `useProofRequest.ts` and `FormLaunchPage.tsx`:
+   ```ts
+   console.log('[trace] isPreview', isPreview,
+               'hasVC', hasVC,
+               'panelFlag', urlShowPanel,
+               'forceReal', forceReal);
+Verify they report correctly on /form/7?preview=1.
+
+Repair showPanel decision
+Current code:
+
+ts
+Copy
+Edit
+const showPanel = urlShowPanel || (!isPreview && hasVC);
+Replace with:
+
+ts
+Copy
+Edit
+const showPanel =
+  urlShowPanel ||                       // explicit dev flag
+  (isPreview  && hasVC) ||              // preview auto-open
+  (!isPreview && hasVC);                // launch page
+Remove the explicit preview exclusion.
+
+Unify prop flow
+Ensure showPanel is what controls the <VerificationPanel …/> render,
+not the old urlShowPanel.
+
+E2E regression test
+Path: tests/e2e/panelPreviewAuto.e2e.ts
+Scenario:
+
+diff
+Copy
+Edit
+- hit /form/7?preview=1
+- wait for .verification-panel
+- assert it is visible and contains an <svg>
+Unit test for hook logic
+tests/unit/showPanel.logic.test.ts
+
+ts
+Copy
+Edit
+expect(computeShowPanel({isPreview:true, hasVC:true, panelFlag:false}))
+     .toBe(true);
+expect(computeShowPanel({isPreview:true, hasVC:false, panelFlag:false}))
+     .toBe(false);
+Commit
+
+vbnet
+Copy
+Edit
+fix: auto-open verification panel in preview mode
+test: add hook + e2e coverage
+All tests must pass before push.
+
+Please implement, then paste the [trace] output for /form/7?preview=1
+and a screenshot confirming the panel opens without the panel=1 flag.
+
+yaml
+Copy
+Edit
+
+---
+
+### Why this prompt
+
+* **Pinpoints the flawed line** (`showPanel` logic) and replaces it.
+* Re-asserts your *“every change → test”* rule (unit + e2e).
+* Leaves the `panel=1` flag intact for dev forcing.
+* Requests trace output so you can quickly verify it’s fixed before moving on.
+
+
+
+
+
+
+Ask ChatGPT
