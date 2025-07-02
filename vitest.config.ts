@@ -6,6 +6,25 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts', 'tests/**/*.e2e.ts'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80,
+      },
+      exclude: [
+        'node_modules/**',
+        'tests/**',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        '**/vite.config.ts',
+        '**/vitest.config.ts',
+        'test-inventory.ts',
+      ],
+    },
   },
   resolve: {
     alias: {

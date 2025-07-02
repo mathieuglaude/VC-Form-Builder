@@ -1,0 +1,95 @@
+### 🧪  Task: Back-fill a complete test suite for the entire repo
+
+Context
+▪ We now have Vitest + Supertest + Husky pre-push gates (see tests/ directory).
+▪ Coverage is very low: most services, hooks, and routes still lack tests.
+▪ Goal: ≥ 80 % statement coverage, green CI, push gate enforced.
+
+────────────────────────────────────────────
+0 ▸ Inventory & gap-analysis
+────────────────────────────────────────────
+1. Recursively scan `apps/` and `packages/` for:
+     – .ts/.tsx files exporting functions, classes, hooks, Express routes.
+2. Build a table:
+     {file, exported symbol, alreadyTested? (true|false)}.
+3. Print the table to console for visibility.
+
+────────────────────────────────────────────
+1 ▸ Auto-generate missing tests  (unit)
+────────────────────────────────────────────
+For every {file, symbol} with alreadyTested==false **and**
+   located in `src/services`, `src/utils`, `src/hooks`
+   ▸ Create `<symbol>.test.ts` under `tests/unit/…`
+   ▸ Use Vitest’s happy-path + one obvious failure path.
+   ▸ Mock external I/O (fetch, db, Orbit API).
+   ▸ Snapshot critical outputs (e.g., generated payloads).
+
+────────────────────────────────────────────
+2 ▸ Auto-generate missing tests  (API/e2e)
+────────────────────────────────────────────
+For each Express route in `apps/api/routes/**`
+   ▸ If no matching `tests/e2e/<routeName>.e2e.ts`
+   ▸ Create it with Supertest:
+       – Success 2xx
+       – Expected 4xx path
+   ▸ Use in-memory sqlite or mocked Prisma so tests are hermetic.
+
+────────────────────────────────────────────
+3 ▸ Coverage enforcement
+────────────────────────────────────────────
+▪ Add to vitest.config.ts
+
+      coverage: {
+        reporter: ['text','lcov'],
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80
+      }
+
+▪ Update `package.json` script:
+
+      "test": "vitest run --coverage",
+
+▪ Keep Husky pre-push hook (`pnpm prepush`) unchanged
+  → push fails if coverage < threshold.
+
+────────────────────────────────────────────
+4 ▸ Fixtures & helpers
+────────────────────────────────────────────
+▪ Re-use / create JSON fixtures in `tests/fixtures/`.
+▪ Add `tests/helpers/mockOrbit.ts` that stubs Orbit calls
+  (defineProof, proofUrl) with predictable responses.
+
+────────────────────────────────────────────
+5 ▸ Commit structure
+────────────────────────────────────────────
+▪ Make one commit titled “test: back-fill unit + e2e suites, enforce 80 % cov”.
+▪ Do **NOT** touch production code except:
+     – add export hooks if missing
+     – expose route handlers for Supertest via `export const app = …`
+▪ Run `pnpm test` locally; ensure green.
+
+────────────────────────────────────────────
+6 ▸ Success criteria
+────────────────────────────────────────────
+1. `pnpm test` prints global coverage ≥ 80 %.
+2. `git push` passes Husky gate **only if** all tests pass.
+3. GitHub-Actions CI runs and stays green.
+
+###  Deliverables
+▪ New/updated files under tests/.
+▪ Updated vitest.config.ts, package.json if needed.
+▪ Console output showing gap table + final coverage summary.
+How to use
+Copy the entire block (from to).
+
+Paste it as a single message to your Replit AI pair-programmer.
+
+Wait: it will scan, generate, and commit the missing suites.
+
+Once done, run pnpm test locally; inspect coverage.
+
+Push ➜ Husky + CI will ensure future changes always add / maintain tests.
+
+This enforces the “every new change must ship with tests and never break old ones” principle you wanted, while cleaning historical gaps in one sweep.
