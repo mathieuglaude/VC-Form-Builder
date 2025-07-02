@@ -66,6 +66,30 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
     },
   });
 
+  // Restore VC mapping data from metadata when loading existing form
+  useEffect(() => {
+    if (initialForm?.metadata?.fields && initialForm?.formSchema?.components) {
+      const restoredComponents = initialForm.formSchema.components.map((comp: any) => {
+        const fieldMeta = initialForm.metadata.fields[comp.key];
+        if (fieldMeta) {
+          return {
+            ...comp,
+            properties: {
+              ...comp.properties,
+              dataSource: fieldMeta.type,
+              vcMapping: fieldMeta.vcMapping,
+              credentialMode: fieldMeta.credentialMode,
+              acceptRevoked: fieldMeta.acceptRevoked,
+              options: fieldMeta.options
+            }
+          };
+        }
+        return comp;
+      });
+      setComponents(restoredComponents);
+    }
+  }, [initialForm]);
+
   // Fetch credential templates for wallet compatibility
   const { data: credentialTemplates = [] } = useQuery({
     queryKey: ['/api/cred-lib'],
