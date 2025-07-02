@@ -1,0 +1,128 @@
+Goal – When I open a form in preview real mode (/form/:id?preview=1&real=1), the backend must:
+
+Read the form’s saved VC mappings
+
+Build a Define-Proof payload that exactly matches those mappings
+
+Call POST /api/lob/{lobId}/define-proof-request (Orbit)
+
+Immediately call POST /api/lob/{lobId}/proof-requests with the returned proofDefinitionId
+
+Return { proofId, invitationUrl, svg } to the web client so the QR panel shows a real QR
+
+Implement it incrementally with the checklist below.
+
+✅ Checkpoint 0 – helper to collect mappings
+New util extractMappings(form) (server side)
+Input: full form JSON
+Output: array like
+
+ts
+Copy
+Edit
+[
+  { credentialType: 'BC Person Credential', attributeName: 'birthdate' },
+  { credentialType: 'BC Person Credential', attributeName: 'given_names' },
+  { credentialType: 'BC Lawyer Credential', attributeName: 'bar_number' }
+]
+Where to look: form.formSchema.components[*].properties.vcMapping
+
+Log [MAPPINGS] so we can see the extracted array.
+
+✅ Checkpoint 1 – map → Orbit “requestedAttributes”
+Hard-map credentialType → schemaId / credentialId just for dev (later we’ll query NB Catalogue).
+
+ts
+Copy
+Edit
+const CRED_MAP = {
+  'BC Person Credential': { schemaId: 1, credentialId: 1 },
+  'BC Lawyer Credential': { schemaId: 2, credentialId: 2 }
+};
+Build the payload exactly like the curl you gave me, but use real values:
+
+jsonc
+Copy
+Edit
+{
+  "proofName": "<form name> proof",
+  "proofCredFormat": "ANONCREDS",
+  "requestedAttributes": [
+    {
+      "attributes": ["birthdate","given_names"],
+      "restrictions": [{
+         "schemaId": 1,
+         "credentialId": 1
+      }]
+    },
+    {
+      "attributes": ["bar_number"],
+      "restrictions": [{
+         "schemaId": 2,
+         "credentialId": 2
+      }]
+    }
+  ]
+}
+Log [DEFINE-PAYLOAD] with JSON.stringify before sending.
+
+✅ Checkpoint 2 – one orchestrator endpoint
+New route POST /api/proofs/init-form/:formId
+
+extractMappings
+
+Build & POST define-proof → receive { proofDefinitionId }
+
+POST proof-requests { proofDefinitionId } → receive { proofId }
+
+GET /{proofId}/url to obtain invitationUrl
+
+GET /{proofId}/qr → { svg }
+
+Return { proofId, invitationUrl, svg }
+
+All Orbit calls use headers
+
+php-template
+Copy
+Edit
+api-key: <env.ORBIT_API_KEY>
+lobId  : <env.ORBIT_LOB_ID>
+and log status + body with [ORBIT] prefix.
+
+If any step 4xx/5xx → respond 500 with { error: 'orbit-failed', step: 'define' | 'request' | 'url' | 'qr' }
+
+✅ Checkpoint 3 – hook integration
+In useProofRequest (client) change:
+
+real mode → call /api/proofs/init-form/:id instead of the old endpoints.
+
+Expect { svg } and stick it straight into <VerificationPanel>.
+
+Keep the mock branch (!real) untouched.
+
+✅ Checkpoint 4 – manual smoke test
+Open /form/7?preview=1&real=1
+
+Console should show
+
+[MAPPINGS] …
+
+[DEFINE-PAYLOAD] …
+
+[ORBIT] status 200 … for define, request, url, qr
+
+QR panel now renders Orbit SVG.
+
+Scan in BC Wallet – expect “credential requested” screen (attribute mismatch will still fail, that’s OK).
+
+Stop here; don’t optimise credentials yet—we just need the end-to-end Orbit round-trip wired.
+
+Notes
+All HTTP → https://devapi-verifier.nborbit.ca/api/lob/${lobId}
+
+The websocket for live proof status can wait; returning svg is enough for the milestone.
+
+Keep the warnings about ref / Radix—functional but not blocking.
+
+That’s the entire slice; once it’s green we can iterate on schema look-ups and live status.

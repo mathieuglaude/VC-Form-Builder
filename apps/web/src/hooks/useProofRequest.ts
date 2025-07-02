@@ -32,10 +32,32 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
     console.log('[useProofRequest] real backend call (preview + real=1)');
   }
 
-  // Real API call for non-preview mode
+  // Real API call for non-preview mode  
   return useQuery({
-    queryKey: ['proof', formId || publicSlug],
+    queryKey: ['proof', formId || publicSlug, forceReal ? 'real' : 'standard'],
     queryFn: async () => {
+      // Use new Orbit integration endpoint when in real mode with formId
+      if (forceReal && formId) {
+        console.log('[useProofRequest] Using real Orbit integration endpoint');
+        const response = await fetch(`/api/proofs/init-form/${formId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to initialize Orbit proof request');
+        }
+        
+        const result = await response.json();
+        return { 
+          proofId: result.proofId, 
+          invitationUrl: result.invitationUrl,
+          svg: result.svg,
+          isMock: false 
+        };
+      }
+
+      // Standard API call for non-real mode
       const body = formId ? { formId: parseInt(formId) } : { publicSlug };
       
       const response = await fetch('/api/proofs/init', {

@@ -7,6 +7,7 @@ import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
 import defineProofRouter from "./routes/defineProof";
+import { initFormProof } from "./routes/initFormProof";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
@@ -601,6 +602,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ error: 'Health check failed' });
     }
   });
+
+  // Orbit form proof initialization endpoint
+  router.post('/proofs/init-form/:formId', initFormProof);
 
   // Register proofs router
   app.use('/api/proofs', proofsRouter);
