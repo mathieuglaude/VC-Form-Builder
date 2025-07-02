@@ -166,26 +166,28 @@ export default function FormLaunchPage() {
     isMock: proofResponse?.isMock
   });
 
-  // Hard-locked return: always render form body
+  // Responsive layout: side-by-side on desktop, stacked on mobile
   return (
-    <>
-      <FormPage
-        form={form}
-        mode={isPreview ? "preview" : "launch"}
-        onSubmit={!isPreview ? handleFormSubmit : undefined}
-        isSubmitting={!isPreview ? submitFormMutation.isPending : false}
-        showHeader={true}
-      />
+    <div className="flex flex-col md:flex-row md:items-start md:justify-center gap-8">
+      {/* Left column - Form */}
+      <div className="md:w-[520px] w-full">
+        <FormPage
+          form={form}
+          mode={isPreview ? "preview" : "launch"}
+          onSubmit={!isPreview ? handleFormSubmit : undefined}
+          isSubmitting={!isPreview ? submitFormMutation.isPending : false}
+          showHeader={true}
+        />
+      </div>
 
-      {/* Show panel for preview (mock) or launch (real) */}
+      {/* Right column - Verification Panel */}
       {urlShowPanel && proofResponse?.svg && (
-        <div className="fixed top-4 right-4 w-80">
-          <VerificationPanel 
-            svg={proofResponse.svg} 
-            url={proofResponse.invitationUrl || '#'} 
-          />
-        </div>
+        <VerificationPanel 
+          svg={proofResponse.svg} 
+          url={proofResponse.invitationUrl || '#'} 
+          className="md:w-[340px] w-full md:sticky md:top-6"
+        />
       )}
-    </>
+    </div>
   );
 }

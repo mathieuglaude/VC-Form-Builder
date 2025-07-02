@@ -1,0 +1,86 @@
+Quick UI polish - make the form & verification panel sit side-by-side (and stack on small screens)
+Below is a minimal Tailwind-friendly patch you can hand off to Replit.
+It does only layout – no JS – so we won’t disturb the Orbit work.
+
+1 | Wrap the two blocks in a responsive flex container
+tsx
+Copy
+Edit
+// apps/web/src/pages/FormLaunchPage.tsx
+
+return (
+  <div className="flex flex-col md:flex-row md:items-start md:justify-center gap-8">
+    {/* === left column === */}
+    <div className="md:w-[520px] w-full">{/* existing <FormPage /> */}</div>
+
+    {/* === right column (panel) === */}
+    {showPanel && proof?.svg && (
+      <VerificationPanel
+        svg={proof.svg}
+        url={proof.invitationUrl}
+        className="md:w-[340px] w-full md:sticky md:top-6"
+      />
+    )}
+  </div>
+);
+flex-col → stacks in mobile.
+
+md:flex-row → side-by-side from the md breakpoint (768 px).
+
+gap-8 keeps breathing room.
+
+md:sticky md:top-6 makes the panel stay visible while scrolling on desktop.
+
+2 | Give the panel an optional className prop
+tsx
+Copy
+Edit
+// apps/web/src/components/VerificationPanel.tsx
+export const VerificationPanel = ({
+  svg,
+  url,
+  className = '',
+}: { svg: string; url: string; className?: string }) => (
+  <aside
+    className={
+      'rounded-lg border bg-background p-6 shadow-lg ' + className
+    }
+  >
+    <h3 className="text-center font-medium mb-4">
+      Credential&nbsp;Verification
+    </h3>
+
+    <div
+      className="mx-auto mb-4 w-[232px] h-[232px]"
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn btn-primary w-full block text-center"
+    >
+      Open in Wallet
+    </a>
+  </aside>
+);
+3 | Small-screen tweak
+At the bottom of VerificationPanel.tsx add:
+
+tsx
+Copy
+Edit
+// hides the shadow on dark backgrounds for XS screens
+/* Tailwind already handles small-screen stacking */
+No extra CSS file needed.
+
+What to test after the patch
+Desktop width (≥ 768 px)
+Form (max ~520 px) on the left, panel (340 px) on the right.
+Scroll – panel should stay sticky.
+
+Tablet / phone (< 768 px)
+Column layout stacks: form first, panel below, full-width.
+
+If that looks good, we’re ready to jump back to refining the Orbit payload (removing the fallback logic and getting a 201 + QR straight from the API).
