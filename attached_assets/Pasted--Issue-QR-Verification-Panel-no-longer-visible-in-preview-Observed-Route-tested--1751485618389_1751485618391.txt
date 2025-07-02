@@ -1,0 +1,63 @@
+### 🛠️  Issue • QR Verification Panel no longer visible in preview
+
+**Observed**
+- Route tested:  `/form/7?preview=1&real=1&panel=1`
+- Console shows `[hook] hitting /api/proofs/init` (should be `/init-form/:id`)
+- Panel DOM never mounts; no network call for SVG.
+- WebSocket error unrelated.
+
+────────────────────────────────────────
+🧭  Fix-Plan (follow sequentially)
+────────────────────────────────────────
+1. **Quick Repro & Logging**
+   - Add `[trace]` log lines in:
+     • `useProofRequest.ts`  (params, endpoint chosen, resolved data)
+     • `FormLaunchPage.tsx` (hasVC, showPanel flags)
+     • `VerificationPanel.tsx` (received props)
+   - Reload route above and paste logs to console.
+
+2. **Hook / Endpoint sanity**
+   - If `forceReal || panelFlag` true → must call  
+     `POST /api/proofs/init-form/{formId}`.
+   - Confirm 200 payload shape `{ svg, invitationUrl, status }`.
+   - Remove any stale call to `/api/proofs/init`.
+
+3. **State wiring**
+   - `useProofRequest` ⇒ returns `{ svg, url }`.
+   - `FormLaunchPage` passes **both** to `VerificationPanel`.
+   - `VerificationPanel` renders:
+       ```tsx
+       {svg ? <div dangerouslySetInnerHTML={{__html: svg}} /> : <Spinner/>}
+       ```
+   - Keep “Open in Wallet” button with `url`.
+
+4. **Layout / CSS**
+   - Panel sits in a CSS grid / flex row:
+       ```tsx
+       <div className="page-grid">
+         <FormCard … />
+         {showPanel && <VerificationPanel … />}
+       </div>
+       ```
+   - `page-grid` = `display:grid; grid-template-columns: 1fr 320px; gap:2rem;`
+   - On `<640px` screen switch to column layout.
+
+5. **Regression Tests**  _(NEW)_
+   - **unit:** `tests/unit/useProofRequest.test.ts`
+       • mocks fetch → returns `{svg:'<svg…>', invitationUrl:'x'}`  
+       • expects hook to hit `/init-form/<id>` when `real=1`.
+   - **e2e:** `tests/e2e/previewPanel.e2e.ts`
+       • spin Vite server, hit `/form/7?preview=1&real=1&panel=1`  
+       • assert that `.verification-panel svg` exists in DOM.
+   - Update `vitest.config.ts` coverage thresholds unchanged.
+
+6. **Commit / Hook**
+   - Commit message  
+     `fix: restore verification panel & add regression tests`
+   - `pnpm test` must stay ≥ 80 % coverage.
+   - Husky pre-push passes.
+
+###  Deliverables
+1. Working preview route shows QR panel side-by-side.
+2. All new/updated test files committed.
+3. Console no longer logs /init endpoint.

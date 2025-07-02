@@ -34,7 +34,7 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
   const panelFlag = !!searchParams.get('panel');
   const shouldMock = inPreview && !forceReal && !panelFlag; // preview => mock, unless real=1 or panel=1
   
-  console.log('[hook] params', { inPreview, forceReal, panelFlag });
+  console.log('[trace] params', { inPreview, forceReal, panelFlag, shouldMock, formId, publicSlug });
 
   if (shouldMock) {
     console.log('[useProofRequest] PREVIEW mock proof');

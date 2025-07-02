@@ -615,9 +615,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Orbit form proof initialization endpoint
-  router.post('/proofs/init-form/:formId', initFormProof);
-
   // Register proofs router
   app.use('/api/proofs', proofsRouter);
   

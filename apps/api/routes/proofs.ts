@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { orbit } from '../src/config';
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
+import { initFormProof } from './initFormProof.js';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const QRCode = require('qrcode-svg');
@@ -75,6 +76,9 @@ router.post('/proofs/init', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// POST /init-form/:formId - Initialize form-specific proof request  
+router.post('/init-form/:formId', initFormProof);
 
 // GET /proofs/:id/qr - Generate QR code for proof request
 router.get('/proofs/:id/qr', async (req, res) => {
