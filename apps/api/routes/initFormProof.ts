@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage.js';
-import { extractMappings, buildDefineProofPayload } from '../services/mappingExtractor.js';
+import { extractMappings, buildDefineProofPayload } from '../../../packages/shared/src/mapping.js';
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { VerifierService } from '../../../packages/external/orbit/VerifierService.js';
 

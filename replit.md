@@ -352,6 +352,15 @@ Changelog:
   - Implemented robust fallback QR code generation when proof/url endpoint fails with server errors
   - Fallback approach uses proofDefineId in URL structure and provides complete JSON response
   - API endpoint now returns status 200 with working QR codes, ready for frontend integration
+- July 2, 2025. Major code consolidation and architecture improvements
+  - Moved mapping utilities from API service layer to shared package for better reusability
+  - Created packages/shared/src/mapping.ts with extractMappings and buildDefineProofPayload functions
+  - Added comprehensive vitest testing framework with 7 passing tests covering mapping extraction
+  - Standardized API contracts with shared TypeScript types and ProofInitResponse interface
+  - Extracted Orbit service layer into centralized VerifierService class with caching capabilities
+  - Reduced initFormProof.ts from 180+ lines to 58 lines by eliminating raw fetch calls
+  - Added Map-based caching for QR SVGs in VerifierService for better performance
+  - Tests validate "birthdate_dateint" attribute extraction and proof payload generation
 ```
 
 ## User Preferences
