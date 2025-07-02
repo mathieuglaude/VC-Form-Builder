@@ -41,6 +41,10 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
 
   const watchedDataSource = watch('dataSource');
   const watchedCredentialType = watch('vcMapping.credentialType');
+  
+  // Debug current form values
+  const currentValues = getValues();
+  console.log('[config-modal render] current form values:', currentValues);
 
   // Populate form with existing field data
   useEffect(() => {
@@ -109,6 +113,15 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
   useEffect(() => {
     setValue('vcMapping.attributeName', '');
   }, [selectedTemplateId, setValue]);
+
+  // Restore saved attribute name after attributes load (race condition fix)
+  useEffect(() => {
+    if (attrs && attrs.length > 0 && initialConfig?.properties?.vcMapping?.attributeName) {
+      const savedAttributeName = initialConfig.properties.vcMapping.attributeName;
+      console.log('[config-modal] restoring saved attribute name:', savedAttributeName);
+      setValue('vcMapping.attributeName', savedAttributeName, { shouldDirty: false });
+    }
+  }, [attrs, initialConfig?.properties?.vcMapping?.attributeName, setValue]);
 
   const handleSave = handleSubmit((data) => {
     const fieldConfig = {
@@ -230,7 +243,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                 name="dataSource"
                 control={control}
                 render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <Select {...field}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -252,7 +265,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                   name="credentialMode"
                   control={control}
                   render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
+                    <Select {...field}>
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -308,7 +321,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                       name="vcMapping.credentialType"
                       control={control}
                       render={({ field }) => (
-                        <Select value={field.value} onValueChange={(value) => {
+                        <Select {...field} onValueChange={(value) => {
                           field.onChange(value);
                           setValue('vcMapping.attributeName', ''); // Reset attribute when credential changes
                         }}>
@@ -347,8 +360,7 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                         control={control}
                         render={({ field }) => (
                           <Select 
-                            value={field.value} 
-                            onValueChange={field.onChange}
+                            {...field}
                             disabled={attrsLoading || !watchedCredentialType}
                           >
                             <SelectTrigger>
