@@ -30,7 +30,7 @@ router.post('/proofs/init', async (req, res) => {
 
     // Real Orbit integration - create proof request
     try {
-      const proofResponse = await fetch(`${orbit.baseUrl}/api/lob/${orbit.lobId}/proof-requests`, {
+      const proofResponse = await fetch(`${orbit.baseUrl}api/lob/${orbit.lobId}/proof-requests`, {
         method: 'POST',
         headers: {
           'apiKey': orbit.apiKey,

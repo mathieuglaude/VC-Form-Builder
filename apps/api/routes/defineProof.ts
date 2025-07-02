@@ -47,7 +47,9 @@ router.post('/define-proof/:formId', async (req, res) => {
       ]
     };
 
-    const response = await fetch(`${orbit.baseUrl}api/lob/${orbit.lobId}/define-proof-request`, {
+    const fullUrl = `${orbit.baseUrl}api/lob/${orbit.lobId}/define-proof-request`;
+    console.log(`[DEFINE-PROOF] Full URL: ${fullUrl}`);
+    const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'apiKey': orbit.apiKey,
