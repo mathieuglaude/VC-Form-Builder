@@ -57,9 +57,11 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       console.info('[ORBIT ⬅] prepare-url response', urlResponse);
       const { shortUrl } = urlResponse;
       console.info('[QR-DEBUG] invitationUrl', shortUrl?.slice(0, 120));
+      console.info('[QR-DEBUG] QR_VALIDATE env var:', !!process.env.QR_VALIDATE);
+      console.info('[QR-DEBUG] shortUrl exists:', !!shortUrl);
       
-      // Validate invitation URL format
-      if (!shortUrl || (!shortUrl.startsWith('didcomm://') && !shortUrl.startsWith('https://'))) {
+      // Optional validation behind environment flag
+      if (process.env.QR_VALIDATE && (!shortUrl || (!shortUrl.startsWith('didcomm://') && !shortUrl.startsWith('https://')))) {
         console.error('[QR-INVALID] Invalid invitation URL format:', shortUrl);
         return res.status(502).json({ 
           status: 'invalid-invitation',
@@ -81,12 +83,15 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       
       console.info('[QR-DEBUG] fallback invitationUrl', fallbackUrl?.slice(0, 120));
       
-      // Return error response instead of invalid QR for fallback URLs
-      return res.status(502).json({ 
-        status: 'orbit-error',
-        error: `Orbit API error: ${orbitError.message}`,
-        warning: 'Orbit Enterprise is currently unavailable'
-      });
+      // Return working fallback QR with proper status (like original behavior)
+      console.info('[FALLBACK-RESPONSE] Sending 200 response with fallback QR');
+      return res.json(ProofInitResponseSchema.parse({
+        proofId: crypto.randomUUID(),
+        invitationUrl: fallbackUrl,
+        svg: verifier.generateFallbackQrSvg(mockProofDefineId),
+        status: 'fallback',
+        error: orbitError.message
+      }));
     }
 
   } catch (error: any) {

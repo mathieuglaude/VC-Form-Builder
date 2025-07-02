@@ -380,6 +380,14 @@ Changelog:
   - Created comprehensive test file covering database operations, asset management, credential seeding, and error handling
   - Achieved 47 total tests with 24 passing tests covering core application functionality
   - Established robust testing foundation with proper mocking, fixtures, and integration patterns
+- July 2, 2025. Hot-fixed critical QR panel regression and implemented regression testing
+  - Identified and resolved critical regression where validation logic caused 502 responses instead of 200 with fallback QRs
+  - Implemented conditional validation behind QR_VALIDATE environment flag to prevent breaking existing functionality
+  - Restored fallback QR behavior with proper HTTP 200 responses when Orbit API fails
+  - Created E2E regression test (qrLoads.e2e.test.ts) with 4 test scenarios covering QR panel rendering workflow
+  - Added comprehensive URL validation unit tests (url.validate.test.ts) with 11 test cases covering edge cases and environment flags
+  - Added development-only debug UI features in VerificationPanel for invitation URL inspection
+  - All 15 regression tests pass successfully, preventing future QR loading issues
 ```
 
 ## User Preferences
