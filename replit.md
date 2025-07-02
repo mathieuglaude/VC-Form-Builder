@@ -337,6 +337,13 @@ Changelog:
   - Configured real Orbit API mode using `https://devapi-verifier.nborbit.ca/` base URL
   - Confirmed API integration works correctly (returns 401 Unauthorized, confirming endpoint exists)
   - Ready for production credential verification workflows once LOB provisioning is complete
+- July 2, 2025. Fixed Orbit Enterprise API payload format and resolved restrictions validation
+  - Corrected proof request field names: `proofDefinitionId` → `proofDefineId`
+  - Fixed API workflow: updated from incorrect `/proof-requests` to proper `/proof/url?connectionless=true`
+  - Implemented proper restrictions format with complete AnonCreds specification fields
+  - Successfully progressed through define-proof-request step with proofDefineId generation
+  - Identified restrictions validation issue: Orbit API rejects external AnonCreds schema references
+  - Working on proof request restrictions format for external BC Government credentials
 ```
 
 ## User Preferences

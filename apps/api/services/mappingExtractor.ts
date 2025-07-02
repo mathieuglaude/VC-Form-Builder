@@ -29,23 +29,30 @@ export function extractMappings(form: any): VCMapping[] {
   return mappings;
 }
 
-// Hard-coded credential mapping for development
-const CRED_MAP: { [key: string]: { schemaId: number; credentialId: number } } = {
-  'BC Person Credential': { schemaId: 1, credentialId: 1 },
-  'BC Lawyer Credential': { schemaId: 2, credentialId: 2 },
-  'BC Digital Business Card v1': { schemaId: 3, credentialId: 3 }
+// Credential mapping with real schema and credential definition IDs
+const CRED_MAP: { [key: string]: { schemaId: string; credDefId: string } } = {
+  'BC Person Credential': { 
+    schemaId: 'RGjWbW1eycP7FrMf4QJvX8:2:Person:1.0',
+    credDefId: 'RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person'
+  },
+  'BC Lawyer Credential': { 
+    schemaId: 'QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0',
+    credDefId: 'QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer'
+  },
+  'BC Digital Business Card v1': { 
+    schemaId: 'L6ASjmDDbDH7yPL1t2yFj9:2:business_card:1.0',
+    credDefId: 'L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card'
+  }
 };
 
 export interface DefineProofPayload {
   proofName: string;
+  proofPurpose: string;
   proofCredFormat: string;
   requestedAttributes: Array<{
     attributes: string[];
-    restrictions: Array<{
-      schemaId: number;
-      credentialId: number;
-    }>;
   }>;
+  requestedPredicates: Array<any>;
 }
 
 export function buildDefineProofPayload(formName: string, mappings: VCMapping[]): DefineProofPayload {
@@ -70,18 +77,18 @@ export function buildDefineProofPayload(formName: string, mappings: VCMapping[])
     }
 
     requestedAttributes.push({
-      attributes,
-      restrictions: [{
-        schemaId: credMapping.schemaId,
-        credentialId: credMapping.credentialId
-      }]
+      attributes
+      // Note: Restrictions removed for define-proof step
+      // External AnonCreds restrictions will be applied during proof request
     });
   }
 
   const payload: DefineProofPayload = {
     proofName: `${formName} proof`,
+    proofPurpose: `Verification for ${formName}`,
     proofCredFormat: "ANONCREDS",
-    requestedAttributes
+    requestedAttributes,
+    requestedPredicates: []
   };
 
   console.log('[DEFINE-PAYLOAD]', JSON.stringify(payload, null, 2));

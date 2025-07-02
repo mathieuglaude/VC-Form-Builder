@@ -1,0 +1,66 @@
+the panel isn’t appearing, so we need to verify whether the new “init-form” flow is actually being invoked from the browser.
+
+1. Double-check the URL you’re using
+The React hook only switches to the real Orbit flow when both flags are present:
+
+bash
+Copy
+Edit
+/form/7?preview=1&real=1
+If you omit real=1 the hook will stay in mock mode and won’t call /api/proofs/init-form/…, so no QR panel is rendered.
+
+2. Open Dev-Tools → Network tab
+Clear the log, reload the page.
+
+Filter by init-form.
+
+You should see a single request:
+
+swift
+Copy
+Edit
+POST /api/proofs/init-form/7   → 200
+If you don’t see it at all → the hook isn’t firing (check the URL & VC-field detection logic).
+
+If you see it but the status ≠ 200 → open the response; it must be JSON with { proofId, svg, invitationUrl }.
+
+3. Open Console
+You should see a sequence like:
+
+css
+Copy
+Edit
+[MAPPINGS] […]
+[DEFINE-PAYLOAD] …
+[ORBIT] define 200
+[ORBIT] proof-requests 200
+[ORBIT] url 200
+[ORBIT] qr 200
+No logs → the hook early-returned (hasVC == false) — check that dataSource === "verified" for at least one field.
+[ORBIT] qr 200 but still no panel → the VerificationPanel isn’t mounted; likely showPanel flag is false — trace the logic in FormLaunchPage (isPreview, showPanel).
+
+4. Quick sanity check in the UI
+While on the preview page, run in the console:
+
+js
+Copy
+Edit
+window.__proofDebug
+(if the hook sets it) — it should dump the current hasVC, proofId, svg etc.
+
+5. Next Replit prompt
+If the network call is missing:
+
+“/api/proofs/init-form/7 isn’t called when I hit /form/7?preview=1&real=1. It looks like useProofRequest early-returns with hasVC=false. Please log the parsed components array and ensure dataSource === "verified" is detected for textfield_1751300145466.”
+
+If the call succeeds (200) but no panel:
+
+“/api/proofs/init-form/7 returns 200 with svg, but VerificationPanel never mounts. showPanel in FormLaunchPage is false even though proofId is set. Trace and fix the condition so the panel appears.”
+
+If the call fails:
+
+“/api/proofs/init-form/7 returns <status>/<error>. Here’s the response … Please log each Orbit step inside the orchestrator and surface any errors to the front-end so we can see what fails.”
+
+Once the request completes and svg reaches the React state, the panel will render and you can scan the QR.
+
+Let me know which of the three cases you hit and we’ll target that path.
