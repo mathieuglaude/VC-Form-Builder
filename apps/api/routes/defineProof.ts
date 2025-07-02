@@ -33,31 +33,60 @@ router.post('/define-proof/:formId', async (req, res) => {
 
     // Real Orbit API call
     const proofDefPayload = {
-      proofName: `Form ${formId} Verification`,
-      version: '1.0',
       requestedAttributes: [
         {
-          name: 'given_names',
+          attributes: [
+            "name",
+            "description",
+            "assessorLevel",
+            "assessmentLevel"
+          ],
+          proofValidTill: "2025-06-30T11:58:41.505Z",
+          proofValidFrom: "2025-06-30T11:58:41.505Z",
           restrictions: [
             {
-              cred_def_id: 'QzLYGuAebsy3MXQ6b1sFiT:3:CL:20:default'
+              schemaId: 1,
+              credentialId: 1,
+              type: [
+                "ConformityAttestation",
+                "Party",
+                "IdentifierScheme",
+                "BinaryFile"
+              ]
             }
           ]
         }
-      ]
+      ],
+      requestedPredicates: [
+        {
+          attributeName: "age",
+          pType: "<",
+          pValue: 0,
+          proofValidTill: "2025-06-30T11:58:41.506Z",
+          proofValidFrom: "2025-06-30T11:58:41.506Z",
+          restrictions: [
+            {
+              schemaId: 1,
+              credentialId: 1
+            }
+          ]
+        }
+      ],
+      proofName: "bcovrin proof define",
+      proofPurpose: "for verify anoncreds credential",
+      proofCredFormat: "ANONCREDS",
+      addVerificationAuthority: false
     };
 
     const fullUrl = `${orbit.baseUrl}api/lob/${orbit.lobId}/define-proof-request`;
     const headers = {
       'api-key': orbit.apiKey,
-      'lobId': orbit.lobId,
       'Content-Type': 'application/json'
     };
     
     console.log(`[DEFINE-PROOF] Full URL: ${fullUrl}`);
     console.log(`[DEFINE-PROOF] Headers:`, {
       'api-key': orbit.apiKey ? `${orbit.apiKey.substring(0, 8)}...` : 'MISSING',
-      lobId: orbit.lobId,
       contentType: headers['Content-Type']
     });
     console.log(`[DEFINE-PROOF] Payload:`, JSON.stringify(proofDefPayload, null, 2));
