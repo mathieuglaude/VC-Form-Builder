@@ -33,7 +33,7 @@ router.post('/proofs/init', async (req, res) => {
       const proofResponse = await fetch(`${orbit.baseUrl}api/lob/${orbit.lobId}/proof-requests`, {
         method: 'POST',
         headers: {
-          'apiKey': orbit.apiKey,
+          'api-key': orbit.apiKey,
           'lobId': orbit.lobId,
           'Content-Type': 'application/json'
         },
@@ -103,7 +103,7 @@ router.get('/proofs/:id/qr', async (req, res) => {
         const prepareResponse = await fetch(`${orbit.baseUrl}/api/lob/${orbit.lobId}/proof-request/url`, {
           method: 'POST',
           headers: {
-            'apiKey': orbit.apiKey,
+            'api-key': orbit.apiKey,
             'lobId': orbit.lobId,
             'Content-Type': 'application/json'
           }
