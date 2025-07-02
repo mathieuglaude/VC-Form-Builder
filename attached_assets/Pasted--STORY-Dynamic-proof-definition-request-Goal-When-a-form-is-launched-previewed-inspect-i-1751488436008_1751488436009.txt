@@ -1,0 +1,92 @@
+### 🟢  STORY: Dynamic proof definition + request
+Goal: When a form is launched/previewed, inspect its VC-field mappings and
+automatically build a **Define-Proof-Request** + **Prepare-URL** call to
+Orbit so the QR represents exactly the attributes that form requires.
+
+──────────────────────────────
+1.  Refactor mappingExtractor
+──────────────────────────────
+• expose 2 pure helpers in  packages/shared/src/proof:
+  ├─ extractMappings(formSchema)  ->  Array<{credType, attrName}>
+  └─ buildDefinePayload(mappings) ->  Orbit request body
+• For each mapping:
+  • requestedAttributes[i] =
+    {
+      "name": attrName,
+      "restrictions": [
+        {
+          "anoncredsCredDefId": CRED_MAP[credType].credDefId,
+          "anoncredsIssuerDid": CRED_MAP[credType].issuerDid,
+          "anoncredsSchemaName": CRED_MAP[credType].schemaName,
+          "anoncredsSchemaVersion": CRED_MAP[credType].schemaVersion,
+          "anoncredsSchemaId": CRED_MAP[credType].schemaId
+        }
+      ]
+    }
+• If form has no VC fields → return null (backend responds 204).
+
+──────────────────────────────
+2.  Orchestrator (/api/proofs/init-form/:id)
+──────────────────────────────
+• Replace ad-hoc “hard-coded attribute” logic with new helpers.
+• Flow:
+  a. get form
+  b. extractMappings → if empty => {status:'no-vc'} (HTTP 200)
+  c. define-proof-request (POST)  -> proofDefineId
+  d. prepare URL   (POST)         -> {shortUrl, svg}
+  e. response 200 {svg, invitationUrl, proofId, status:'orbit'}
+
+• Keep existing fallback QR path if any Orbit step fails.
+
+──────────────────────────────
+3.  Front-end
+──────────────────────────────
+• No changes needed: hook already consumes {svg, invitationUrl}.
+
+──────────────────────────────
+4.  Tests (must be updated **every push**)
+──────────────────────────────
+🧪 unit
+  • packages/shared/__tests__/mappingExtractor.test.ts
+    – given form fixture with 1-N VC fields returns correct array & payload
+  • packages/shared/__tests__/buildDefinePayload.test.ts
+    – snapshot of full Orbit body
+
+🧪 e2e (playwright or cypress)
+  • tests/e2e/proofFlow.e2e.ts  
+    – create form fixture with birthdate_dateint attribute  
+    – open `/form/{id}?preview=1`  
+    – assert panel visible & QR `<img src="data:image/svg+xml…">` exists  
+    – assert network POST `/api/proofs/init-form/{id}` returns 200 & body.status==='orbit'
+
+Run: `pnpm vitest && pnpm playwright test`  → all green.
+
+──────────────────────────────
+5.  CI rule
+──────────────────────────────
+If vitest or e2e suite fails, abort commit and show failing diff.
+Add note to replit.md.
+
+Commit message:
+feat: dynamic Orbit proof payload per form mapping
+test: add unit & e2e coverage for extractor + QR flow
+
+pgsql
+Copy
+Edit
+
+###  🔁  Remember  
+*After* implementing each task, create/extend tests **before** committing.  
+No new feature is “done” until its tests pass and prior tests remain green.
+How to verify quickly
+
+Edit any form and map a VC attribute (e.g., Unverified Person → birthdate_dateint).
+
+Visit /form/{id}?preview=1 → panel auto-opens, QR appears.
+
+Console network tab:
+• POST /api/proofs/init-form/{id} 200
+• body.requestedAttributes[0].name === "birthdate_dateint"
+
+Scan QR with BC Wallet – it should prompt for Unverified Person credential.
+

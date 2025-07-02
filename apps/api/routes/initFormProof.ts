@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage.js';
-import { extractMappings, buildDefineProofPayload } from '../../../packages/shared/src/mapping.js';
+import { extractMappings, buildDefinePayload } from '../../../packages/shared/src/proof.js';
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { VerifierService } from '../../../packages/external/orbit/VerifierService.js';
+import crypto from 'crypto';
 
 export async function initFormProof(req: Request<{ formId: string }>, res: Response) {
   try {
@@ -16,9 +17,20 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       return res.status(404).json({ error: 'Form not found' });
     }
 
-    const mappings = extractMappings(form);
+    // Step 1: Extract VC mappings from form schema
+    const mappings = extractMappings(form.formSchema as any);
+    console.log('[MAPPINGS]', JSON.stringify(mappings, null, 2));
+    
     if (mappings.length === 0) {
-      return res.status(400).json({ error: 'No VC mappings found in form' });
+      return res.json({ status: 'no-vc', message: 'No verifiable credential fields found' });
+    }
+
+    // Step 2: Build Orbit proof request payload
+    const definePayload = buildDefinePayload(mappings, form.name);
+    console.log('[DEFINE-PAYLOAD]', JSON.stringify(definePayload, null, 2));
+    
+    if (!definePayload) {
+      return res.json({ status: 'no-vc', message: 'Unable to build proof request from mappings' });
     }
 
     const { ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_BASE_URL = 'https://devapi-verifier.nborbit.ca/' } = process.env;
@@ -27,10 +39,20 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
     }
 
     const verifier = new VerifierService(ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_BASE_URL);
-    const definePayload = buildDefineProofPayload(form.name, mappings);
+
+    // Step 3: Convert to Orbit-compatible format (simplified attributes structure)
+    const orbitPayload = {
+      proofName: definePayload.proofName,
+      proofPurpose: definePayload.proofPurpose,
+      proofCredFormat: definePayload.proofCredFormat,
+      requestedAttributes: definePayload.requestedAttributes.map(attr => ({
+        attributes: [attr.name]
+      })),
+      requestedPredicates: definePayload.requestedPredicates
+    } as any;
 
     try {
-      const { proofDefineId } = await verifier.defineProof(definePayload);
+      const { proofDefineId } = await verifier.defineProof(orbitPayload);
       const { shortUrl } = await verifier.createProofUrl({ proofDefineId });
       
       res.json(ProofInitResponseSchema.parse({
