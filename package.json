@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "pnpm --filter api dev & pnpm --filter web dev"
+    "dev": "pnpm --filter api dev & pnpm --filter web dev",
+    "prepare": "husky"
   },
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {
