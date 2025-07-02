@@ -66,6 +66,15 @@ export default function VerificationPanel({ svg, url, className = '', onCancel }
         >
           Cancel Verification
         </Button>
+        
+        {/* Debug information */}
+        <details className="mt-4 text-left">
+          <summary className="text-xs text-gray-400 cursor-pointer">Debug Info</summary>
+          <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono break-all">
+            <div className="mb-1"><strong>URL:</strong> {url}</div>
+            <div><strong>Protocol:</strong> {url.startsWith('didcomm://') ? 'DIDComm' : url.startsWith('https://') ? 'HTTPS' : 'Unknown'}</div>
+          </div>
+        </details>
       </div>
     </aside>
   );

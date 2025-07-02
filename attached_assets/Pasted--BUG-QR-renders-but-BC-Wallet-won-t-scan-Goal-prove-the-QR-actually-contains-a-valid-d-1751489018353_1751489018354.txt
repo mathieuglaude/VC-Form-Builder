@@ -1,0 +1,81 @@
+### 🛠️  BUG – QR renders but BC Wallet won’t scan  
+Goal: prove the QR actually contains a valid *didcomm:/* or
+https://…?oob=… invitation.  
+If it’s our “fallback” URL, or the payload is malformed, detect & fix it.
+
+──────────────────────────────────────────
+1.  Tighten server-side logging
+──────────────────────────────────────────
+▸ In  apps/api/routes/initFormProof.ts  
+
+  • After we receive the **prepare-url** response add:
+
+    console.info('[ORBIT ⬅] prepare-url response', data);
+
+  • Just before sending the final JSON response add:
+
+    console.info('[QR-DEBUG] invitationUrl', invitationUrl?.slice(0,120));
+
+  – If any Orbit step throws, log the error class & message **once**.
+
+──────────────────────────────────────────
+2.  Expose invitation URL in UI (dev-only)
+──────────────────────────────────────────
+▸ In  VerificationPanel.tsx add (dev mode only):
+
+    {process.env.NODE_ENV !== 'production' && url && (
+      <p style={{wordBreak:'break-all',fontSize:10,color:'#888'}}>
+        {url}
+      </p>
+    )}
+
+This lets us eyeball the invitation string under the QR.
+
+──────────────────────────────────────────
+3.  Fallback detector
+──────────────────────────────────────────
+▸ Treat any invitationUrl that **doesn’t** start with
+  - 'didcomm://'
+  - 'https://'
+  as *invalid*.  
+Return 502 with `{status:'invalid-invitation'}` so the panel can show a red
+error banner and skip rendering the QR.
+
+──────────────────────────────────────────
+4.  Quick manual decode test
+──────────────────────────────────────────
+▸ Add `scripts/dev/decode-qr.ts` – takes SVG text, prints payload string.
+
+  pnpm ts-node scripts/dev/decode-qr.ts <<< "$(curl -s -X POST \
+        http://localhost:5000/api/proofs/init-form/7 | jq -r .svg)"
+
+This lets us confirm the QR encodes the same invitationUrl.
+
+──────────────────────────────────────────
+5.  Unit + E2E tests (MUST be green)
+──────────────────────────────────────────
+🧪 unit:  tests/unit/invitationUrl.validation.test.ts  
+  – valid strings pass; fallback string triggers validation error.
+
+🧪 e2e:  tests/e2e/qrValid.e2e.ts  
+  – open `/form/7?preview=1`  
+  – intercept network 200 → body.invitationUrl startsWith /(didcomm:|https:\/\/)/  
+  – ensure `<img>` visible inside panel.
+
+──────────────────────────────────────────
+6.  Iterate until BC Wallet scans
+──────────────────────────────────────────
+• If Orbit **prepare-url** still 500’s:
+    – print the full payload & 500 body to console once
+    – fall back to temporary *warning panel* (“Orbit error: …”)  
+      but **do not** emit a fake QR – prevents false-positive tests.
+
+• When BC Wallet finally scans, add screenshot + note to replit.md  
+  (“✅ wallet scan confirmed, form 7 birthdate_dateint works”).
+
+##### Remember
+*All* new code **must** include/adjust tests; if any test breaks, agent shall
+fix before committing.
+Commit message:
+fix(qr): ensure only valid Orbit invitations rendered
+test: add validation + e2e scan coverage
