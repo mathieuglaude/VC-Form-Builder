@@ -178,9 +178,12 @@ export default function FormLaunchPage() {
       />
 
       {/* Show panel for preview (mock) or launch (real) */}
-      {showPanel && (
-        <div style={{ border:'2px solid red', position:'fixed', top:0, right:0, zIndex:9999 }}>
-          <VerificationPanel proofId={proofResponse?.proofId || mockProof.proofId} />
+      {urlShowPanel && proofResponse?.svg && (
+        <div className="fixed top-4 right-4 w-80">
+          <VerificationPanel 
+            svg={proofResponse.svg} 
+            url={proofResponse.invitationUrl || '#'} 
+          />
         </div>
       )}
     </>

@@ -1,34 +1,17 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, Shield, QrCode, ExternalLink, X } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Shield, ExternalLink, X } from 'lucide-react';
 
 interface VerificationPanelProps {
-  proofId: string;
+  svg: string;
+  url: string;
   onCancel?: () => void;
 }
 
-export default function VerificationPanel({ proofId, onCancel }: VerificationPanelProps) {
-  console.log('[panel] props', { proofId });
+export default function VerificationPanel({ svg, url, onCancel }: VerificationPanelProps) {
+  console.log('[panel] mounted with props', { svg: !!svg, url });
   const [isVisible, setIsVisible] = useState(true);
-
-  // Fetch QR code SVG and invitation URL
-  const { data: qrResponse, isLoading, error, refetch } = useQuery({
-    queryKey: ['qr-code', proofId],
-    queryFn: async () => {
-      // Get the JSON response with SVG and invitation URL
-      const response = await fetch(`/api/proofs/${proofId}/qr`);
-      if (!response.ok) {
-        throw new Error('Failed to generate QR code');
-      }
-      
-      return response.json();
-    },
-    enabled: !!proofId && isVisible,
-    retry: 2
-  });
 
   if (!isVisible) {
     return null;
@@ -51,91 +34,41 @@ export default function VerificationPanel({ proofId, onCancel }: VerificationPan
             variant="ghost"
             size="sm"
             onClick={handleCancel}
-            className="h-8 w-8 p-0"
+            className="h-6 w-6 p-0"
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Loading State */}
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center p-8">
-            <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center mb-4">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-            <p className="text-sm text-gray-600">Generating verification QR code...</p>
-          </div>
-        )}
-
-        {/* Error State */}
-        {error && (
-          <div className="space-y-4">
-            <Alert className="border-red-200 bg-red-50">
-              <AlertDescription className="text-red-700">
-                Could not generate verification QR code. Please try again.
-              </AlertDescription>
-            </Alert>
-            <Button 
-              onClick={() => refetch()} 
-              variant="outline" 
-              className="w-full"
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-
-        {/* Success State - Display QR Code */}
-        {qrResponse && (
-          <div className="space-y-4">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 mb-4">
-                Scan with your digital wallet to verify credentials
-              </p>
-              
-              {/* QR Code Display */}
-              <div className="flex justify-center mb-4">
-                <div className="w-64 h-64 bg-white rounded-lg border shadow-sm p-2 flex items-center justify-center">
-                  {qrResponse.svg ? (
-                    <img
-                      width={250}
-                      height={250}
-                      src={`data:image/svg+xml;utf8,${encodeURIComponent(qrResponse.svg)}`}
-                      alt="Credential verification QR"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="flex flex-col items-center text-gray-400">
-                      <QrCode className="w-16 h-16 mb-2" />
-                      <span className="text-sm">QR Code Loading...</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Open in Wallet Button */}
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  onClick={() => window.open(qrResponse.invitationUrl, '_blank')}
-                  className="w-full flex items-center justify-center"
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  Open in Wallet
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  onClick={handleCancel}
-                  className="w-full text-sm text-gray-500"
-                >
-                  Cancel Verification
-                </Button>
-              </div>
+        <div className="text-center">
+          <p className="text-sm text-gray-600 mb-4">
+            Scan with your digital wallet to verify credentials
+          </p>
+          
+          {/* QR Code Display */}
+          <div className="flex justify-center mb-4">
+            <div className="w-64 h-64 bg-white rounded-lg border shadow-sm p-2 flex items-center justify-center">
+              <div dangerouslySetInnerHTML={{__html: svg}} />
             </div>
           </div>
-        )}
+
+          {/* Direct wallet link */}
+          <Button asChild variant="outline" className="w-full">
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Open in Wallet
+            </a>
+          </Button>
+        </div>
+        
+        <Button
+          variant="ghost"
+          onClick={handleCancel}
+          className="w-full text-sm text-gray-500"
+        >
+          Cancel Verification
+        </Button>
       </CardContent>
     </Card>
   );

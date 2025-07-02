@@ -24,7 +24,12 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
   if (shouldMock) {
     console.log('[useProofRequest] PREVIEW mock proof');
     return { 
-      data: { proofId: 'mock-proof-debug', isMock: true },
+      data: { 
+        proofId: 'mock-proof-debug', 
+        svg: mockProof.svg,
+        invitationUrl: mockProof.inviteUrl,
+        isMock: true 
+      },
       isSuccess: true,
       isLoading: false,
       error: null
@@ -34,6 +39,13 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
   if (inPreview && (forceReal || panelFlag)) {
     console.log('[useProofRequest] real backend call (preview + real=1 or panel=1)');
   }
+
+  // Determine endpoint based on mode
+  const endpoint = (forceReal || panelFlag) && formId
+    ? `/api/proofs/init-form/${formId}`
+    : '/api/proofs/init';
+  
+  console.log('[hook] hitting', endpoint);
 
   // Real API call for non-preview mode  
   return useQuery({
@@ -74,7 +86,12 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
       }
       
       const result = await response.json();
-      return { proofId: result.proofId, isMock: false };
+      return { 
+        proofId: result.proofId, 
+        svg: result.svg || mockProof.svg,
+        invitationUrl: result.invitationUrl || mockProof.inviteUrl,
+        isMock: false 
+      };
     },
     enabled: enabled && (!!formId || !!publicSlug),
     retry: 1,

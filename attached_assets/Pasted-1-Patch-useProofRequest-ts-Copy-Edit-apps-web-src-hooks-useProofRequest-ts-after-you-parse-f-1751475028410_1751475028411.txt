@@ -1,0 +1,126 @@
+1 – Patch useProofRequest
+ts
+Copy
+Edit
+// apps/web/src/hooks/useProofRequest.ts
+// after you parse formId, forceReal, panelFlag:
+
+const endpoint = forceReal || panelFlag
+  ? `/api/proofs/init-form/${formId}`   // NEW!
+  : '/api/proofs/init';                // legacy / mock
+
+// only ONE fetch – no branches further down
+const { data, error } = useSWR(endpoint, postJson); // make sure postJson POSTs!
+Tip: give the fetcher a name (postJson) that always performs POST so SWR doesn’t default to GET.
+
+Add:
+
+ts
+Copy
+Edit
+console.log('[hook] hitting', endpoint);
+Expect in console:
+
+csharp
+Copy
+Edit
+[hook] hitting /api/proofs/init-form/7
+and the network tab must show that same URL.
+
+2 – Return the full proof object
+Keep whatever you get back:
+
+ts
+Copy
+Edit
+return {
+  proofId: data?.proofId,
+  svg: data?.svg,
+  invitationUrl: data?.invitationUrl,
+  isLoading: !data && !error,
+  error,
+};
+No extra fetch is needed.
+
+3 – Feed the SVG into the panel
+In FormLaunchPage:
+
+tsx
+Copy
+Edit
+{panelFlag && proof?.svg && (
+  <VerificationPanel svg={proof.svg} url={proof.invitationUrl} />
+)}
+(You can drop proofId entirely for now.)
+
+Then in VerificationPanel.tsx just render:
+
+tsx
+Copy
+Edit
+export const VerificationPanel = ({ svg, url } : {svg:string; url:string}) => (
+  <DialogContent className="w-[360px]">
+    <div dangerouslySetInnerHTML={{__html: svg}} />
+    <a href={url} target="_blank">Open in Wallet</a>
+  </DialogContent>
+);
+Add a log to prove it mounts:
+
+ts
+Copy
+Edit
+console.log('[panel] mounted');
+4 – Quick smoke-test
+Restart the API server (so /init-form still returns 200 + svg).
+
+Visit
+
+bash
+Copy
+Edit
+/form/7?preview=1&real=1&panel=1
+In DevTools expect:
+
+[hook] hitting /api/proofs/init-form/7
+
+200 response with svg in JSON
+
+[panel] mounted and the QR SVG visible (red border still wraps it).
+
+If this works we’ve proved:
+
+Frontend path is correct.
+
+Backend returns valid SVG.
+
+The panel shows up.
+
+Then we can tidy: remove red outline, re-enable real showPanel logic, and move on to the Orbit predicate payload.
+
+Prompt to send Replit
+csharp
+Copy
+Edit
+🔧 Fix useProofRequest so it really hits /api/proofs/init-form/:id
+
+1. Inside useProofRequest compute:
+   const endpoint = (forceReal || panelFlag)
+       ? `/api/proofs/init-form/${formId}`
+       : '/api/proofs/init';
+
+   useSWR(endpoint, postJson); // POST helper
+   console.log('[hook] hitting', endpoint);
+
+2. Return svg + invitationUrl directly; don’t use proofId any more.
+
+3. In FormLaunchPage render <VerificationPanel svg={proof.svg} url={proof.invitationUrl} /> unconditionally when panelFlag is true.
+
+4. Simplify VerificationPanel: just inject the svg (dangerouslySetInnerHTML) and show the url.
+
+5. Restart the server and load /form/7?preview=1&real=1&panel=1 – you should see:
+   • [hook] hitting /api/proofs/init-form/7
+   • 200 response with svg
+   • [panel] mounted and the QR visible.
+
+Once the QR shows we can remove the red wrapper and polish.
+That should surface the QR container immediately; then we can iterate on the Orbit payload with real scans.
