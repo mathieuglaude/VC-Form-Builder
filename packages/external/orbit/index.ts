@@ -1,1 +1,1 @@
-export * from './LobClient';
+export * from './VerifierService';
