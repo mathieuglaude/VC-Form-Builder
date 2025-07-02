@@ -6,6 +6,7 @@ import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
+import defineProofRouter from "./routes/defineProof";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
@@ -965,6 +966,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount sub-routers
   app.use('/api', proofsRouter);
   app.use('/api', adminCredentialsRouter);
+  app.use('/api', defineProofRouter);
 
   return httpServer;
 }
