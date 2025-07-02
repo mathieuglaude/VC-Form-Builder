@@ -1,0 +1,30 @@
+{
+  "formSchema": {
+    "display": "form",
+    "components": [
+      {
+        "label": "Birth Date",
+        "type": "datetime",
+        "key": "birthDate",
+        "input": true,
+        "properties": {
+          "dataSource": "verified",
+          "credentialMode": "required",
+          "vcMapping": {
+            "credentialType": "Unverified Person",
+            "attributeName": "birthdate_dateint"
+          }
+        }
+      },
+      {
+        "label": "Full Name",
+        "type": "textfield",
+        "key": "fullName",
+        "input": true,
+        "properties": {
+          "dataSource": "manual"
+        }
+      }
+    ]
+  }
+}

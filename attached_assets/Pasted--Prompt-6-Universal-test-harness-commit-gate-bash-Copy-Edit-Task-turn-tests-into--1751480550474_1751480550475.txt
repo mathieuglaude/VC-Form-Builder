@@ -1,0 +1,119 @@
+🧪 Prompt #6 – Universal test harness + commit gate
+bash
+Copy
+Edit
+### 🧪  Task: turn `tests/` into a first-class citizen & enforce test coverage on every push
+
+────────────────────────────────────────────
+1  ▸  Generic test folder + 2 starter suites
+────────────────────────────────────────────
+  • mkdir  tests/unit   tests/e2e
+  • Add **tests/unit/mappingExtractor.test.ts**
+
+        import {describe,it,expect} from 'vitest';
+        import {extractMappings} from '@/shared/mapping';
+
+        describe('extractMappings', () => {
+          it('pulls birthdate_dateint from sample form', () => {
+            const form = await
+              import('@/tests/fixtures/form_birthdate.json');
+            const m = extractMappings(form.default.formSchema);
+            expect(m[0]?.attributeName).toBe('birthdate_dateint');
+          });
+        });
+
+  • Add **tests/e2e/proofFlow.e2e.ts**  (supertest)
+
+        import request from 'supertest';
+        import {app} from '@/api/server';
+        import {describe,it,expect} from 'vitest';
+
+        describe('init-form proof flow', () => {
+          it('returns svg + url', async () => {
+            const res = await request(app)
+              .post('/api/proofs/init-form/7')
+              .send();
+            expect(res.status).toBe(200);
+            expect(res.body.svg).toContain('<svg');
+            expect(res.body.invitationUrl).toMatch(/^https?:\/\//);
+          });
+        });
+
+  • Place any sample JSON under **tests/fixtures/**.
+
+────────────────────────────────────────────
+2  ▸  Vitest config
+────────────────────────────────────────────
+  • Add **vitest.config.ts**
+
+        import {defineConfig} from 'vitest/config';
+        export default defineConfig({
+          test: {
+            globals: true,
+            environment: 'node',
+            include: ['tests/**/*.test.ts', 'tests/**/*.e2e.ts'],
+          },
+        });
+
+────────────────────────────────────────────
+3  ▸  Commit / push guard
+────────────────────────────────────────────
+  • Add to **package.json**
+
+        "scripts": {
+          "test": "vitest run",
+          "prepush": "pnpm lint && pnpm test"
+        }
+
+  • Update Husky hook:
+
+        pnpm husky add .husky/pre-push "pnpm prepush"
+
+  > Result → **Every push** runs the linter + full test suite; push fails if anything breaks or new code lacks tests.
+
+────────────────────────────────────────────
+4  ▸  CI placeholder (optional but recommended)
+────────────────────────────────────────────
+  • Create **.github/workflows/ci.yml**
+
+        name: CI
+        on: [push, pull_request]
+        jobs:
+          build:
+            runs-on: ubuntu-latest
+            steps:
+              - uses: actions/checkout@v3
+              - uses: pnpm/action-setup@v2
+                with: {version: 8}
+              - run: pnpm install
+              - run: pnpm lint
+              - run: pnpm test
+
+────────────────────────────────────────────
+✅  Success criteria
+────────────────────────────────────────────
+  1. `pnpm test` prints green locally.
+  2. Trying `git push` with a failing test is blocked.
+  3. New PRs run the GitHub-Actions CI and pass.
+Usage Guidance for Your Team
+Rule of thumb – any new feature or bug-fix adds/updates a test under tests/.
+
+Keep fixtures small: one JSON per scenario in tests/fixtures.
+
+If a change touches both API and React, supply:
+
+one unit test (logic)
+
+one e2e/API test (route)
+
+Push is rejected until tests & linter are green.
+
+This prompt turns your test suite into a guard-rail, keeps regressions out, and makes Replit auto-runs faster because Vitest is blazingly quick.
+
+
+
+
+
+
+
+Ask ChatGPT
