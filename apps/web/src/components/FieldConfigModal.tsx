@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -165,6 +165,9 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Configure Field</DialogTitle>
+          <DialogDescription id="field-config-desc">
+            Configure how this form field pulls data from a credential.
+          </DialogDescription>
         </DialogHeader>
         
         <form onSubmit={handleSave} className="space-y-6">
@@ -243,8 +246,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                 name="dataSource"
                 control={control}
                 render={({ field }) => (
-                  <Select {...field}>
-                    <SelectTrigger>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger ref={field.ref}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -265,8 +268,8 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                   name="credentialMode"
                   control={control}
                   render={({ field }) => (
-                    <Select {...field}>
-                      <SelectTrigger>
+                    <Select value={field.value} onValueChange={field.onChange}>
+                      <SelectTrigger ref={field.ref}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -321,11 +324,14 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                       name="vcMapping.credentialType"
                       control={control}
                       render={({ field }) => (
-                        <Select {...field} onValueChange={(value) => {
-                          field.onChange(value);
-                          setValue('vcMapping.attributeName', ''); // Reset attribute when credential changes
-                        }}>
-                          <SelectTrigger>
+                        <Select 
+                          value={field.value} 
+                          onValueChange={(value) => {
+                            field.onChange(value);
+                            setValue('vcMapping.attributeName', ''); // Reset attribute when credential changes
+                          }}
+                        >
+                          <SelectTrigger ref={field.ref}>
                             <SelectValue placeholder="Choose a credential from your catalogue..." />
                           </SelectTrigger>
                           <SelectContent>
@@ -360,10 +366,11 @@ export default function FieldConfigModal({ isOpen, onClose, onSave, initialConfi
                         control={control}
                         render={({ field }) => (
                           <Select 
-                            {...field}
+                            value={field.value}
+                            onValueChange={field.onChange}
                             disabled={attrsLoading || !watchedCredentialType}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger ref={field.ref}>
                               <SelectValue 
                                 placeholder={
                                   attrsLoading 
