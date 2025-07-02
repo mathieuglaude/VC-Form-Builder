@@ -48,14 +48,23 @@ router.post('/define-proof/:formId', async (req, res) => {
     };
 
     const fullUrl = `${orbit.baseUrl}api/lob/${orbit.lobId}/define-proof-request`;
+    const headers = {
+      'apiKey': orbit.apiKey,
+      'lobId': orbit.lobId,
+      'Content-Type': 'application/json'
+    };
+    
     console.log(`[DEFINE-PROOF] Full URL: ${fullUrl}`);
+    console.log(`[DEFINE-PROOF] Headers:`, {
+      apiKey: orbit.apiKey ? `${orbit.apiKey.substring(0, 8)}...` : 'MISSING',
+      lobId: orbit.lobId,
+      contentType: headers['Content-Type']
+    });
+    console.log(`[DEFINE-PROOF] Payload:`, JSON.stringify(proofDefPayload, null, 2));
+    
     const response = await fetch(fullUrl, {
       method: 'POST',
-      headers: {
-        'apiKey': orbit.apiKey,
-        'lobId': orbit.lobId,
-        'Content-Type': 'application/json'
-      },
+      headers,
       body: JSON.stringify(proofDefPayload)
     });
 
