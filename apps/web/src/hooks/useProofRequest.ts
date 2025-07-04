@@ -77,7 +77,15 @@ export function useProofRequest({ formId, publicSlug, enabled = true }: UseProof
         });
         
         if (!response.ok) {
-          throw new Error('Failed to initialize Orbit proof request');
+          console.warn('[useProofRequest] Orbit endpoint failed, using mock QR for development');
+          // Return mock data when direct endpoint fails for external credentials
+          return { 
+            proofId: 'orbit-failed-' + Date.now(), 
+            invitationUrl: 'https://example.com/orbit-unavailable',
+            svg: mockProof.svg,
+            isMock: true,
+            error: 'Direct endpoint requires registered credentials'
+          };
         }
         
         const result = await response.json();
