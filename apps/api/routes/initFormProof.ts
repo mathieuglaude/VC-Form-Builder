@@ -3,6 +3,7 @@ import { storage } from '../storage.js';
 import { extractMappings, buildDefinePayload, extractInvitationUrl } from '../../../packages/shared/src/proof.js';
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { VerifierService } from '../../../packages/external/orbit/VerifierService.js';
+// import { CredentialImportService } from '../services/credentialImportService.js';
 import crypto from 'crypto';
 
 export async function initFormProof(req: Request<{ formId: string }>, res: Response) {
@@ -25,20 +26,23 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       return res.json({ status: 'no-vc', message: 'No verifiable credential fields found' });
     }
 
-    // Step 2: Build Orbit proof request payload
-    const definePayload = buildDefinePayload(mappings, form.name);
+    const { ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_VERIFIER_BASE_URL = 'https://testapi-verifier.nborbit.ca/' } = process.env;
+    if (!ORBIT_API_KEY || !ORBIT_LOB_ID) {
+      return res.status(500).json({ error: 'Orbit configuration missing' });
+    }
+
+    // Step 2: Build proof request payload (to be enhanced with auto-import)
+    // TODO: Implement auto-import of external credentials into Orbit LOB
+    const orbitMappings = new Map(); // Will contain numeric Orbit IDs after import
+    
+    const definePayload = buildDefinePayload(mappings, form.name, orbitMappings);
     console.log('[DEFINE-PAYLOAD]', JSON.stringify(definePayload, null, 2));
     
     if (!definePayload) {
       return res.json({ status: 'no-vc', message: 'Unable to build proof request from mappings' });
     }
 
-    const { ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_BASE_URL = 'https://devapi-verifier.nborbit.ca/' } = process.env;
-    if (!ORBIT_API_KEY || !ORBIT_LOB_ID) {
-      return res.status(500).json({ error: 'Orbit configuration missing' });
-    }
-
-    const verifier = new VerifierService(ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_BASE_URL);
+    const verifier = new VerifierService(ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_VERIFIER_BASE_URL);
 
     // Step 3: Pass complete payload to VerifierService for direct endpoint transformation
     const orbitPayload = definePayload;

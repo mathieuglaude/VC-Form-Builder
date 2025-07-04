@@ -103,13 +103,30 @@ export interface OrbitProofRequest {
  * @param formName - Name of the form for proof identification
  * @returns Orbit proof request payload or null if no valid mappings
  */
-export function buildDefinePayload(mappings: VCMapping[], formName: string = "Form"): OrbitProofRequest | null {
+export function buildDefinePayload(
+  mappings: VCMapping[], 
+  formName: string = "Form", 
+  orbitMappings?: Map<string, { orbitSchemaId: number; orbitCredDefId: number }>
+): OrbitProofRequest | null {
   if (!mappings.length) {
     return null;
   }
 
   const requestedAttributes = mappings
     .map(mapping => {
+      // If Orbit mappings are provided, use numeric IDs for direct endpoint
+      if (orbitMappings?.has(mapping.credentialType)) {
+        const orbitMapping = orbitMappings.get(mapping.credentialType)!;
+        return {
+          name: mapping.attributeName,
+          restrictions: [{
+            schemaId: orbitMapping.orbitSchemaId,
+            credentialId: orbitMapping.orbitCredDefId
+          }]
+        };
+      }
+
+      // Fallback to external AnonCreds format (for legacy compatibility)
       const credDef = CRED_MAP[mapping.credentialType];
       if (!credDef) {
         console.warn(`[buildDefinePayload] Unknown credential type: ${mapping.credentialType}`);

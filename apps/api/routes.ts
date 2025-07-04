@@ -9,6 +9,7 @@ import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
 import defineProofRouter from "./routes/defineProof";
 import { initFormProof } from "./routes/initFormProof";
+import { testImportCredential, getOrbitMapping } from "./routes/credentialImport";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
 import { z } from "zod";
 import { ensureLawyerCred } from "./ensureLawyerCred";
@@ -973,6 +974,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ error: error instanceof Error ? error.message : 'Failed to import credential' });
     }
   });
+
+  // Credential import routes for testing external credential registration
+  router.post('/credentials/import/test', testImportCredential);
+  router.get('/credentials/orbit-mapping/:credentialType', getOrbitMapping);
 
   // Mount all API routes under /api prefix
   app.use('/api', router);

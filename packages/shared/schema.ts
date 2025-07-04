@@ -68,6 +68,30 @@ export interface OCAOverlay {
   data: any;
 }
 
+// Orbit imported schemas table - stores external schemas imported into Orbit LOB
+export const orbitSchemas = pgTable("orbit_schemas", {
+  id: serial("id").primaryKey(),
+  externalSchemaId: text("external_schema_id").notNull().unique(), // Original AnonCreds schema ID
+  orbitSchemaId: integer("orbit_schema_id").notNull().unique(), // Numeric ID returned by Orbit
+  schemaName: text("schema_name").notNull(),
+  schemaVersion: text("schema_version").notNull(),
+  issuerDid: text("issuer_did").notNull(),
+  attributes: jsonb("attributes").$type<string[]>().notNull(),
+  importedAt: timestamp("imported_at").defaultNow().notNull(),
+});
+
+// Orbit imported credential definitions table - stores external cred defs imported into Orbit LOB  
+export const orbitCredentialDefinitions = pgTable("orbit_credential_definitions", {
+  id: serial("id").primaryKey(),
+  externalCredDefId: text("external_cred_def_id").notNull().unique(), // Original AnonCreds cred def ID
+  orbitCredDefId: integer("orbit_cred_def_id").notNull().unique(), // Numeric ID returned by Orbit
+  orbitSchemaId: integer("orbit_schema_id").notNull().references(() => orbitSchemas.orbitSchemaId),
+  externalSchemaId: text("external_schema_id").notNull(),
+  issuerDid: text("issuer_did").notNull(),
+  tag: text("tag").default("default"),
+  importedAt: timestamp("imported_at").defaultNow().notNull(),
+});
+
 export const credentialTemplates = pgTable("credential_templates", {
   id: serial("id").primaryKey(),
   label: text("label").notNull().unique(),
@@ -168,6 +192,24 @@ export const insertCredentialAttributeSchema = createInsertSchema(credentialAttr
   pos: true,
 });
 
+export const insertOrbitSchemaSchema = createInsertSchema(orbitSchemas).pick({
+  externalSchemaId: true,
+  orbitSchemaId: true,
+  schemaName: true,
+  schemaVersion: true,
+  issuerDid: true,
+  attributes: true,
+});
+
+export const insertOrbitCredentialDefinitionSchema = createInsertSchema(orbitCredentialDefinitions).pick({
+  externalCredDefId: true,
+  orbitCredDefId: true,
+  orbitSchemaId: true,
+  externalSchemaId: true,
+  issuerDid: true,
+  tag: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -186,6 +228,12 @@ export type InsertCredentialTemplate = z.infer<typeof insertCredentialTemplateSc
 
 export type CredentialAttribute = typeof credentialAttributes.$inferSelect;
 export type InsertCredentialAttribute = z.infer<typeof insertCredentialAttributeSchema>;
+
+export type OrbitSchema = typeof orbitSchemas.$inferSelect;
+export type InsertOrbitSchema = z.infer<typeof insertOrbitSchemaSchema>;
+
+export type OrbitCredentialDefinition = typeof orbitCredentialDefinitions.$inferSelect;
+export type InsertOrbitCredentialDefinition = z.infer<typeof insertOrbitCredentialDefinitionSchema>;
 
 // Extended types for VC integration
 export interface DataSourceMetadata {
