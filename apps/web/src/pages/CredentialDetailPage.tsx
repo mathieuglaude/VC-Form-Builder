@@ -338,33 +338,7 @@ export default function CredentialDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button asChild className="w-full" variant="default">
-                <Link href="/build">
-                  Use in Form Builder
-                </Link>
-              </Button>
-              
-              {credential.schemaUrl && (
-                <Button asChild className="w-full" variant="outline">
-                  <a
-                    href={credential.schemaUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2"
-                  >
-                    View Documentation
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+
 
           {/* Metadata */}
           <Card>
