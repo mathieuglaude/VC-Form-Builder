@@ -44,8 +44,7 @@ export class VerifierService {
 
   async createDirectProofUrl(payload: any): Promise<{ shortUrl: string; longUrl: string }> {
     const headers = {
-      'api-key': this.apiKey,
-      'lobId': this.lobId,
+      'Authorization': `Bearer ${this.apiKey}`,
       'Content-Type': 'application/json',
       'Accept': '*/*'
     };
@@ -62,11 +61,11 @@ export class VerifierService {
       addVerificationAuthority: false,
       requestedAttributes: (payload.requestedAttributes || []).map((attr: any) => ({
         attributes: [attr.name],
-        // Use external AnonCreds format for external credentials
+        // Use Orbit numeric IDs for registered credentials
         restrictions: (attr.restrictions || []).map((restriction: any) => ({
-          // Based on Swagger docs, use minimal format for external credentials
-          schemaId: restriction.anoncredsSchemaId,
-          credentialId: restriction.anoncredsCredDefId
+          // Use the Orbit numeric IDs from the database
+          schemaId: restriction.schemaId,
+          credentialId: restriction.credentialId
         }))
       })),
       requestedPredicates: payload.requestedPredicates || []
