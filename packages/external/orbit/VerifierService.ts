@@ -44,7 +44,7 @@ export class VerifierService {
 
   async createDirectProofUrl(payload: any): Promise<{ shortUrl: string; longUrl: string }> {
     const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
+      'api-key': this.apiKey,
       'Content-Type': 'application/json',
       'Accept': '*/*'
     };
@@ -73,7 +73,7 @@ export class VerifierService {
 
     console.info('[ORBIT-DIRECT] Transformed payload:', JSON.stringify(directPayload, null, 2));
 
-    const response = await fetch(`${this.baseUrl}api/lob/${this.lobId}/proof-request/url`, {
+    const response = await fetch(`${this.baseUrl}api/lob/${this.lobId}/proof-request/url?connectionless=true`, {
       method: 'POST',
       headers,
       body: JSON.stringify(directPayload)

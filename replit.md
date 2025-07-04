@@ -432,6 +432,13 @@ Changelog:
   - Successfully submitted LOB registration with real API key MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et to Orbit Enterprise development environment
   - LOB registration pending approval - awaiting email confirmation with actual LOB ID to replace test placeholder
   - Proof request pipeline fully functional: extracts mappings → fetches Orbit IDs from database → builds direct endpoint payload
+- July 4, 2025. Identified LOB ID authentication issue and prepared for production readiness
+  - Fixed authentication headers to use 'api-key' format as specified in GitHub documentation
+  - Added connectionless=true parameter to proof request URL per API specification
+  - Updated base URL to testapi-verifier.nborbit.ca as per official documentation
+  - Discovered LOB ID a03f92ac-5ce7-4037-b8b5-79ff821b0878 returns "lob not found!" (404) error
+  - System correctly builds proof requests with proper Orbit numeric IDs and authentication format
+  - Ready for production once correct LOB ID is provided from Northern Block approval email
 ```
 
 ## User Preferences
