@@ -115,6 +115,8 @@ export const credentialTemplates = pgTable("credential_templates", {
   brandBgUrl: text("brand_bg_url"),
   brandLogoUrl: text("brand_logo_url"),
   visible: boolean("visible").notNull().default(true),
+  orbitSchemaId: integer("orbit_schema_id"), // Numeric ID returned from Orbit schema import
+  orbitCredDefId: integer("orbit_cred_def_id"), // Numeric ID returned from Orbit credential definition import
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

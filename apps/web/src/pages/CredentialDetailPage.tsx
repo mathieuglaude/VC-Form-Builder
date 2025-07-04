@@ -234,6 +234,54 @@ export default function CredentialDetailPage() {
                   </Button>
                 </div>
               </div>
+              
+              <Separator />
+              
+              <div>
+                <label className="text-sm font-medium text-gray-700">Orbit Schema ID</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-sm bg-blue-100 px-2 py-1 rounded font-mono flex-1">
+                    {credential.orbitSchemaId || "Not yet imported"}
+                  </code>
+                  {credential.orbitSchemaId && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(credential.orbitSchemaId.toString(), "Orbit Schema ID")}
+                      className="h-8 w-8 p-0"
+                    >
+                      {copiedField === "Orbit Schema ID" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Orbit Credential Definition ID</label>
+                <div className="flex items-center gap-2 mt-1">
+                  <code className="text-sm bg-blue-100 px-2 py-1 rounded font-mono flex-1">
+                    {credential.orbitCredDefId || "Not yet imported"}
+                  </code>
+                  {credential.orbitCredDefId && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => copyToClipboard(credential.orbitCredDefId.toString(), "Orbit Credential Definition ID")}
+                      className="h-8 w-8 p-0"
+                    >
+                      {copiedField === "Orbit Credential Definition ID" ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
+                </div>
+              </div>
 
               <div>
                 <label className="text-sm font-medium text-gray-700">Issuer DID</label>
