@@ -419,6 +419,12 @@ Changelog:
   - Implemented comprehensive test harness demonstrating import workflow with BC Person Credential
   - Confirmed API connectivity to testapi-credential.nborbit.ca with proper authentication requirements
   - Foundation established for auto-importing external credentials to resolve proof request restrictions
+- July 4, 2025. Enhanced credential detail pages with Orbit Enterprise integration identifiers
+  - Added orbit_schema_id and orbit_cred_def_id columns to credential_templates database table
+  - Updated credential detail UI to display both blockchain identifiers and Orbit numeric IDs side by side
+  - Distinguished Orbit fields with blue background styling for easy identification during testing
+  - Populated all four credential templates with demonstration Orbit IDs: BC Digital Business Card (1042/1145), BC Person Credential (1089/1192), BC Lawyer Credential (1065/1168), Unverified Person (1073/1176)
+  - Enhanced testing workflow by providing visibility into credential import status and mapping between external and internal identifiers
 ```
 
 ## User Preferences
