@@ -405,6 +405,12 @@ Changelog:
   - System now exclusively uses "Prepare URL for Proof Request (Without A Proof Definition ID)" endpoint
   - All form proof requests consistently return clear error messages when external credentials require registered definitions
   - Architecture simplified: removed cache maps, legacy interfaces, and dual-path complexity for cleaner codebase
+- July 4, 2025. Updated API documentation system of record to official Northern Block repository
+  - Replaced all Orbit Enterprise API documentation references with https://github.com/4sure-tech/eapi-llm-friendly-format
+  - Updated base URL from devapi-verifier.nborbit.ca to testapi-verifier.nborbit.ca per official documentation
+  - Added comprehensive documentation headers to VerifierService referencing new system of record
+  - Confirmed endpoint path /api/lob/{lob_id}/proof-request/url remains correct as per official specification
+  - System now exclusively follows official Northern Block API documentation for all Orbit Enterprise integrations
 ```
 
 ## User Preferences

@@ -13,13 +13,29 @@ export interface DefineProofPayload {
   requestedPredicates: Array<any>;
 }
 
+/**
+ * VerifierService for Orbit Enterprise API integration
+ * 
+ * System of Record: https://github.com/4sure-tech/eapi-llm-friendly-format
+ * 
+ * This service implements the "Prepare URL for Proof Request (Without A Proof Definition ID)" endpoint
+ * as documented in the official Orbit Enterprise API specification.
+ * 
+ * Endpoint: POST /api/lob/{lob_id}/proof-request/url
+ * Base URL: https://testapi-verifier.nborbit.ca (dev environment)
+ * 
+ * Limitations:
+ * - External credentials with AnonCreds identifiers require registered credential definitions
+ * - Schema IDs and Credential IDs must be numeric references to LOB-registered credentials
+ * - Direct endpoint cannot handle external BC Government credentials without prior registration
+ */
 export class VerifierService {
   private baseUrl: string;
 
   constructor(
     private apiKey: string, 
     private lobId: string,
-    baseUrl: string = 'https://devapi-verifier.nborbit.ca/'
+    baseUrl: string = 'https://testapi-verifier.nborbit.ca/'
   ) {
     this.baseUrl = baseUrl;
   }
