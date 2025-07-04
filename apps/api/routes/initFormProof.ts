@@ -32,8 +32,23 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
     }
 
     // Step 2: Build proof request payload (to be enhanced with auto-import)
-    // TODO: Implement auto-import of external credentials into Orbit LOB
-    const orbitMappings = new Map(); // Will contain numeric Orbit IDs after import
+    // Fetch credential templates to get Orbit numeric IDs
+    const credentialTemplates = await storage.listCredentialTemplates();
+    
+    // Build Orbit mappings from database
+    const orbitMappings = new Map();
+    for (const mapping of mappings) {
+      const template = credentialTemplates.find(t => t.label === mapping.credentialType);
+      if (template?.orbitSchemaId && template?.orbitCredDefId) {
+        orbitMappings.set(mapping.credentialType, {
+          orbitSchemaId: template.orbitSchemaId,
+          orbitCredDefId: template.orbitCredDefId
+        });
+        console.log(`[ORBIT-MAPPING] ${mapping.credentialType} → Schema: ${template.orbitSchemaId}, CredDef: ${template.orbitCredDefId}`);
+      } else {
+        console.warn(`[ORBIT-MAPPING] No Orbit IDs found for ${mapping.credentialType}`);
+      }
+    }
     
     const definePayload = buildDefinePayload(mappings, form.name, orbitMappings);
     console.log('[DEFINE-PAYLOAD]', JSON.stringify(definePayload, null, 2));
