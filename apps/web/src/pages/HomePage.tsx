@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, FileText, Edit, ExternalLink, Clock, TrendingUp, Filter, X } from 'lucide-react';
+import { Plus, FileText, Edit, ExternalLink, Clock, Filter, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useForms, useCredentialLibrary } from '@shared/react-query';
 
@@ -172,15 +172,9 @@ export default function HomePage() {
                     
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">{form.purpose}</p>
                     
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        Updated last {new Date(form.updatedAt).toLocaleString()}
-                      </span>
-                      <span className="flex items-center">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        {Math.floor(Math.random() * 50)} views
-                      </span>
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Updated last {new Date(form.updatedAt).toLocaleString()}
                     </div>
                   </div>
                 </CardContent>
