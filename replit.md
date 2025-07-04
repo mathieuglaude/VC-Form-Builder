@@ -388,6 +388,15 @@ Changelog:
   - Added comprehensive URL validation unit tests (url.validate.test.ts) with 11 test cases covering edge cases and environment flags
   - Added development-only debug UI features in VerificationPanel for invitation URL inspection
   - All 15 regression tests pass successfully, preventing future QR loading issues
+- July 4, 2025. Completed Orbit Enterprise direct proof-request/url endpoint implementation and analysis
+  - Built complete payload transformation from two-step to single-step direct endpoint format per Swagger documentation
+  - Successfully transformed payload structure with credProofId, messageProtocol, createClaim, and addVerificationAuthority fields
+  - Implemented proper restriction mapping with schemaId, credentialId, and type fields required by direct endpoint
+  - Confirmed API integration code is correct: direct endpoint now responds with 404 instead of 500 server errors
+  - Identified fundamental limitation: direct endpoint requires pre-registered credential definitions within Orbit LOB
+  - External BC Government credentials cannot be used with direct approach since they're not registered in our Orbit instance
+  - Documented technical constraint: direct endpoint designed for internal credential ecosystems, not external verifier scenarios
+  - Maintained fallback QR generation system for continued functionality while external credential support is resolved
 ```
 
 ## User Preferences

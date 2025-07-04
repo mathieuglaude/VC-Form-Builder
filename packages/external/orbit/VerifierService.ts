@@ -1,4 +1,5 @@
 import { createRequire } from 'module';
+import crypto from 'crypto';
 const require = createRequire(import.meta.url);
 const QRCode = require('qrcode-svg');
 
@@ -51,6 +52,62 @@ export class VerifierService {
     }
 
     return { proofDefineId };
+  }
+
+  async createDirectProofUrl(payload: any): Promise<{ shortUrl: string; longUrl: string }> {
+    const headers = {
+      'api-key': this.apiKey,
+      'lobId': this.lobId,
+      'Content-Type': 'application/json',
+      'Accept': '*/*'
+    };
+
+    console.log('[PAYLOAD-DEBUG] Original payload:', JSON.stringify(payload, null, 2));
+
+    // Transform payload for direct endpoint format based on Swagger docs
+    const directPayload = {
+      messageProtocol: "AIP2_0",
+      credProofId: crypto.randomUUID(),
+      proofAutoVerify: false,
+      createClaim: false,
+      proofName: payload.proofName,
+      proofPurpose: payload.proofPurpose,
+      proofCredFormat: payload.proofCredFormat,
+      addVerificationAuthority: false,
+      requestedAttributes: (payload.requestedAttributes || []).map((attr: any) => ({
+        attributes: [attr.name],
+        // NOTE: Direct endpoint requires pre-registered credential definitions in Orbit
+        // External BC Government credentials cannot be used with this approach
+        restrictions: (attr.restrictions || []).map((restriction: any) => ({
+          schemaId: 1, // Would need valid registered schema ID
+          credentialId: 1, // Would need valid registered credential definition ID
+          type: ["ConformityAttestation"]
+        }))
+      })),
+      requestedPredicates: payload.requestedPredicates || []
+    };
+
+    console.info('[ORBIT-DIRECT] Transformed payload:', JSON.stringify(directPayload, null, 2));
+
+    const response = await fetch(`${this.baseUrl}api/lob/${this.lobId}/proof-request/url`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(directPayload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Direct proof URL failed: ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    const { shortUrl, longUrl } = result.data || {};
+    
+    if (!shortUrl) {
+      throw new Error('No shortUrl returned from proof-request/url');
+    }
+
+    return { shortUrl, longUrl: longUrl || shortUrl };
   }
 
   async createProofUrl(args: { proofDefineId: number }): Promise<{ shortUrl: string; longUrl: string }> {

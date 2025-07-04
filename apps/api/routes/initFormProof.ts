@@ -40,22 +40,13 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
 
     const verifier = new VerifierService(ORBIT_API_KEY, ORBIT_LOB_ID, ORBIT_BASE_URL);
 
-    // Step 3: Convert to Orbit-compatible format (simplified attributes structure)
-    const orbitPayload = {
-      proofName: definePayload.proofName,
-      proofPurpose: definePayload.proofPurpose,
-      proofCredFormat: definePayload.proofCredFormat,
-      requestedAttributes: definePayload.requestedAttributes.map(attr => ({
-        attributes: [attr.name]
-      })),
-      requestedPredicates: definePayload.requestedPredicates
-    } as any;
+    // Step 3: Pass complete payload to VerifierService for direct endpoint transformation
+    const orbitPayload = definePayload;
 
     try {
-      const { proofDefineId } = await verifier.defineProof(orbitPayload);
-      console.log('[DUMP-CMD] To debug this proof: cd apps/api && npx tsx scripts/dumpProofUrl.ts', proofDefineId);
-      const urlResponse = await verifier.createProofUrl({ proofDefineId });
-      console.info('[ORBIT ⬅] prepare-url response', urlResponse);
+      console.info('[ORBIT ➡] Calling direct proof-request/url endpoint');
+      const urlResponse = await verifier.createDirectProofUrl(orbitPayload);
+      console.info('[ORBIT ⬅] proof-request/url response', urlResponse);
       
       // Extract wallet-friendly invitation URL from response
       const invitationUrl = extractInvitationUrl(urlResponse);
@@ -85,7 +76,7 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       }));
 
     } catch (orbitError: any) {
-      console.error('[ORBIT-ERROR]', orbitError.constructor.name, ':', orbitError.message);
+      console.error('[ORBIT-ERROR] Direct proof-request/url failed:', orbitError.constructor.name, ':', orbitError.message);
       const mockProofDefineId = Date.now();
       const fallbackUrl = verifier.getFallbackUrl(mockProofDefineId);
       
