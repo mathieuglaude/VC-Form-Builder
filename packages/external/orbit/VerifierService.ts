@@ -46,12 +46,11 @@ export class VerifierService {
       addVerificationAuthority: false,
       requestedAttributes: (payload.requestedAttributes || []).map((attr: any) => ({
         attributes: [attr.name],
-        // NOTE: Direct endpoint requires pre-registered credential definitions in Orbit
-        // External BC Government credentials cannot be used with this approach
+        // Use external AnonCreds format for external credentials
         restrictions: (attr.restrictions || []).map((restriction: any) => ({
-          schemaId: 1, // Would need valid registered schema ID
-          credentialId: 1, // Would need valid registered credential definition ID
-          type: ["ConformityAttestation"]
+          // Based on Swagger docs, use minimal format for external credentials
+          schemaId: restriction.anoncredsSchemaId,
+          credentialId: restriction.anoncredsCredDefId
         }))
       })),
       requestedPredicates: payload.requestedPredicates || []
