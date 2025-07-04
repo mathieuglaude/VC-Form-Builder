@@ -77,20 +77,13 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
 
     } catch (orbitError: any) {
       console.error('[ORBIT-ERROR] Direct proof-request/url failed:', orbitError.constructor.name, ':', orbitError.message);
-      const mockProofDefineId = Date.now();
-      const fallbackUrl = verifier.getFallbackUrl(mockProofDefineId);
       
-      console.info('[QR-DEBUG] fallback invitationUrl', fallbackUrl?.slice(0, 120));
-      
-      // Return working fallback QR with proper status (like original behavior)
-      console.info('[FALLBACK-RESPONSE] Sending 200 response with fallback QR');
-      return res.json(ProofInitResponseSchema.parse({
-        proofId: crypto.randomUUID(),
-        invitationUrl: fallbackUrl,
-        svg: verifier.generateFallbackQrSvg(mockProofDefineId),
-        status: 'fallback',
-        error: orbitError.message
-      }));
+      // Since we're only using direct endpoint, return error response
+      return res.status(500).json({ 
+        error: 'Proof request failed', 
+        details: orbitError.message,
+        reason: 'Direct endpoint requires registered credentials in Orbit LOB'
+      });
     }
 
   } catch (error: any) {

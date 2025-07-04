@@ -14,7 +14,6 @@ export interface DefineProofPayload {
 }
 
 export class VerifierService {
-  private qrCache = new Map<number, string>();
   private baseUrl: string;
 
   constructor(
@@ -25,34 +24,7 @@ export class VerifierService {
     this.baseUrl = baseUrl;
   }
 
-  async defineProof(payload: DefineProofPayload): Promise<{ proofDefineId: number }> {
-    const headers = {
-      'api-key': this.apiKey,
-      'lobId': this.lobId,
-      'Content-Type': 'application/json',
-      'Accept': '*/*'
-    };
-
-    const response = await fetch(`${this.baseUrl}api/lob/${this.lobId}/define-proof-request`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Define proof failed: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    const proofDefineId = result.data?.proofDefineId;
-    
-    if (!proofDefineId) {
-      throw new Error('No proofDefineId returned from define-proof');
-    }
-
-    return { proofDefineId };
-  }
+  // Removed: defineProof method - only using direct single-step process
 
   async createDirectProofUrl(payload: any): Promise<{ shortUrl: string; longUrl: string }> {
     const headers = {
@@ -61,8 +33,6 @@ export class VerifierService {
       'Content-Type': 'application/json',
       'Accept': '*/*'
     };
-
-    console.log('[PAYLOAD-DEBUG] Original payload:', JSON.stringify(payload, null, 2));
 
     // Transform payload for direct endpoint format based on Swagger docs
     const directPayload = {
@@ -110,43 +80,7 @@ export class VerifierService {
     return { shortUrl, longUrl: longUrl || shortUrl };
   }
 
-  async createProofUrl(args: { proofDefineId: number }): Promise<{ shortUrl: string; longUrl: string }> {
-    const headers = {
-      'api-key': this.apiKey,
-      'lobId': this.lobId,
-      'Content-Type': 'application/json',
-      'Accept': '*/*'
-    };
-
-    const credProofId = crypto.randomUUID();
-    const payload = {
-      proofDefineId: args.proofDefineId,
-      messageProtocol: "AIP2_0",
-      credProofId,
-      proofAutoVerify: false,
-      createClaim: false
-    };
-
-    const response = await fetch(`${this.baseUrl}api/lob/${this.lobId}/proof/url?connectionless=true`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Create proof URL failed: ${response.status} ${errorText}`);
-    }
-
-    const result = await response.json();
-    const { shortUrl, longUrl } = result.data || {};
-    
-    if (!shortUrl) {
-      throw new Error('No shortUrl returned from proof/url');
-    }
-
-    return { shortUrl, longUrl: longUrl || shortUrl };
-  }
+  // Removed: createProofUrl method - only using direct single-step process
 
   generateQrSvg(url: string): string {
     const qr = new QRCode({
@@ -161,23 +95,5 @@ export class VerifierService {
     return qr.svg();
   }
 
-  generateFallbackQrSvg(proofDefineId: number): string {
-    // Check cache first
-    const cached = this.qrCache.get(proofDefineId);
-    if (cached) {
-      return cached;
-    }
-
-    const fallbackUrl = `${this.baseUrl}api/lob/${this.lobId}/proof-request/${proofDefineId}`;
-    const svg = this.generateQrSvg(fallbackUrl);
-    
-    // Cache the result
-    this.qrCache.set(proofDefineId, svg);
-    
-    return svg;
-  }
-
-  getFallbackUrl(proofDefineId: number): string {
-    return `${this.baseUrl}api/lob/${this.lobId}/proof-request/${proofDefineId}`;
-  }
+  // Removed: fallback methods - only using direct single-step process
 }

@@ -397,6 +397,14 @@ Changelog:
   - External BC Government credentials cannot be used with direct approach since they're not registered in our Orbit instance
   - Documented technical constraint: direct endpoint designed for internal credential ecosystems, not external verifier scenarios
   - Maintained fallback QR generation system for continued functionality while external credential support is resolved
+- July 4, 2025. Enforced single-step direct proof-request/url approach as exclusive method
+  - Removed all two-step process methods (defineProof, createProofUrl) from VerifierService class
+  - Eliminated fallback QR generation methods dependent on proofDefineId from two-step workflow
+  - Updated error handling to return proper HTTP 500 responses when direct endpoint fails
+  - Simplified VerifierService to only support createDirectProofUrl method with complete Swagger-compliant payload transformation
+  - System now exclusively uses "Prepare URL for Proof Request (Without A Proof Definition ID)" endpoint
+  - All form proof requests consistently return clear error messages when external credentials require registered definitions
+  - Architecture simplified: removed cache maps, legacy interfaces, and dual-path complexity for cleaner codebase
 ```
 
 ## User Preferences
