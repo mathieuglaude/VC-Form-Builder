@@ -578,7 +578,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: 'Credential template not found' });
       }
       
-      res.json(template);
+      // Transform unified OCA metadata structure to the format expected by frontend
+      const schemaMetadata = template.schemaMetadata;
+      const cryptographicMetadata = template.cryptographicMetadata;
+      const brandingMetadata = template.brandingMetadata;
+      const ecosystemMetadata = template.ecosystemMetadata;
+      const orbitIntegration = template.orbitIntegration;
+      
+      const transformedTemplate = {
+        id: template.id,
+        label: template.label,
+        version: template.version,
+        // Schema information
+        schemaId: schemaMetadata.schemaId,
+        credDefId: cryptographicMetadata.credDefId,
+        issuerDid: cryptographicMetadata.issuerDid,
+        attributes: schemaMetadata.attributes,
+        // Branding and display
+        branding: {
+          logoUrl: brandingMetadata.logo?.url,
+          backgroundImage: brandingMetadata.backgroundImage?.url,
+          primaryColor: brandingMetadata.colors?.primary,
+          layout: brandingMetadata.layout
+        },
+        meta: {
+          issuer: brandingMetadata.issuerName,
+          issuerUrl: brandingMetadata.issuerWebsite,
+          description: brandingMetadata.description
+        },
+        // Compatibility and ecosystem
+        ecosystem: ecosystemMetadata.ecosystem,
+        interopProfile: ecosystemMetadata.interopProfile,
+        compatibleWallets: ecosystemMetadata.compatibleWallets,
+        walletRestricted: ecosystemMetadata.walletRestricted,
+        // Governance
+        governanceUrl: cryptographicMetadata.governanceFramework,
+        // Orbit integration
+        orbitSchemaId: orbitIntegration?.orbitSchemaId,
+        orbitCredDefId: orbitIntegration?.orbitCredDefId,
+        // Administrative
+        isPredefined: template.isPredefined,
+        visible: template.visible,
+        createdAt: template.createdAt,
+        updatedAt: template.updatedAt,
+        // Ensure issuer name is human readable
+        issuer: brandingMetadata.issuerName || 'Unknown Issuer',
+        issuerUrl: brandingMetadata.issuerWebsite,
+        description: brandingMetadata.description || `${template.label} credential`
+      };
+      
+      res.json(transformedTemplate);
     } catch (error) {
       console.error('Error fetching credential template:', error);
       res.status(500).json({ error: 'Failed to fetch credential template' });
