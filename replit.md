@@ -471,6 +471,14 @@ Changelog:
   - Enhanced API route to handle both URL and content parameters for backward compatibility
   - File upload interface includes drag-and-drop support with 5MB limit and .md file validation
   - System now provides more reliable parsing by working with clean markdown content
+- July 5, 2025. Implemented OpenAI-powered webpage scraping for schema and credential definition fetching
+  - Replaced failing blockchain API calls with OpenAI webpage scraping approach
+  - OpenAI now fetches HTML content from CANdy scan URLs, converts to markdown, and extracts schema details
+  - Updated fetchCANdySchemaData() to use extractSchemaFromWebpage() method with intelligent HTML parsing
+  - Added extractCredDefFromWebpage() method for credential definition validation using same approach
+  - System now works with any blockchain explorer webpage format, not just specific API endpoints
+  - Enhanced error handling and fallback mechanisms for robust schema attribute extraction
+  - Both schema fetching and credential definition validation now use consistent OpenAI web scraping methodology
 ```
 
 ## User Preferences

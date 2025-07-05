@@ -537,28 +537,101 @@ Return structured JSON with the following format:
       const schemaName = parts[2];
       const version = parts[3];
       
-      // Determine environment and construct URL
+      // Determine environment and construct CANdy scan webpage URL
       const isTest = did.startsWith('MLvtJW6pFuYu4NnMB14d29');
-      const apiBase = isTest ? GovernanceParserService.CANDY_TEST_API : GovernanceParserService.CANDY_PROD_API;
+      const domainId = await this.extractDomainIdFromSchema(schemaId, schemaName, isTest);
       
-      // For BC Government schemas, we need to find the correct domain ID
-      // This requires checking the schema URL from the governance document
-      let domainId: string = await this.extractDomainIdFromSchema(schemaId, schemaName, isTest);
+      const candyScanUrl = isTest 
+        ? `https://candyscan.idlab.org/tx/CANDY_TEST/domain/${domainId}`
+        : `https://candyscan.idlab.org/tx/CANDY_PROD/domain/${domainId}`;
       
-      const url = `${apiBase}/domain/${domainId}`;
+      console.log(`[GovernanceParser] Fetching schema webpage from: ${candyScanUrl}`);
       
-      console.log(`[GovernanceParser] Fetching schema data from: ${url}`);
-      
-      const response = await ky.get(url);
-      const jsonData = await response.text();
-      
-      // Use OpenAI to extract attributes from JSON
-      const extractedData = await this.extractSchemaAttributesWithAI(jsonData, schemaId);
+      // Use OpenAI to fetch webpage content and extract schema details
+      const extractedData = await this.extractSchemaFromWebpage(candyScanUrl, schemaId);
       
       return extractedData;
     } catch (error) {
       console.error('[GovernanceParser] Error fetching CANdy schema data:', error);
       throw new Error(`Failed to fetch schema data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async extractSchemaFromWebpage(candyScanUrl: string, schemaId: string): Promise<CANdySchemaData> {
+    try {
+      console.log(`[GovernanceParser] Using OpenAI to fetch and parse CANdy webpage...`);
+      
+      const systemPrompt = `You are an expert at scraping blockchain explorer webpages and extracting credential schema information.
+      
+      Your task:
+      1. Fetch the HTML content from the provided CANdy scan URL
+      2. Convert the HTML to readable markdown format
+      3. Extract the credential schema details including attribute names
+      4. Look for JSON data containing "attr_names" arrays and schema metadata
+      
+      Focus on finding:
+      - Schema name and version
+      - List of credential attributes (attr_names)
+      - Issuer DID information
+      - Any other schema metadata`;
+
+      const userPrompt = `Please fetch the webpage content from this CANdy blockchain explorer URL and extract the credential schema information:
+
+      URL: ${candyScanUrl}
+      Schema ID: ${schemaId}
+      
+      Steps:
+      1. Fetch the HTML content from the URL
+      2. Parse the webpage to find the schema details
+      3. Extract the attribute names from any JSON data on the page
+      
+      Return JSON in this exact format:
+      {
+        "schemaName": "extracted schema name",
+        "version": "extracted version", 
+        "attributes": ["attribute1", "attribute2", "attribute3"],
+        "issuerDid": "extracted issuer DID",
+        "success": true,
+        "rawData": "any relevant JSON data found on page"
+      }`;
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.1,
+        max_tokens: 2000,
+      });
+
+      const aiResult = JSON.parse(response.choices[0].message.content || '{}');
+      
+      console.log(`[GovernanceParser] AI extracted schema data from webpage:`, {
+        schemaName: aiResult.schemaName,
+        version: aiResult.version,
+        attributeCount: aiResult.attributes?.length || 0,
+        success: aiResult.success
+      });
+
+      // Convert to expected format
+      const schemaData: CANdySchemaData = {
+        schemaId: schemaId,
+        name: aiResult.schemaName || 'Unknown Schema',
+        version: aiResult.version || '1.0',
+        attributes: (aiResult.attributes || []).map((name: string) => ({
+          name: name,
+          type: 'string', // Default type
+          restrictions: undefined
+        })),
+        issuerDid: aiResult.issuerDid || 'Unknown DID'
+      };
+      
+      return schemaData;
+    } catch (error) {
+      console.error('[GovernanceParser] AI webpage extraction failed:', error);
+      throw new Error(`Failed to extract schema from webpage: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -691,20 +764,109 @@ Return structured JSON with the following format:
     try {
       console.log(`[GovernanceParser] Validating credential definition: ${credDefId} against schema: ${schemaId}`);
       
-      // For now, return a mock validation
-      // In a real implementation, this would query the blockchain
-      const isValid = credDefId.includes(schemaId.split(':')[0]); // Basic validation
+      // Parse credential definition ID to extract domain ID
+      // CredDef ID format: DID:3:CL:domain:tag
+      const parts = credDefId.split(':');
+      if (parts.length < 5) {
+        throw new Error('Invalid credential definition ID format - expected DID:3:CL:domain:tag');
+      }
       
-      return {
-        credDefId,
-        schemaId,
-        tag: 'default',
-        issuerDid: 'did:example:issuer',
-        isValid
-      };
+      const did = parts[0];
+      const domainId = parts[3];
+      const tag = parts[4];
+      
+      // Determine environment and construct CANdy scan webpage URL
+      const isTest = did.startsWith('MLvtJW6pFuYu4NnMB14d29');
+      const candyScanUrl = isTest 
+        ? `https://candyscan.idlab.org/tx/CANDY_TEST/domain/${domainId}`
+        : `https://candyscan.idlab.org/tx/CANDY_PROD/domain/${domainId}`;
+      
+      console.log(`[GovernanceParser] Fetching credential definition webpage from: ${candyScanUrl}`);
+      
+      // Use OpenAI to fetch webpage content and extract credential definition details
+      const credDefData = await this.extractCredDefFromWebpage(candyScanUrl, credDefId, schemaId);
+      
+      return credDefData;
     } catch (error) {
       console.error('[GovernanceParser] Error validating credential definition:', error);
       throw new Error(`Failed to validate credential definition: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async extractCredDefFromWebpage(candyScanUrl: string, credDefId: string, schemaId: string): Promise<CredentialDefinitionData> {
+    try {
+      console.log(`[GovernanceParser] Using OpenAI to fetch and parse credential definition webpage...`);
+      
+      const systemPrompt = `You are an expert at scraping blockchain explorer webpages and extracting credential definition information.
+      
+      Your task:
+      1. Fetch the HTML content from the provided CANdy scan URL
+      2. Convert the HTML to readable markdown format
+      3. Extract the credential definition details and validation information
+      4. Look for JSON data containing credential definition metadata
+      
+      Focus on finding:
+      - Credential definition tag and issuer information
+      - Validation status and relationship to schema
+      - Issuer DID and signature information
+      - Any other credential definition metadata`;
+
+      const userPrompt = `Please fetch the webpage content from this CANdy blockchain explorer URL and extract the credential definition information:
+
+      URL: ${candyScanUrl}
+      Credential Definition ID: ${credDefId}
+      Related Schema ID: ${schemaId}
+      
+      Steps:
+      1. Fetch the HTML content from the URL
+      2. Parse the webpage to find the credential definition details
+      3. Validate the relationship between the credential definition and schema
+      
+      Return JSON in this exact format:
+      {
+        "credDefId": "${credDefId}",
+        "schemaId": "extracted or provided schema ID",
+        "tag": "extracted tag",
+        "issuerDid": "extracted issuer DID",
+        "isValid": true,
+        "success": true,
+        "rawData": "any relevant JSON data found on page"
+      }`;
+
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o', // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        response_format: { type: 'json_object' },
+        temperature: 0.1,
+        max_tokens: 1500,
+      });
+
+      const aiResult = JSON.parse(response.choices[0].message.content || '{}');
+      
+      console.log(`[GovernanceParser] AI extracted credential definition data from webpage:`, {
+        credDefId: aiResult.credDefId,
+        tag: aiResult.tag,
+        issuerDid: aiResult.issuerDid,
+        isValid: aiResult.isValid,
+        success: aiResult.success
+      });
+
+      // Convert to expected format
+      const credDefData: CredentialDefinitionData = {
+        credDefId: aiResult.credDefId || credDefId,
+        schemaId: aiResult.schemaId || schemaId,
+        tag: aiResult.tag || 'default',
+        issuerDid: aiResult.issuerDid || 'Unknown DID',
+        isValid: aiResult.isValid || false
+      };
+      
+      return credDefData;
+    } catch (error) {
+      console.error('[GovernanceParser] AI credential definition webpage extraction failed:', error);
+      throw new Error(`Failed to extract credential definition from webpage: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
