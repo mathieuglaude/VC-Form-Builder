@@ -403,79 +403,97 @@ export default function CredentialDetailPage() {
           </Card>
 
           {/* Governance Information */}
-          {credential.isPredefined && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Governance & Trust</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Trust Framework</label>
-                  <p className="text-sm text-gray-900 mt-1">BC Digital Trust Ecosystem</p>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Issuer Authority</label>
-                  <p className="text-sm text-gray-900 mt-1">Government of British Columbia</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Verification Level</label>
-                  <div className="mt-1">
-                    <Badge variant="default" className="bg-blue-100 text-blue-800">
-                      Government Issued
-                    </Badge>
+          <Card>
+            <CardHeader>
+              <CardTitle>Governance & Trust</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {credential.isPredefined ? (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Trust Framework</label>
+                    <p className="text-sm text-gray-900 mt-1">BC Digital Trust Ecosystem</p>
                   </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Governance Documentation</label>
-                  <div className="mt-1">
-                    {credential.governanceUrl && credential.governanceUrl !== "N/A" ? (
-                      <Button asChild variant="outline" size="sm" className="w-full">
-                        <a
-                          href={credential.governanceUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
-                          View Documentation
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-gray-500 py-2">
-                        N/A - No governance documentation available
-                      </p>
-                    )}
+                  
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Issuer Authority</label>
+                    <p className="text-sm text-gray-900 mt-1">Government of British Columbia</p>
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-sm font-medium text-gray-700">OCA Bundle</label>
-                  <div className="mt-1">
-                    {credential.ocaBundleUrl && credential.ocaBundleUrl !== "N/A" ? (
-                      <Button asChild variant="outline" size="sm" className="w-full">
-                        <a
-                          href={credential.ocaBundleUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-2"
-                        >
-                          View OCA Bundle
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </Button>
-                    ) : (
-                      <p className="text-sm text-gray-500 py-2">
-                        N/A - No OCA bundle available
-                      </p>
-                    )}
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Verification Level</label>
+                    <div className="mt-1">
+                      <Badge variant="default" className="bg-blue-100 text-blue-800">
+                        Government Issued
+                      </Badge>
+                    </div>
                   </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Issuer Organization</label>
+                    <p className="text-sm text-gray-900 mt-1">{credential.meta?.issuer || credential.issuer || 'Unknown Issuer'}</p>
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Verification Level</label>
+                    <div className="mt-1">
+                      <Badge variant="default" className="bg-amber-100 text-amber-800">
+                        Imported Credential
+                      </Badge>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">Governance Documentation</label>
+                <div className="mt-1">
+                  {credential.governanceUrl && credential.governanceUrl !== "N/A" ? (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <a
+                        href={credential.governanceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2"
+                      >
+                        View Documentation
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">
+                      N/A - No governance documentation available
+                    </p>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700">OCA Bundle</label>
+                <div className="mt-1">
+                  {credential.ocaBundleUrl && credential.ocaBundleUrl !== "N/A" ? (
+                    <Button asChild variant="outline" size="sm" className="w-full">
+                      <a
+                        href={credential.ocaBundleUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2"
+                      >
+                        View OCA Bundle
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-gray-500 py-2">
+                      N/A - No OCA bundle available
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

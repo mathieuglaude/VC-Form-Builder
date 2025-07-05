@@ -1228,6 +1228,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing required import data' });
       }
       
+      console.log('[CREDENTIAL-IMPORT] Starting Orbit integration for:', metadata.credentialName);
+      
+      // Import schema and credential definition into Orbit Enterprise
+      let orbitSchemaId = null;
+      let orbitCredDefId = null;
+      
+      try {
+        // Import external schema into Orbit LOB
+        console.log('[CREDENTIAL-IMPORT] Importing schema into Orbit:', schemaData.schemaId);
+        const { credentialManagementService } = await import('./services/credentialManagementService');
+        
+        const schemaImportResult = await credentialManagementService.importExternalSchema({
+          externalSchemaId: schemaData.schemaId,
+          name: schemaData.name,
+          version: schemaData.version,
+          attributes: schemaData.attributes.map(attr => attr.name)
+        });
+        
+        orbitSchemaId = schemaImportResult.orbitSchemaId;
+        console.log('[CREDENTIAL-IMPORT] Schema imported to Orbit with ID:', orbitSchemaId);
+        
+        // Import external credential definition into Orbit LOB
+        console.log('[CREDENTIAL-IMPORT] Importing credential definition into Orbit:', credDefData.credDefId);
+        const credDefImportResult = await credentialManagementService.importExternalCredentialDefinition({
+          externalCredDefId: credDefData.credDefId,
+          orbitSchemaId: orbitSchemaId,
+          tag: credDefData.tag || 'default',
+          issuerDid: schemaData.issuerDid
+        });
+        
+        orbitCredDefId = credDefImportResult.orbitCredDefId;
+        console.log('[CREDENTIAL-IMPORT] Credential definition imported to Orbit with ID:', orbitCredDefId);
+        
+      } catch (orbitError) {
+        console.warn('[CREDENTIAL-IMPORT] Orbit integration failed, continuing with local storage:', orbitError);
+        // Continue with credential creation even if Orbit import fails
+      }
+      
       // Create the credential template using the existing schema
       const templateData = {
         label: metadata.credentialName,
@@ -1258,14 +1296,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           interopProfile: 'AIP 2.0'
         },
         orbitIntegration: {
-          orbitSchemaId: null,
-          orbitCredDefId: null
+          orbitSchemaId: orbitSchemaId,
+          orbitCredDefId: orbitCredDefId
         },
         isPredefined: false,
         visible: true
       };
       
       const template = await storage.createCredentialTemplate(templateData);
+      
+      console.log('[CREDENTIAL-IMPORT] Successfully created credential template with Orbit IDs:', {
+        templateId: template.id,
+        orbitSchemaId,
+        orbitCredDefId
+      });
       
       res.status(201).json(template);
     } catch (error: unknown) {
