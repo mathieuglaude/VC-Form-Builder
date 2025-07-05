@@ -145,36 +145,65 @@ export default function OCAPreviewStep({
     if (!brandingAssets) return null;
 
     return (
-      <div className="border rounded-lg p-6 bg-white shadow-sm">
-        <div 
-          className="h-40 rounded-lg mb-4 flex items-center justify-center"
-          style={{ 
-            backgroundColor: brandingAssets.colors?.primary || '#4F46E5',
-            backgroundImage: brandingAssets.backgroundImage ? `url(${brandingAssets.backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          {brandingAssets.logo ? (
-            <img 
-              src={brandingAssets.logo} 
-              alt="Credential Logo" 
-              className="max-h-20 max-w-40 object-contain"
-            />
-          ) : (
-            <div className="text-white text-lg font-medium">
-              {governanceData.issuerOrganization}
-            </div>
-          )}
-        </div>
-        
-        <div className="space-y-3">
-          <h3 className="text-lg font-semibold">{governanceData.credentialName}</h3>
-          <p className="text-sm text-gray-600">{governanceData.description}</p>
+      <div className="flex flex-col items-center space-y-4">
+        {/* Full Visual Credential Card */}
+        <div className="relative overflow-hidden rounded-lg shadow-lg w-96 h-56 bg-white">
+          {/* Top section with background image or gradient */}
+          <div 
+            className="relative h-2/3"
+            style={{
+              backgroundImage: brandingAssets.backgroundImage ? `url(${brandingAssets.backgroundImage})` : undefined,
+              backgroundColor: brandingAssets.backgroundImage ? 'transparent' : '#f3f4f6',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center'
+            }}
+          >
+            {/* Centered text on background for credentials without background images */}
+            {!brandingAssets.backgroundImage && (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-gray-600 text-lg font-medium text-center px-4">
+                  {governanceData.issuerOrganization}
+                </div>
+              </div>
+            )}
+          </div>
           
-          <div className="flex items-center justify-between text-xs text-gray-500">
+          {/* Bottom section with primary color, logo, and credential info */}
+          <div 
+            className="h-1/3 flex items-center px-4 relative"
+            style={{ backgroundColor: brandingAssets.colors?.primary || '#4F46E5' }}
+          >
+            {/* Logo on the left */}
+            {brandingAssets.logo && (
+              <div className="flex-shrink-0 mr-3">
+                <img 
+                  src={brandingAssets.logo} 
+                  alt="Issuer Logo"
+                  className="w-10 h-10 object-contain bg-white rounded p-1"
+                />
+              </div>
+            )}
+            
+            {/* Text content in white */}
+            <div className="flex-1 min-w-0">
+              <div className="text-white text-sm font-medium truncate">
+                {governanceData.issuerOrganization}
+              </div>
+              <div className="text-white text-xs truncate opacity-90">
+                {governanceData.credentialName}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Credential Details Below Card */}
+        <div className="w-96 space-y-3 text-center">
+          <h3 className="text-lg font-semibold">{governanceData.credentialName}</h3>
+          <p className="text-sm text-gray-600 line-clamp-3">{governanceData.description}</p>
+          
+          <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
             <span>Issued by {governanceData.issuerOrganization}</span>
-            <span>Layout: {brandingAssets.layout}</span>
+            <span>Layout: {brandingAssets.layout || 'banner-bottom'}</span>
           </div>
         </div>
       </div>
