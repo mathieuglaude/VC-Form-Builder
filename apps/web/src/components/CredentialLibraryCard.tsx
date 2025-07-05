@@ -24,7 +24,7 @@ export default function CredentialLibraryCard({ credential }: CredentialLibraryC
       <OCACredentialCard
         branding={ocaBranding}
         credentialTitle={credential.label}
-        issuerName={credential.brandingMetadata.issuerName}
+        issuerName={credential.brandingMetadata?.issuerName || "Unknown Issuer"}
         size="large"
       />
     );
@@ -38,7 +38,7 @@ export default function CredentialLibraryCard({ credential }: CredentialLibraryC
       </div>
       <div 
         className="h-1/3 flex items-center px-4"
-        style={{ backgroundColor: credential.brandingMetadata.colors.primary || '#4F46E5' }}
+        style={{ backgroundColor: credential.brandingMetadata?.colors?.primary || '#4F46E5' }}
       >
         <div className="text-white">
           <div className="font-medium text-sm">{credential.label}</div>
