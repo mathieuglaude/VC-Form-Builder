@@ -47,9 +47,10 @@ export default function MetadataEditStep({
 
   useEffect(() => {
     if (needsParsing && !isLoading && !parsedData && !parseError) {
+      console.log('Auto-triggering parsing for uploaded file');
       handleParseGovernanceDocument();
     }
-  }, [needsParsing, isLoading, parsedData, parseError]);
+  }, [needsParsing]); // Only depend on needsParsing to avoid infinite loops
 
   useEffect(() => {
     if (parsedData) {
@@ -90,7 +91,13 @@ export default function MetadataEditStep({
     setParseError(null);
 
     try {
-      const response = await fetch('/api/governance/parse', {
+      // Create a timeout promise that rejects after 10 seconds
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Parsing timeout - please try again')), 10000)
+      );
+
+      // Create the fetch promise
+      const fetchPromise = fetch('/api/governance/parse', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,12 +105,16 @@ export default function MetadataEditStep({
         body: JSON.stringify({ content: governanceData.content }),
       });
 
+      // Race between the timeout and the fetch
+      const response = await Promise.race([fetchPromise, timeoutPromise]) as Response;
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || `HTTP ${response.status}: Failed to parse governance document`);
       }
 
       const parsed = await response.json();
+      console.log('Parsing completed successfully:', parsed);
       setParsedData(parsed);
     } catch (err) {
       console.error('Failed to parse governance document:', err);
