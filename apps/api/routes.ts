@@ -614,7 +614,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         walletRestricted: ecosystemMetadata.walletRestricted,
         // Governance
         governanceUrl: cryptographicMetadata.governanceFramework,
-        ocaBundleUrl: cryptographicMetadata.ocaBundleUrl,
         // Orbit integration
         orbitSchemaId: orbitIntegration?.orbitSchemaId,
         orbitCredDefId: orbitIntegration?.orbitCredDefId,
@@ -1304,10 +1303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           attributes: schemaData.attributes
         },
         cryptographicMetadata: {
-          credentialDefinitionId: credDefData.credDefId,
+          credDefId: credDefData.credDefId,
           issuerDid: schemaData.issuerDid,
-          governanceFramework: metadata.governanceUrl || null,
-          ocaBundleUrl: metadata.ocaBundleUrls?.[0] || null
+          governanceFramework: metadata.governanceUrl || null
         },
         brandingMetadata: {
           issuerName: metadata.issuerOrganization,
