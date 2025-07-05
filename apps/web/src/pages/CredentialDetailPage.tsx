@@ -414,21 +414,28 @@ export default function CredentialDetailPage() {
                   </div>
                 </div>
 
-                {credential.schemaUrl && (
-                  <div className="pt-2">
-                    <Button asChild variant="outline" size="sm" className="w-full">
-                      <a
-                        href={credential.schemaUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2"
-                      >
-                        Governance Documentation
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Governance Documentation</label>
+                  <div className="mt-1">
+                    {credential.governanceUrl && credential.governanceUrl !== "N/A" ? (
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <a
+                          href={credential.governanceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2"
+                        >
+                          View Documentation
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">
+                        N/A - No governance documentation available
+                      </p>
+                    )}
                   </div>
-                )}
+                </div>
               </CardContent>
             </Card>
           )}

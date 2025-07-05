@@ -834,7 +834,7 @@ export const storage = new DatabaseStorage();
         cryptographicMetadata: {
           issuerDid: "did:indy:candy:L6ASjmDDbDH7yPL1t2yFj9",
           credDefId: "L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card",
-          governanceFramework: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-digital-business-card/1.0/governance.md"
+          governanceFramework: "https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/business/digital-business-card-v1.md"
         },
         brandingMetadata: {
           displayName: "BC Digital Business Card v1",
@@ -889,7 +889,7 @@ export const storage = new DatabaseStorage();
         cryptographicMetadata: {
           issuerDid: "did:indy:candy:RGjWbW1eycP7FrMf4QJvX8",
           credDefId: "RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person",
-          governanceFramework: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-person-credential/1.0/governance.md"
+          governanceFramework: "https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/person/person-cred-doc.md"
         },
         brandingMetadata: {
           displayName: "BC Person Credential",
@@ -994,7 +994,8 @@ export const storage = new DatabaseStorage();
         },
         cryptographicMetadata: {
           issuerDid: "did:demo:unverified",
-          credDefId: "demo:unverified:person:cred-def:1.0"
+          credDefId: "demo:unverified:person:cred-def:1.0",
+          governanceFramework: "N/A"
         },
         brandingMetadata: {
           displayName: "Unverified Person",
