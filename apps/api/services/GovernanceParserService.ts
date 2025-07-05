@@ -1,4 +1,5 @@
 import ky from 'ky';
+import OpenAI from 'openai';
 
 export interface ParsedMetadata {
   credentialName: string;
@@ -47,6 +48,120 @@ export interface CredentialDefinitionData {
 export class GovernanceParserService {
   private static readonly CANDY_TEST_API = 'https://candyscan.idlab.org/api/tx/CANDY_TEST';
   private static readonly CANDY_PROD_API = 'https://candyscan.idlab.org/api/tx/CANDY_PROD';
+  private openai: OpenAI;
+
+  constructor() {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY environment variable is required for AI-powered governance parsing');
+    }
+    this.openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+
+  /**
+   * Use AI to extract structured metadata from governance documents
+   * This replaces the regex-based parsing with intelligent extraction
+   */
+  private async extractMetadataWithAI(markdown: string): Promise<ParsedMetadata> {
+    try {
+      console.log('[GovernanceParser] Using AI-powered extraction...');
+      
+      const systemPrompt = `You are an expert at parsing governance documents for verifiable credentials. Analyze the provided markdown document and extract structured metadata. Focus on accuracy and pay attention to context.
+
+Instructions:
+- Extract the credential name exactly as it appears in tables or headings (e.g., "Lawyer Credential", "BC Digital Business Card v1")
+- Identify the issuing organization (e.g., "Law Society of British Columbia (LSBC)", "Government of British Columbia")
+- Find the issuer website URL if available
+- Extract a meaningful description from the credential overview or summary sections
+- Look specifically in section 5.3 "Schema Implementation" for schema references
+- Look specifically in section 5.4 "Credential Implementation" for credential definition references
+- Extract CANdy scan URLs for schemas and credential definitions
+- Find any OCA bundle GitHub URLs
+- Determine if schema/credential references are from TEST or PROD environments
+
+Schema URLs typically look like: https://candyscan.idlab.org/tx/CANDY_TEST/domain/123 or CANDY_PROD
+Credential Definition IDs are AnonCreds format like: did:example:123:3:CL:456:default
+OCA Bundle URLs are GitHub links to OCABundles directories.`;
+
+      const userPrompt = `Parse this governance document and extract metadata:
+
+${markdown}
+
+Return structured JSON with the following format:
+{
+  "credentialName": "exact credential name from document",
+  "issuerOrganization": "full issuer organization name",
+  "issuerWebsite": "issuer website URL or empty string",
+  "description": "meaningful description (max 500 chars)",
+  "schemas": [
+    {
+      "id": "schema identifier from CANdy or other format",
+      "name": "human-readable schema name",
+      "url": "CANdy scan URL if available",
+      "environment": "test or prod"
+    }
+  ],
+  "credentialDefinitions": [
+    {
+      "id": "credential definition ID",
+      "name": "human-readable credential definition name", 
+      "schemaId": "related schema ID",
+      "environment": "test or prod"
+    }
+  ],
+  "ocaBundleUrls": ["GitHub OCA bundle URLs"]
+}`;
+
+      const response = await this.openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1, // Low temperature for consistent, accurate extraction
+      });
+
+      const extractedData = JSON.parse(response.choices[0].message.content || '{}');
+      
+      console.log('[GovernanceParser] AI extraction completed:', {
+        credentialName: extractedData.credentialName,
+        issuerOrganization: extractedData.issuerOrganization,
+        schemasFound: extractedData.schemas?.length || 0,
+        credDefsFound: extractedData.credentialDefinitions?.length || 0
+      });
+
+      // Transform AI response to match our interface
+      const metadata: ParsedMetadata = {
+        credentialName: extractedData.credentialName || 'Unknown Credential',
+        issuerOrganization: extractedData.issuerOrganization || '',
+        issuerWebsite: extractedData.issuerWebsite || '',
+        description: extractedData.description || 'No description available',
+        schemas: (extractedData.schemas || []).map((schema: any) => ({
+          id: schema.id || '',
+          name: schema.name || 'Unknown Schema',
+          url: schema.url || '',
+          environment: schema.environment === 'prod' ? 'prod' : 'test'
+        })),
+        credentialDefinitions: (extractedData.credentialDefinitions || []).map((credDef: any) => ({
+          id: credDef.id || '',
+          name: credDef.name || 'Unknown Credential Definition',
+          schemaId: credDef.schemaId || '',
+          environment: credDef.environment === 'prod' ? 'prod' : 'test'
+        })),
+        ocaBundleUrls: extractedData.ocaBundleUrls || []
+      };
+
+      return metadata;
+    } catch (error) {
+      console.error('[GovernanceParser] AI extraction failed:', error);
+      
+      // Fallback to regex-based parsing if AI fails
+      console.log('[GovernanceParser] Falling back to regex-based parsing...');
+      return this.extractMetadataFromMarkdown(markdown);
+    }
+  }
   
   async parseGovernanceDocument(url: string): Promise<ParsedMetadata> {
     try {
@@ -58,8 +173,8 @@ export class GovernanceParserService {
       
       console.log(`[GovernanceParser] Document fetched, length: ${markdown.length} chars`);
       
-      // Parse the markdown content
-      const metadata = this.extractMetadataFromMarkdown(markdown);
+      // Parse the markdown content using AI
+      const metadata = await this.extractMetadataWithAI(markdown);
       
       console.log(`[GovernanceParser] Extracted metadata:`, {
         credentialName: metadata.credentialName,
