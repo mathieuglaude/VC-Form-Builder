@@ -44,13 +44,6 @@ export interface ParsedGovernanceData {
   governanceUrl?: string;
 }
 
-export interface FileUploadData {
-  content: string;
-  fileName: string;
-}
-
-export type GovernanceStepData = ParsedGovernanceData | FileUploadData;
-
 export interface SchemaData {
   schemaId: string;
   name: string;
@@ -95,7 +88,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
   const [isLoading, setIsLoading] = useState(false);
   
   // Wizard state
-  const [governanceData, setGovernanceData] = useState<GovernanceStepData | null>(null);
+  const [governanceData, setGovernanceData] = useState<ParsedGovernanceData | null>(null);
   const [editedMetadata, setEditedMetadata] = useState<Partial<ParsedGovernanceData> | null>(null);
   const [selectedSchema, setSelectedSchema] = useState<SchemaData | null>(null);
   const [selectedCredDef, setSelectedCredDef] = useState<CredDefData | null>(null);

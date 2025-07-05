@@ -134,8 +134,6 @@ Return structured JSON with the following format:
         ],
         response_format: { type: "json_object" },
         temperature: 0.1, // Low temperature for consistent, accurate extraction
-        max_tokens: 1500, // Limit response length for faster parsing
-        timeout: 8000, // 8 second timeout
       });
 
       const extractedData = JSON.parse(response.choices[0].message.content || '{}');

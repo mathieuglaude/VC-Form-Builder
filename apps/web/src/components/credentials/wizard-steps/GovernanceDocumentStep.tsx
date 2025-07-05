@@ -3,11 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { AlertCircle, CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { GovernanceStepData, ParsedGovernanceData } from '../GovernanceImportWizard';
+import { ParsedGovernanceData } from '../GovernanceImportWizard';
 
 interface GovernanceDocumentStepProps {
-  data: GovernanceStepData | null;
-  onComplete: (data: GovernanceStepData) => void;
+  data: ParsedGovernanceData | null;
+  onComplete: (data: ParsedGovernanceData) => void;
   onNext: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -73,13 +73,26 @@ export default function GovernanceDocumentStep({
         throw new Error('File appears to be empty');
       }
 
-      // Pass the content to the parent and advance to next step immediately
-      // The actual parsing will happen in Step 2 for better UX
-      onComplete({ content, fileName: file.name });
-      onNext();
+      const response = await fetch('/api/governance/parse', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to parse governance document`);
+      }
+
+      const governanceData = await response.json();
+      setParsedData(governanceData);
+      onComplete(governanceData);
     } catch (err) {
-      console.error('Failed to read file:', err);
-      setError(err instanceof Error ? err.message : 'Failed to read the file');
+      console.error('Failed to parse governance document:', err);
+      setError(err instanceof Error ? err.message : 'Failed to parse governance document');
+    } finally {
       setIsLoading(false);
     }
   };
