@@ -18,14 +18,20 @@ export interface ImportCredentialData {
   label: string;
   version: string;
   issuerName: string;
+  issuerWebsite?: string;
+  description?: string;
   issuerDid: string;
   ledgerNetwork: string;
   schemaId: string;
   credDefId: string;
   attributes: string;
-  bundleUrl?: string;
+  ocaBundleUrl?: string;
   governanceUrl?: string;
   primaryColor: string;
+  ecosystem: string;
+  interopProfile: string;
+  compatibleWallets: string[];
+  walletRestricted: boolean;
 }
 
 const LEDGER_NETWORKS = [
@@ -45,14 +51,20 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
     label: '',
     version: '1.0',
     issuerName: '',
+    issuerWebsite: '',
+    description: '',
     issuerDid: '',
     ledgerNetwork: 'BCOVRIN_TEST',
     schemaId: '',
     credDefId: '',
     attributes: '',
-    bundleUrl: '',
+    ocaBundleUrl: '',
     governanceUrl: '',
     primaryColor: '#4F46E5',
+    ecosystem: 'Custom Ecosystem',
+    interopProfile: 'AIP 2.0',
+    compatibleWallets: [],
+    walletRestricted: false,
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ImportCredentialData, string>>>({});
@@ -103,7 +115,7 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
   const importMutation = useMutation({
     mutationFn: async (data: ImportCredentialData) => {
       // Validate bundle URL if provided
-      if (data.bundleUrl && !(await validateBundleUrl(data.bundleUrl))) {
+      if (data.ocaBundleUrl && !(await validateBundleUrl(data.ocaBundleUrl))) {
         throw new Error('Invalid bundle URL');
       }
 
@@ -115,6 +127,13 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
         body: JSON.stringify({
           ...data,
           attributes: data.attributes.split(',').map(attr => attr.trim()).filter(Boolean),
+          // Ensure all new fields are included
+          ecosystem: data.ecosystem || '',
+          interopProfile: data.interopProfile || '',
+          compatibleWallets: data.compatibleWallets || [],
+          walletRestricted: data.walletRestricted || false,
+          issuerWebsite: data.issuerWebsite || '',
+          description: data.description || '',
         }),
       });
 
@@ -149,14 +168,20 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
       label: '',
       version: '1.0',
       issuerName: '',
+      issuerWebsite: '',
+      description: '',
       issuerDid: '',
       ledgerNetwork: 'BCOVRIN_TEST',
       schemaId: '',
       credDefId: '',
       attributes: '',
-      bundleUrl: '',
+      ocaBundleUrl: '',
       governanceUrl: '',
       primaryColor: '#4F46E5',
+      ecosystem: 'Custom Ecosystem',
+      interopProfile: 'AIP 2.0',
+      compatibleWallets: [],
+      walletRestricted: false,
     });
     setErrors({});
     setBundleUrlError('');
@@ -167,8 +192,15 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
     importMutation.mutate(formData);
   };
 
-  const handleChange = (field: keyof ImportCredentialData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof ImportCredentialData, value: string | boolean | string[]) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      [field]: field === 'walletRestricted' ? 
+        (value === 'true' || value === true) : 
+        field === 'compatibleWallets' ? 
+          (typeof value === 'string' ? value.split(',').map(w => w.trim()).filter(w => w.length > 0) : value) :
+          value 
+    }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -224,6 +256,27 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
                 placeholder="e.g. Province of British Columbia"
               />
               {errors.issuerName && <p className="text-sm text-red-600 mt-1">{errors.issuerName}</p>}
+            </div>
+
+            <div>
+              <Label htmlFor="issuerWebsite">Issuer Website</Label>
+              <Input
+                id="issuerWebsite"
+                value={formData.issuerWebsite}
+                onChange={(e) => handleChange('issuerWebsite', e.target.value)}
+                placeholder="e.g. https://www.gov.bc.ca"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="description">Credential Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => handleChange('description', e.target.value)}
+                placeholder="Brief description of what this credential represents"
+                rows={2}
+              />
             </div>
 
             <div>
@@ -299,16 +352,72 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
             </div>
           </div>
 
-          {/* Optional Extras */}
+          {/* Ecosystem & Interoperability */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium border-b pb-2">Optional Extras</h3>
+            <h3 className="text-lg font-medium border-b pb-2">Ecosystem & Interoperability</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="ecosystem">Ecosystem</Label>
+                <Input
+                  id="ecosystem"
+                  value={formData.ecosystem}
+                  onChange={(e) => handleChange('ecosystem', e.target.value)}
+                  placeholder="e.g. BC Ecosystem"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="interopProfile">Interoperability Profile</Label>
+                <Select value={formData.interopProfile} onValueChange={(value) => handleChange('interopProfile', value)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="AIP 1.0">AIP 1.0</SelectItem>
+                    <SelectItem value="AIP 2.0">AIP 2.0</SelectItem>
+                    <SelectItem value="W3C VC">W3C VC</SelectItem>
+                    <SelectItem value="DIDComm v2">DIDComm v2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="walletRestricted"
+                checked={formData.walletRestricted}
+                onChange={(e) => handleChange('walletRestricted', e.target.checked)}
+                className="rounded"
+              />
+              <Label htmlFor="walletRestricted">Restrict to specific wallets only</Label>
+            </div>
+
+            {formData.walletRestricted && (
+              <div>
+                <Label htmlFor="compatibleWallets">Compatible Wallets</Label>
+                <Input
+                  id="compatibleWallets"
+                  value={formData.compatibleWallets.join(', ')}
+                  onChange={(e) => handleChange('compatibleWallets', e.target.value)}
+                  placeholder="BC Wallet, Orbit Edge Wallet"
+                />
+                <p className="text-sm text-gray-500 mt-1">Comma-separated list of supported wallets</p>
+              </div>
+            )}
+          </div>
+
+          {/* Documentation & Assets */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium border-b pb-2">Documentation & Assets</h3>
             
             <div>
-              <Label htmlFor="bundleUrl">OCA Bundle URL</Label>
+              <Label htmlFor="ocaBundleUrl">OCA Bundle URL</Label>
               <Input
-                id="bundleUrl"
-                value={formData.bundleUrl}
-                onChange={(e) => handleChange('bundleUrl', e.target.value)}
+                id="ocaBundleUrl"
+                value={formData.ocaBundleUrl}
+                onChange={(e) => handleChange('ocaBundleUrl', e.target.value)}
                 placeholder="https://github.com/org/repo/tree/main/overlays or direct bundle.json URL"
               />
               {bundleUrlError && <p className="text-sm text-red-600 mt-1">{bundleUrlError}</p>}
