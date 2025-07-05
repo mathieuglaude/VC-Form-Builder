@@ -1225,10 +1225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[OCA-DOWNLOAD] Processing ${ocaBundleUrls.length} OCA bundle URLs:`, ocaBundleUrls);
       
-      // Use GitHubOCAService to fetch authentic branding assets
-      const { githubOCAService } = await import('./services/GitHubOCAService');
+      // Use UnifiedOCAProcessor directly to fetch authentic branding assets
+      const { UnifiedOCAProcessor } = await import('../../packages/shared/src/oca/UnifiedOCAProcessor');
       
-      const brandingAssets = await githubOCAService.fetchMultipleBundles(ocaBundleUrls);
+      const brandingAssets = await UnifiedOCAProcessor.fetchMultipleBundles(ocaBundleUrls);
       
       console.log(`[OCA-DOWNLOAD] Successfully processed OCA bundles:`, brandingAssets);
       
