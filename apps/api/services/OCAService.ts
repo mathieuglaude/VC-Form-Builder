@@ -85,14 +85,32 @@ export class OCAService {
         .where(eq(credentialTemplates.id, credentialId));
 
       if (!credential || !credential.brandingMetadata) {
+        console.log(`No OCA bundle URL found for credential ${credential?.label || 'unknown'}`);
         return null;
       }
 
       const branding = credential.brandingMetadata as any;
+      console.log(`Branding data for credential ${credentialId}:`, JSON.stringify(branding, null, 2));
       
-      // Check if we have processed OCA branding
+      // Check if we have processed OCA branding (legacy format)
       if (branding.processedAt && branding.type === 'aries/overlays/branding/1.0') {
         return branding as ProcessedOCABranding;
+      }
+
+      // Handle imported credential branding format from wizard
+      if (branding.colors || branding.logo || branding.backgroundImage || branding.primaryColor) {
+        const processedBranding: ProcessedOCABranding = {
+          primary_background_color: branding.colors?.primary || branding.primaryColor || '#4F46E5',
+          secondary_background_color: branding.colors?.secondary || branding.secondaryColor || '#6B7280',
+          logo: branding.logo?.url || branding.logo || null,
+          background_image: branding.backgroundImage?.url || branding.backgroundImage || null,
+          processedAt: new Date(),
+          repositoryId: 'imported',
+          bundlePath: 'imported-credential'
+        };
+        
+        console.log(`Generated processed branding for credential ${credentialId}:`, JSON.stringify(processedBranding, null, 2));
+        return processedBranding;
       }
 
       return null;
