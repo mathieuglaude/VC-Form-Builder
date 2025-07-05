@@ -665,15 +665,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.delete('/cred-lib/:id', async (req, res) => {
     try {
       const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ error: 'Invalid credential template ID' });
+      }
+      
+      // Check if credential exists and get its details
+      const template = await storage.getCredentialTemplate(id);
+      if (!template) {
+        return res.status(404).json({ error: 'Credential template not found' });
+      }
+      
+      // Prevent deletion of predefined BC Government credentials
+      if (template.isPredefined) {
+        return res.status(403).json({ 
+          error: 'Cannot delete predefined credentials',
+          message: 'BC Government credentials cannot be deleted as they are required for the system.'
+        });
+      }
+      
+      console.log(`[CREDENTIAL-DELETE] Deleting credential template: ${template.label} (ID: ${id})`);
+      
       const deleted = await storage.deleteCredentialTemplate(id);
       
       if (!deleted) {
-        return res.status(404).json({ error: 'Template not found' });
+        return res.status(500).json({ error: 'Failed to delete credential template' });
       }
       
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to delete template' });
+      console.log(`[CREDENTIAL-DELETE] Successfully deleted credential template: ${template.label}`);
+      res.json({ 
+        success: true, 
+        message: `Credential "${template.label}" has been permanently deleted.`
+      });
+    } catch (error: unknown) {
+      console.error('[CREDENTIAL-DELETE] Error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ 
+        error: 'Failed to delete credential template', 
+        details: errorMessage 
+      });
     }
   });
 

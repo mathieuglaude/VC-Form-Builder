@@ -1,20 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { useParams, Link } from "wouter";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useParams, Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
+import { ArrowLeft, ExternalLink, Copy, Check, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useOCABranding } from "@/hooks/useOCABranding";
 import { OCACredentialCard } from "@/components/oca/OCACredentialCard";
+import { DeleteCredentialDialog } from "@/components/credentials/DeleteCredentialDialog";
 import type { CredentialTemplate } from "@shared/schema";
 
 export default function CredentialDetailPage() {
   const { id } = useParams();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const credentialId = parseInt(id || '0');
 
   const { data: credential, isLoading, error } = useQuery({
@@ -28,6 +32,38 @@ export default function CredentialDetailPage() {
 
   // Fetch OCA branding for the credential
   const { data: ocaBranding, isLoading: isLoadingOCA } = useOCABranding(credentialId);
+
+  // Delete credential mutation
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/cred-lib/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || error.error || 'Failed to delete credential');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate and refetch credential library queries
+      queryClient.invalidateQueries({ queryKey: ['/api/cred-lib'] });
+      // Show success message
+      toast({
+        title: "Credential deleted",
+        description: data.message || "The credential has been permanently deleted.",
+      });
+      // Redirect back to credential library
+      setLocation('/credentials');
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete credential",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
 
   const copyToClipboard = async (text: string, fieldName: string) => {
     try {
@@ -352,7 +388,26 @@ export default function CredentialDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-
+          {/* Actions */}
+          {!credential.isPredefined && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setIsDeleteDialogOpen(true)}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Credential
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Metadata */}
           <Card>
@@ -496,6 +551,18 @@ export default function CredentialDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteCredentialDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => setIsDeleteDialogOpen(false)}
+        onConfirm={() => {
+          deleteMutation.mutate();
+          setIsDeleteDialogOpen(false);
+        }}
+        credentialName={credential?.label || 'this credential'}
+        isDeleting={deleteMutation.isPending}
+      />
     </div>
   );
 }
