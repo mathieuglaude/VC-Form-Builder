@@ -237,6 +237,10 @@ export default function CredentialsPage() {
           setShowImportModal(false);
           refetch(); // Refresh the credential list after import
         }}
+        onComplete={() => {
+          setShowImportModal(false);
+          refetch(); // Refresh the credential list after successful import
+        }}
       />
     </div>
   );

@@ -3,7 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Edit3, Save } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Edit3, Save, Lock } from 'lucide-react';
 import { ParsedGovernanceData } from '../GovernanceImportWizard';
 
 interface MetadataEditStepProps {
@@ -149,19 +150,19 @@ export default function MetadataEditStep({
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Edit3 className="w-5 h-5" />
-            Step 2: Edit Metadata
+    <div className="space-y-8">
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <Edit3 className="w-5 h-5 text-blue-600" />
+            Edit Credential Metadata
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-base leading-relaxed">
             Review and edit the extracted metadata. Click the pencil icon next to any field to make changes.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <CardContent className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <EditableField
               label="Credential Name"
               field="credentialName"
@@ -175,13 +176,13 @@ export default function MetadataEditStep({
               placeholder="Enter issuer organization name"
             />
             <EditableField
-              label="Issuer Website (Optional)"
+              label="Issuer Website"
               field="issuerWebsite"
               value={editableMetadata.issuerWebsite || ''}
               placeholder="https://example.org"
             />
             <EditableField
-              label="Governance URL (Optional)"
+              label="Governance URL"
               field="governanceUrl"
               value={editableMetadata.governanceUrl || ''}
               placeholder="https://github.com/..."
@@ -196,45 +197,64 @@ export default function MetadataEditStep({
             multiline
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-sm text-gray-700 mb-2">Schemas (Read-only)</h4>
-              <div className="space-y-2">
-                {editableMetadata.schemas?.map((schema, index) => (
-                  <div key={index} className="text-xs bg-gray-100 rounded p-2">
-                    <div className="font-mono">{schema.id}</div>
-                    <div className="text-gray-600">{schema.name} ({schema.environment})</div>
-                  </div>
-                ))}
+          <Separator className="my-8" />
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-gray-500" />
+              <h4 className="font-semibold text-base text-gray-900">Technical References</h4>
+              <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">Read-only</span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h5 className="font-semibold text-sm text-gray-900">
+                  Schemas ({editableMetadata.schemas?.length || 0})
+                </h5>
+                <div className="space-y-2 max-h-40 overflow-y-auto p-1">
+                  {editableMetadata.schemas?.map((schema, index) => (
+                    <div key={index} className="p-3 bg-blue-50 border border-blue-100 rounded-md">
+                      <div className="font-mono text-xs text-blue-800 break-all mb-1">{schema.id}</div>
+                      <div className="text-sm text-blue-700">{schema.name}</div>
+                      <div className="text-xs text-blue-600 mt-1">Environment: {schema.environment}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="space-y-3">
+                <h5 className="font-semibold text-sm text-gray-900">
+                  Credential Definitions ({editableMetadata.credentialDefinitions?.length || 0})
+                </h5>
+                <div className="space-y-2 max-h-40 overflow-y-auto p-1">
+                  {editableMetadata.credentialDefinitions?.map((credDef, index) => (
+                    <div key={index} className="p-3 bg-green-50 border border-green-100 rounded-md">
+                      <div className="font-mono text-xs text-green-800 break-all mb-1">{credDef.id}</div>
+                      <div className="text-sm text-green-700">{credDef.name}</div>
+                      <div className="text-xs text-green-600 mt-1">Environment: {credDef.environment}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-            <div>
-              <h4 className="font-medium text-sm text-gray-700 mb-2">Credential Definitions (Read-only)</h4>
-              <div className="space-y-2">
-                {editableMetadata.credentialDefinitions?.map((credDef, index) => (
-                  <div key={index} className="text-xs bg-gray-100 rounded p-2">
-                    <div className="font-mono">{credDef.id}</div>
-                    <div className="text-gray-600">{credDef.name} ({credDef.environment})</div>
-                  </div>
-                ))}
+
+            {editableMetadata.ocaBundleUrls && editableMetadata.ocaBundleUrls.length > 0 && (
+              <div className="space-y-3">
+                <h5 className="font-semibold text-sm text-gray-900">
+                  OCA Bundle URLs ({editableMetadata.ocaBundleUrls.length})
+                </h5>
+                <div className="space-y-2 max-h-32 overflow-y-auto p-1">
+                  {editableMetadata.ocaBundleUrls.map((bundleUrl, index) => (
+                    <div key={index} className="p-3 bg-purple-50 border border-purple-100 rounded-md">
+                      <div className="font-mono text-xs text-purple-800 break-all">{bundleUrl}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
-          {editableMetadata.ocaBundleUrls && editableMetadata.ocaBundleUrls.length > 0 && (
-            <div>
-              <h4 className="font-medium text-sm text-gray-700 mb-2">OCA Bundle URLs (Read-only)</h4>
-              <div className="space-y-2">
-                {editableMetadata.ocaBundleUrls.map((bundleUrl, index) => (
-                  <div key={index} className="text-xs bg-gray-100 rounded p-2 font-mono">
-                    {bundleUrl}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="pt-4 border-t">
+          <div className="pt-6 border-t">
             <Button
               onClick={handleValidateAndContinue}
               disabled={
@@ -243,7 +263,7 @@ export default function MetadataEditStep({
                 !editableMetadata.description ||
                 isLoading
               }
-              className="w-full"
+              className="w-full py-6 text-base"
             >
               {isLoading ? 'Validating...' : 'Continue to Schema Selection'}
             </Button>
