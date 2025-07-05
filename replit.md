@@ -461,6 +461,16 @@ Changelog:
   - Modern OCA system now uses simplified, working implementation with authentic BC Government data integration
   - Cleaned up comprehensive test suite by removing references to deprecated OCA functions
   - Application successfully boots with proper environment configuration and Orbit API integration
+- July 5, 2025. Implementing governance-document-driven credential import system
+  - Designing 6-step wizard to replace manual credential creation with governance document parsing
+  - Step 1: Governance document URL input and parsing
+  - Step 2: Editable metadata confirmation with pencil icons for field editing
+  - Step 3: Schema selection from blockchain (CANdy Test/Prod) with read-only attribute display
+  - Step 4: Credential definition selection and validation against selected schema
+  - Step 5: OCA asset preview with StandardOCACard visual confirmation
+  - Step 6: Ecosystem tagging and final import to credential library
+  - System uses governance documents (BC Government, City of Vancouver) as single source of truth
+  - Maintains existing credentials while adding new governance-based import workflow
 ```
 
 ## User Preferences

@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { ExternalLink, Filter, X, ChevronRight, Plus } from "lucide-react";
 import type { CredentialTemplate } from "@shared/schema";
 import CredentialLibraryCard from "@/components/CredentialLibraryCard";
-import ImportCredentialModal from "@/components/admin/ImportCredentialModal";
+import GovernanceImportWizard from "@/components/credentials/GovernanceImportWizard";
 
 export default function CredentialsPage() {
   const [showFilters, setShowFilters] = useState(false);
@@ -230,8 +230,8 @@ export default function CredentialsPage() {
         )}
       </div>
 
-      {/* Import Credential Modal */}
-      <ImportCredentialModal 
+      {/* Governance Import Wizard Modal */}
+      <GovernanceImportWizard 
         isOpen={showImportModal}
         onClose={() => {
           setShowImportModal(false);

@@ -1051,6 +1051,218 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.post('/credentials/import/test', testImportCredential);
   router.get('/credentials/orbit-mapping/:credentialType', getOrbitMapping);
 
+  // Governance-document-driven credential import routes
+  router.post('/governance/parse', async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: 'Governance document URL is required' });
+      }
+      
+      const { governanceParserService } = await import('./services/GovernanceParserService');
+      const parsedMetadata = await governanceParserService.parseGovernanceDocument(url);
+      
+      res.json(parsedMetadata);
+    } catch (error: unknown) {
+      console.error('Governance parsing error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to parse governance document', details: errorMessage });
+    }
+  });
+
+  router.put('/governance/metadata', async (req, res) => {
+    try {
+      const metadata = req.body;
+      
+      // Validate the metadata structure
+      const requiredFields = ['credentialName', 'issuerOrganization', 'description'];
+      for (const field of requiredFields) {
+        if (!metadata[field]) {
+          return res.status(400).json({ error: `Missing required field: ${field}` });
+        }
+      }
+      
+      // Simply return the validated metadata (frontend manages state)
+      res.json(metadata);
+    } catch (error: unknown) {
+      console.error('Metadata validation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(400).json({ error: 'Invalid metadata', details: errorMessage });
+    }
+  });
+
+  router.get('/schema/options/:governanceData', async (req, res) => {
+    try {
+      // Parse governance data from URL parameter
+      const governanceData = JSON.parse(decodeURIComponent(req.params.governanceData));
+      
+      if (!governanceData.schemas || !Array.isArray(governanceData.schemas)) {
+        return res.status(400).json({ error: 'No schemas found in governance data' });
+      }
+      
+      res.json({ schemas: governanceData.schemas });
+    } catch (error: unknown) {
+      console.error('Schema options error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to get schema options', details: errorMessage });
+    }
+  });
+
+  router.get('/schema/candy/:schemaId', async (req, res) => {
+    try {
+      const { schemaId } = req.params;
+      
+      if (!schemaId) {
+        return res.status(400).json({ error: 'Schema ID is required' });
+      }
+      
+      const { governanceParserService } = await import('./services/GovernanceParserService');
+      const schemaData = await governanceParserService.fetchCANdySchemaData(schemaId);
+      
+      res.json(schemaData);
+    } catch (error: unknown) {
+      console.error('CANdy schema fetch error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to fetch schema data', details: errorMessage });
+    }
+  });
+
+  router.get('/creddef/options/:schemaId', async (req, res) => {
+    try {
+      const { schemaId } = req.params;
+      
+      if (!schemaId) {
+        return res.status(400).json({ error: 'Schema ID is required' });
+      }
+      
+      // For now, return mock credential definition options
+      // In a real implementation, this would query the blockchain for available cred defs
+      const mockCredDefs = [
+        {
+          id: `${schemaId}:cred-def:1`,
+          name: 'Production Credential Definition',
+          environment: schemaId.includes('TEST') ? 'test' : 'prod'
+        }
+      ];
+      
+      res.json({ credentialDefinitions: mockCredDefs });
+    } catch (error: unknown) {
+      console.error('Credential definition options error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to get credential definition options', details: errorMessage });
+    }
+  });
+
+  router.post('/creddef/validate', async (req, res) => {
+    try {
+      const { credDefId, schemaId } = req.body;
+      
+      if (!credDefId || !schemaId) {
+        return res.status(400).json({ error: 'Credential definition ID and schema ID are required' });
+      }
+      
+      const { governanceParserService } = await import('./services/GovernanceParserService');
+      const validationResult = await governanceParserService.validateCredentialDefinition(credDefId, schemaId);
+      
+      res.json(validationResult);
+    } catch (error: unknown) {
+      console.error('Credential definition validation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to validate credential definition', details: errorMessage });
+    }
+  });
+
+  router.post('/oca/download-assets', async (req, res) => {
+    try {
+      const { ocaBundleUrls } = req.body;
+      
+      if (!ocaBundleUrls || !Array.isArray(ocaBundleUrls)) {
+        return res.status(400).json({ error: 'OCA bundle URLs array is required' });
+      }
+      
+      // Mock OCA asset download for now
+      // In a real implementation, this would download and process OCA bundles
+      const mockBrandingAssets = {
+        logo: 'https://example.com/logo.png',
+        backgroundImage: 'https://example.com/background.png',
+        colors: {
+          primary: '#4F46E5',
+          secondary: '#6B7280'
+        },
+        layout: 'banner-bottom'
+      };
+      
+      res.json(mockBrandingAssets);
+    } catch (error: unknown) {
+      console.error('OCA asset download error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to download OCA assets', details: errorMessage });
+    }
+  });
+
+  router.post('/credentials/import', async (req, res) => {
+    try {
+      const {
+        metadata,
+        schemaData,
+        credDefData,
+        brandingAssets,
+        ecosystemTag
+      } = req.body;
+      
+      // Validate required data
+      if (!metadata || !schemaData || !credDefData || !ecosystemTag) {
+        return res.status(400).json({ error: 'Missing required import data' });
+      }
+      
+      // Create the credential template using the existing schema
+      const templateData = {
+        label: metadata.credentialName,
+        version: schemaData.version,
+        schemaMetadata: {
+          schemaId: schemaData.schemaId,
+          name: schemaData.name,
+          version: schemaData.version,
+          attributes: schemaData.attributes
+        },
+        cryptographicMetadata: {
+          credentialDefinitionId: credDefData.credDefId,
+          issuerDid: schemaData.issuerDid,
+          governanceFramework: metadata.governanceUrl || null,
+          ocaBundleUrl: metadata.ocaBundleUrls?.[0] || null
+        },
+        brandingMetadata: {
+          issuerName: metadata.issuerOrganization,
+          issuerWebsite: metadata.issuerWebsite || null,
+          description: metadata.description,
+          logo: brandingAssets?.logo ? { url: brandingAssets.logo } : null,
+          backgroundImage: brandingAssets?.backgroundImage ? { url: brandingAssets.backgroundImage } : null,
+          colors: brandingAssets?.colors || { primary: '#4F46E5' },
+          layout: brandingAssets?.layout || 'default'
+        },
+        ecosystemMetadata: {
+          ecosystem: ecosystemTag,
+          interopProfile: 'AIP 2.0'
+        },
+        orbitIntegration: {
+          orbitSchemaId: null,
+          orbitCredDefId: null
+        },
+        isPredefined: false,
+        visible: true
+      };
+      
+      const template = await storage.createCredentialTemplate(templateData);
+      
+      res.status(201).json(template);
+    } catch (error: unknown) {
+      console.error('Credential import error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      res.status(500).json({ error: 'Failed to import credential', details: errorMessage });
+    }
+  });
+
   // Mount all API routes under /api prefix
   app.use('/api', router);
   
