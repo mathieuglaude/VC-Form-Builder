@@ -205,31 +205,11 @@ export default function OCADemo() {
               ) : branding ? (
                 <div className="space-y-6">
                   <div>
-                    <div className="text-sm font-medium mb-2">Banner Bottom</div>
+                    <div className="text-sm font-medium mb-2">Standard OCA Credential Card</div>
                     <OCACredentialCard 
                       branding={branding}
-                      credentialData={sampleCredentialData}
-                      variant="banner-bottom"
-                      size="small"
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm font-medium mb-2">Banner Top</div>
-                    <OCACredentialCard 
-                      branding={branding}
-                      credentialData={sampleCredentialData}
-                      variant="banner-top"
-                      size="small"
-                    />
-                  </div>
-                  
-                  <div>
-                    <div className="text-sm font-medium mb-2">Minimal</div>
-                    <OCACredentialCard 
-                      branding={branding}
-                      credentialData={sampleCredentialData}
-                      variant="minimal"
+                      credentialTitle="Lawyer Credential"
+                      issuerName="Law Society of BC"
                       size="small"
                     />
                   </div>
@@ -256,8 +236,8 @@ export default function OCADemo() {
               <div className="flex justify-center">
                 <OCACredentialCard 
                   branding={branding}
-                  credentialData={sampleCredentialData}
-                  variant="banner-bottom"
+                  credentialTitle="Lawyer Credential"
+                  issuerName="Law Society of BC"
                   size="large"
                 />
               </div>

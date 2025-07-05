@@ -2,8 +2,8 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 /**
- * OCA-compliant credential card renderer
- * Follows BC Government OCA for Aries standards
+ * Standardized OCA credential card renderer
+ * Single consistent layout for all credential types
  */
 
 export interface OCABranding {
@@ -42,15 +42,17 @@ export interface OCABranding {
 export interface OCACredentialCardProps {
   branding?: OCABranding;
   credentialData?: Record<string, any>;
-  variant?: 'banner-bottom' | 'banner-top' | 'full-background' | 'minimal';
+  credentialTitle?: string;
+  issuerName?: string;
   size?: 'small' | 'medium' | 'large';
   className?: string;
 }
 
 export function OCACredentialCard({ 
   branding, 
-  credentialData = {}, 
-  variant = 'banner-bottom',
+  credentialData = {},
+  credentialTitle,
+  issuerName,
   size = 'medium',
   className 
 }: OCACredentialCardProps) {
@@ -68,195 +70,77 @@ export function OCACredentialCard({
 
   const cardDimensions = {
     small: 'w-72 h-44',
-    medium: 'w-80 h-48',
+    medium: 'w-80 h-48', 
     large: 'w-96 h-56'
   };
 
+  // Extract OCA data
   const primaryColor = branding.primary_background_color || '#4F46E5';
-  const secondaryColor = branding.secondary_background_color || '#6B7280';
   const logoUrl = branding.logo;
   const backgroundImage = branding.background_image;
+  
+  // Use provided props or extract from branding metadata
+  const displayIssuerName = issuerName || branding.metadata?.issuer || 'Digital Issuer';
+  const displayCredentialTitle = credentialTitle || branding.metadata?.name || 'Credential';
 
-  // Extract credential data based on OCA attributes
-  const primaryText = branding.primary_attribute ? 
-    credentialData[branding.primary_attribute] || 'Primary Attribute' : 
-    credentialData.given_names || credentialData.name || 'John Doe';
-    
-  const secondaryText = branding.secondary_attribute ? 
-    credentialData[branding.secondary_attribute] || 'Secondary Attribute' :
-    credentialData.member_status || credentialData.title || 'Professional';
-
-  const issuerName = branding.metadata?.issuer || 'Digital Issuer';
-
-  if (variant === 'banner-bottom') {
-    return (
-      <div className={cn(
-        'relative overflow-hidden rounded-lg shadow-lg',
-        cardDimensions[size],
-        className
-      )}>
-        {/* Background */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundColor: primaryColor,
-            backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        
-        {/* Content Area */}
-        <div className="relative h-full flex flex-col">
-          {/* Main content area */}
-          <div className="flex-1 p-4 text-white">
-            {logoUrl && (
-              <img 
-                src={logoUrl} 
-                alt="Logo"
-                className="w-16 h-16 object-contain mb-3 bg-white rounded p-1"
-              />
-            )}
-            <div className="space-y-1">
-              <div className="text-lg font-semibold">{primaryText}</div>
-              <div className="text-sm opacity-90">{secondaryText}</div>
-            </div>
-          </div>
-          
-          {/* Bottom banner */}
-          <div 
-            className="h-12 flex items-center px-4"
-            style={{ backgroundColor: secondaryColor }}
-          >
-            <div className="text-white text-sm font-medium">{issuerName}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === 'banner-top') {
-    return (
-      <div className={cn(
-        'relative overflow-hidden rounded-lg shadow-lg',
-        cardDimensions[size],
-        className
-      )}>
-        {/* Top banner */}
-        <div 
-          className="h-12 flex items-center px-4"
-          style={{ backgroundColor: primaryColor }}
-        >
-          <div className="text-white text-sm font-medium">{issuerName}</div>
-        </div>
-        
-        {/* Main content */}
-        <div 
-          className="flex-1 p-4"
-          style={{
-            backgroundColor: secondaryColor,
-            backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          {logoUrl && (
-            <img 
-              src={logoUrl} 
-              alt="Logo"
-              className="w-16 h-16 object-contain mb-3 bg-white rounded p-1"
-            />
-          )}
-          <div className="space-y-1 text-white">
-            <div className="text-lg font-semibold">{primaryText}</div>
-            <div className="text-sm opacity-90">{secondaryText}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (variant === 'full-background') {
-    return (
-      <div className={cn(
-        'relative overflow-hidden rounded-lg shadow-lg',
-        cardDimensions[size],
-        className
-      )}>
-        {/* Full background */}
-        <div 
-          className="absolute inset-0"
-          style={{
-            backgroundColor: primaryColor,
-            backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        />
-        
-        {/* Overlay for text readability */}
-        <div className="absolute inset-0 bg-black bg-opacity-20" />
-        
-        {/* Content */}
-        <div className="relative h-full p-4 flex flex-col justify-between text-white">
-          <div className="flex justify-between items-start">
-            {logoUrl && (
-              <img 
-                src={logoUrl} 
-                alt="Logo"
-                className="w-12 h-12 object-contain bg-white rounded p-1"
-              />
-            )}
-            <div className="text-xs opacity-75">{issuerName}</div>
-          </div>
-          
-          <div className="space-y-1">
-            <div className="text-lg font-semibold">{primaryText}</div>
-            <div className="text-sm opacity-90">{secondaryText}</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Minimal variant
   return (
     <div className={cn(
-      'border rounded-lg p-4 bg-white shadow',
+      'relative overflow-hidden rounded-lg shadow-lg',
       cardDimensions[size],
       className
     )}>
-      <div className="flex items-center space-x-3 h-full">
+      {/* Top section with background image */}
+      <div 
+        className="relative h-2/3"
+        style={{
+          backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+          backgroundColor: backgroundImage ? 'transparent' : '#f3f4f6',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center'
+        }}
+      >
+        {/* Optional overlay text could go here if needed */}
+      </div>
+      
+      {/* Bottom section with primary color, logo, issuer and credential title */}
+      <div 
+        className="h-1/3 flex items-center px-4 relative"
+        style={{ backgroundColor: primaryColor }}
+      >
+        {/* White logo on the left */}
         {logoUrl && (
-          <img 
-            src={logoUrl} 
-            alt="Logo"
-            className="w-12 h-12 object-contain"
-          />
-        )}
-        <div className="flex-1 min-w-0">
-          <div 
-            className="text-lg font-semibold truncate"
-            style={{ color: primaryColor }}
-          >
-            {primaryText}
+          <div className="flex-shrink-0 mr-3">
+            <img 
+              src={logoUrl} 
+              alt="Issuer Logo"
+              className="w-10 h-10 object-contain bg-white rounded p-1"
+            />
           </div>
-          <div className="text-sm text-gray-600 truncate">{secondaryText}</div>
-          <div className="text-xs text-gray-400 truncate">{issuerName}</div>
+        )}
+        
+        {/* Text content in white */}
+        <div className="flex-1 min-w-0">
+          <div className="text-white text-sm font-medium truncate">
+            {displayIssuerName}
+          </div>
+          <div className="text-white text-xs truncate opacity-90">
+            {displayCredentialTitle}
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-export function OCACredentialCardPreview({ branding }: { branding?: OCABranding }) {
-  const sampleData = {
-    given_names: 'John',
-    surname: 'Doe',
-    member_status: 'Active Professional',
-    credential_type: 'Lawyer'
-  };
-
+export function OCACredentialCardPreview({ 
+  branding, 
+  credentialTitle,
+  issuerName 
+}: { 
+  branding?: OCABranding;
+  credentialTitle?: string;
+  issuerName?: string;
+}) {
   if (!branding) {
     return (
       <div className="p-4 border border-dashed border-gray-300 rounded-lg text-center text-gray-500">
@@ -272,8 +156,8 @@ export function OCACredentialCardPreview({ branding }: { branding?: OCABranding 
       </div>
       <OCACredentialCard 
         branding={branding}
-        credentialData={sampleData}
-        variant="banner-bottom"
+        credentialTitle={credentialTitle}
+        issuerName={issuerName}
       />
     </div>
   );

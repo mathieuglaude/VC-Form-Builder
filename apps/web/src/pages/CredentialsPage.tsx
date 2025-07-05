@@ -9,8 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { ExternalLink, Filter, X, ChevronRight, Plus } from "lucide-react";
 import type { CredentialTemplate } from "@shared/schema";
-import BannerBottomCard from "@/components/BannerBottomCard";
-import DefaultCard from "@/components/DefaultCard";
+import CredentialLibraryCard from "@/components/CredentialLibraryCard";
 import ImportCredentialModal from "@/components/admin/ImportCredentialModal";
 
 export default function CredentialsPage() {
@@ -42,28 +41,31 @@ export default function CredentialsPage() {
   const isAdmin = user?.role === 'super_admin';
 
   // Extract unique ecosystems and interop profiles for filter dropdowns
-  const uniqueEcosystems = useMemo(() => {
+  const uniqueEcosystems = useMemo((): string[] => {
+    if (!templates || templates.length === 0) return [];
     const ecosystems = templates
-      .map((template: CredentialTemplate) => template.ecosystem)
-      .filter((ecosystem: string | null): ecosystem is string => Boolean(ecosystem));
+      .map((template: CredentialTemplate) => template.ecosystemMetadata?.ecosystem)
+      .filter((ecosystem: string | null | undefined): ecosystem is string => Boolean(ecosystem));
     return Array.from(new Set(ecosystems));
   }, [templates]);
 
-  const uniqueInteropProfiles = useMemo(() => {
+  const uniqueInteropProfiles = useMemo((): string[] => {
+    if (!templates || templates.length === 0) return [];
     const profiles = templates
-      .map((template: CredentialTemplate) => template.interopProfile)
-      .filter((profile: string | null): profile is string => Boolean(profile));
+      .map((template: CredentialTemplate) => template.ecosystemMetadata?.interopProfile)
+      .filter((profile: string | null | undefined): profile is string => Boolean(profile));
     return Array.from(new Set(profiles));
   }, [templates]);
 
   // Filter templates based on search term, ecosystem, and interop profile
   const filteredTemplates = useMemo(() => {
+    if (!templates || templates.length === 0) return [];
     return templates.filter((template: CredentialTemplate) => {
       const matchesSearch = template.label.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesEcosystem = ecosystemFilter === "all" || template.ecosystem === ecosystemFilter;
+      const matchesEcosystem = ecosystemFilter === "all" || template.ecosystemMetadata?.ecosystem === ecosystemFilter;
       
-      const matchesInterop = interopFilter === "all" || template.interopProfile === interopFilter;
+      const matchesInterop = interopFilter === "all" || template.ecosystemMetadata?.interopProfile === interopFilter;
       
       return matchesSearch && matchesEcosystem && matchesInterop;
     });
@@ -145,7 +147,7 @@ export default function CredentialsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Ecosystems</SelectItem>
-                    {uniqueEcosystems.map((ecosystem) => (
+                    {uniqueEcosystems.map((ecosystem: string) => (
                       <SelectItem key={ecosystem} value={ecosystem}>
                         {ecosystem}
                       </SelectItem>
@@ -162,7 +164,7 @@ export default function CredentialsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Profiles</SelectItem>
-                    {uniqueInteropProfiles.map((profile) => (
+                    {uniqueInteropProfiles.map((profile: string) => (
                       <SelectItem key={profile} value={profile}>
                         {profile}
                       </SelectItem>
@@ -208,11 +210,7 @@ export default function CredentialsPage() {
         {filteredTemplates.map((template: CredentialTemplate) => (
           <Link key={template.id} href={`/credentials/${template.id}`}>
             <div className="group hover:scale-105 transition-transform cursor-pointer">
-              {template.branding?.layout === 'banner-bottom' ? (
-                <BannerBottomCard credential={template} />
-              ) : (
-                <DefaultCard credential={template} />
-              )}
+              <CredentialLibraryCard credential={template} />
             </div>
           </Link>
         ))}

@@ -7,13 +7,15 @@ import { Separator } from "@/components/ui/separator";
 import { ArrowLeft, ExternalLink, Copy, Check } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { useOCABranding } from "@/hooks/useOCABranding";
+import { OCACredentialCard } from "@/components/oca/OCACredentialCard";
 import type { CredentialTemplate } from "@shared/schema";
-import BannerBottomCard from "@/components/BannerBottomCard";
 
 export default function CredentialDetailPage() {
   const { id } = useParams();
   const { toast } = useToast();
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const credentialId = parseInt(id || '0');
 
   const { data: credential, isLoading, error } = useQuery({
     queryKey: ['/api/cred-lib', id],
@@ -23,6 +25,9 @@ export default function CredentialDetailPage() {
       return response.json();
     }
   });
+
+  // Fetch OCA branding for the credential
+  const { data: ocaBranding, isLoading: isLoadingOCA } = useOCABranding(credentialId);
 
   const copyToClipboard = async (text: string, fieldName: string) => {
     try {
@@ -84,8 +89,17 @@ export default function CredentialDetailPage() {
 
       {/* Professional Credential Card */}
       <div className="mb-8 flex justify-center">
-        {credential.branding?.layout === 'banner-bottom' ? (
-          <BannerBottomCard credential={credential} />
+        {ocaBranding ? (
+          <OCACredentialCard
+            branding={ocaBranding}
+            credentialTitle={credential.label}
+            issuerName={credential.meta?.issuer || credential.branding?.issuerName}
+            size="large"
+          />
+        ) : isLoadingOCA ? (
+          <div className="w-96 h-56 bg-gray-100 animate-pulse rounded-lg flex items-center justify-center">
+            <div className="text-gray-500">Loading credential card...</div>
+          </div>
         ) : (
           <Card className="w-full max-w-lg">
             <CardHeader>
