@@ -9,6 +9,7 @@ interface GovernanceDocumentStepProps {
   data: ParsedGovernanceData | null;
   onComplete: (data: ParsedGovernanceData) => void;
   onNext: () => void;
+  onStepAdvance?: () => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
@@ -17,6 +18,7 @@ export default function GovernanceDocumentStep({
   data,
   onComplete,
   onNext,
+  onStepAdvance,
   isLoading,
   setIsLoading,
 }: GovernanceDocumentStepProps) {
@@ -89,6 +91,7 @@ export default function GovernanceDocumentStep({
       const governanceData = await response.json();
       setParsedData(governanceData);
       onComplete(governanceData);
+      onNext(); // Automatically proceed to next step
     } catch (err) {
       console.error('Failed to parse governance document:', err);
       setError(err instanceof Error ? err.message : 'Failed to parse governance document');
@@ -100,11 +103,20 @@ export default function GovernanceDocumentStep({
   const removeFile = () => {
     setFile(null);
     setError(null);
+    setParsedData(null);
   };
 
-  const handleContinue = () => {
+  const handleNext = async () => {
     if (parsedData) {
-      onNext();
+      // Data already parsed, advance to next step
+      onStepAdvance?.();
+    } else if (file) {
+      // Parse the file and advance to next step
+      await handleParseDocument();
+      // After parsing completes, advance to next step
+      onStepAdvance?.();
+    } else {
+      setError('Please select a governance document file');
     }
   };
 
@@ -207,20 +219,7 @@ export default function GovernanceDocumentStep({
             </ul>
           </div>
 
-          <Button
-            onClick={handleParseDocument}
-            disabled={!file || isLoading}
-            className="w-full py-6 text-base"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-3 animate-spin" />
-                Parsing Document...
-              </>
-            ) : (
-              'Parse Governance Document'
-            )}
-          </Button>
+
         </CardContent>
       </Card>
 
@@ -291,7 +290,7 @@ export default function GovernanceDocumentStep({
 
             <div className="pt-4 border-t">
               <Button
-                onClick={handleContinue}
+                onClick={handleNext}
                 className="w-full py-6 text-base"
               >
                 Continue to Edit Metadata

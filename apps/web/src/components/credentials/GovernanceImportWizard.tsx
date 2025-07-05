@@ -111,9 +111,13 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
     onClose();
   }, [resetWizard, onClose]);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < steps.length) {
-      setCurrentStep(currentStep + 1);
+      // For step 1, the GovernanceDocumentStep handles its own Next behavior
+      // Other steps can proceed normally
+      if (currentStep !== 1) {
+        setCurrentStep(currentStep + 1);
+      }
     }
   };
 
@@ -149,7 +153,9 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return governanceData !== null;
+        // For step 1, validation is handled by the component itself
+        // We always allow the Next button to be enabled, as the component controls when to advance
+        return true;
       case 2:
         return editedMetadata !== null;
       case 3:
@@ -179,6 +185,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
           <GovernanceDocumentStep
             {...stepProps}
             data={governanceData}
+            onStepAdvance={() => setCurrentStep(currentStep + 1)}
           />
         );
       case 2:
