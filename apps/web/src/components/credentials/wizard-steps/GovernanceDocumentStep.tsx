@@ -10,6 +10,7 @@ interface GovernanceDocumentStepProps {
   onComplete: (data: ParsedGovernanceData) => void;
   onNext: () => void;
   onStepAdvance?: () => void;
+  onValidationChange?: (isValid: boolean) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
@@ -19,6 +20,7 @@ export default function GovernanceDocumentStep({
   onComplete,
   onNext,
   onStepAdvance,
+  onValidationChange,
   isLoading,
   setIsLoading,
 }: GovernanceDocumentStepProps) {
@@ -32,6 +34,12 @@ export default function GovernanceDocumentStep({
       setParsedData(data);
     }
   }, [data]);
+
+  // Notify wizard of validation state changes
+  useEffect(() => {
+    const isValid = file !== null || parsedData !== null;
+    onValidationChange?.(isValid);
+  }, [file, parsedData, onValidationChange]);
 
   const handleFileChange = (selectedFile: File | null) => {
     if (!selectedFile) return;

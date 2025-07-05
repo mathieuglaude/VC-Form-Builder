@@ -94,6 +94,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
   const [selectedCredDef, setSelectedCredDef] = useState<CredDefData | null>(null);
   const [brandingAssets, setBrandingAssets] = useState<BrandingAssets | null>(null);
   const [ecosystemTag, setEcosystemTag] = useState<string>('');
+  const [step1Valid, setStep1Valid] = useState(false);
 
   const resetWizard = useCallback(() => {
     setCurrentStep(1);
@@ -103,6 +104,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
     setSelectedCredDef(null);
     setBrandingAssets(null);
     setEcosystemTag('');
+    setStep1Valid(false);
     setIsLoading(false);
   }, []);
 
@@ -153,9 +155,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        // For step 1, validation is handled by the component itself
-        // We always allow the Next button to be enabled, as the component controls when to advance
-        return true;
+        return step1Valid;
       case 2:
         return editedMetadata !== null;
       case 3:
@@ -186,6 +186,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
             {...stepProps}
             data={governanceData}
             onStepAdvance={() => setCurrentStep(currentStep + 1)}
+            onValidationChange={setStep1Valid}
           />
         );
       case 2:
