@@ -67,26 +67,39 @@ export class GovernanceParserService {
     try {
       console.log('[GovernanceParser] Using AI-powered extraction...');
       
-      const systemPrompt = `You are an expert at parsing governance documents for verifiable credentials. Analyze the provided markdown document and extract structured metadata. Focus on accuracy and pay attention to context.
+      const systemPrompt = `You are an expert at parsing governance documents for verifiable credentials. Analyze the provided markdown document and extract structured metadata with high accuracy and attention to context.
 
 Instructions:
-- Extract the credential name exactly as it appears in tables or headings (e.g., "Lawyer Credential", "BC Digital Business Card v1")
-- Identify the issuing organization (e.g., "Law Society of British Columbia (LSBC)", "Government of British Columbia")
-- Find the issuer website URL if available
-- Extract a meaningful description from the credential overview or summary sections
-- Look specifically in section 5.3 "Schema Implementation" for schema references
-- Look specifically in section 5.4 "Credential Implementation" for credential definition references
-- Extract CANdy scan URLs for schemas and credential definitions
-- Find any OCA bundle GitHub URLs
-- Determine if schema/credential references are from TEST or PROD environments
+- Extract the exact credential name as it appears in the document (from tables, headings, or credential descriptions)
+- Identify the complete issuing organization name (including any acronyms or formal titles)
+- Find the issuer website URL if mentioned
+- Extract a meaningful description from credential overview, summary, or introduction sections
+- Look for schema references in sections like "Schema Implementation", "Technical Implementation", or numbered sections (5.3, etc.)
+- Look for credential definition references in sections like "Credential Implementation", "Technical Specifications", or numbered sections (5.4, etc.)
+- Extract any blockchain explorer URLs (CANdy scan, Indy ledger browsers, etc.)
+- Find GitHub OCA bundle URLs or other asset repository links
+- Determine environment types from context (test/development vs production/mainnet)
 
-Schema URLs typically look like: https://candyscan.idlab.org/tx/CANDY_TEST/domain/123 or CANDY_PROD
-Credential Definition IDs are AnonCreds format like: did:example:123:3:CL:456:default
-OCA Bundle URLs are GitHub links to OCABundles directories.`;
+Common patterns:
+- Schema URLs: https://candyscan.idlab.org/tx/CANDY_TEST/domain/123, https://candyscan.idlab.org/tx/CANDY_PROD/domain/456
+- Credential Definition IDs: AnonCreds format like did:example:123:3:CL:456:default
+- OCA Bundle URLs: GitHub links to OCABundles or overlay directories
+- Environment indicators: "test", "dev", "prod", "production", "mainnet", "testnet"`;
 
-      const userPrompt = `Parse this governance document and extract metadata:
+      const userPrompt = `Parse this governance document and extract metadata. Focus specifically on these sections:
+
+SECTION 2 - Credential Overview: Look for the credential name in the table
+SECTION 5.3 - Schema Implementation: Contains Schema IDs in format DID:2:name:version
+SECTION 5.4 - Credential Implementation: Contains Credential Definition IDs in format DID:3:CL:number:tag
+SECTION 6.2 - Issuer List: Contains issuer DIDs
 
 ${markdown}
+
+IMPORTANT: The document contains tables with these exact patterns:
+- Schema IDs like: QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0
+- Credential Definition IDs like: QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer  
+- CANdy URLs like: https://candyscan.idlab.org/tx/CANDY_PROD/domain/2351
+- OCA Bundle URLs like: https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Prod
 
 Return structured JSON with the following format:
 {
@@ -131,6 +144,8 @@ Return structured JSON with the following format:
         schemasFound: extractedData.schemas?.length || 0,
         credDefsFound: extractedData.credentialDefinitions?.length || 0
       });
+      
+      console.log('[GovernanceParser] Full AI response:', JSON.stringify(extractedData, null, 2));
 
       // Transform AI response to match our interface
       const metadata: ParsedMetadata = {
