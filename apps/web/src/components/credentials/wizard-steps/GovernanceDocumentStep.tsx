@@ -182,8 +182,8 @@ export default function GovernanceDocumentStep({
                 <div className="space-y-2 max-h-40 overflow-y-auto">
                   {parsedData.schemas.map((schema, index) => (
                     <div key={index} className="p-3 bg-blue-50 border border-blue-100 rounded-md">
-                      <div className="font-mono text-xs text-blue-800 break-all">{schema.id}</div>
-                      <div className="text-sm text-blue-700 mt-1">{schema.name} ({schema.environment})</div>
+                      <div className="font-mono text-xs text-blue-800 break-all overflow-hidden">{schema.id}</div>
+                      <div className="text-sm text-blue-700 mt-1 break-words">{schema.name} ({schema.environment})</div>
                     </div>
                   ))}
                 </div>
