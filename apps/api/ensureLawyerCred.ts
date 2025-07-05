@@ -44,7 +44,10 @@ export async function ensureLawyerCred() {
         layout: 'banner-bottom',
         logoUrl,
         backgroundImage: bannerUrl,
-        primaryColor: '#00698c'
+        primaryColor: '#00698c',
+        ocaBundleUrl: 'https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Prod',
+        issuerName: 'Law Society of British Columbia (LSBC)',
+        governanceUrl: 'https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/justice/legal-professional/governance.md'
       },
       metaOverlay: {
         issuer: 'Law Society of British Columbia (LSBC)',

@@ -8,6 +8,7 @@ import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
 import adminCredentialsRouter from "./routes/adminCredentials";
 import defineProofRouter from "./routes/defineProof";
+import ocaRouter from "./routes/oca";
 import { initFormProof } from "./routes/initFormProof";
 import { testImportCredential, getOrbitMapping } from "./routes/credentialImport";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
@@ -1057,6 +1058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', proofsRouter);
   app.use('/api', adminCredentialsRouter);
   app.use('/api', defineProofRouter);
+  app.use('/api/oca', ocaRouter);
 
   return httpServer;
 }

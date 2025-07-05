@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { FileText, Database, Wallet, Users, Settings, LogOut, User, Shield } from "lucide-react";
+import { FileText, Database, Wallet, Users, Settings, LogOut, User, Shield, Palette } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -47,6 +47,7 @@ export default function Navigation() {
     { path: "/community", label: "Community Forms", icon: Users },
     { path: "/credentials", label: "Credential Library", icon: Database },
     { path: "/wallets", label: "Wallet Library", icon: Wallet },
+    { path: "/oca-demo", label: "OCA Demo", icon: Palette },
   ];
 
   const handleLogout = () => {
