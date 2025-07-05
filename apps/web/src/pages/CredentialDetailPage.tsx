@@ -436,6 +436,29 @@ export default function CredentialDetailPage() {
                     )}
                   </div>
                 </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700">OCA Bundle</label>
+                  <div className="mt-1">
+                    {credential.ocaBundleUrl && credential.ocaBundleUrl !== "N/A" ? (
+                      <Button asChild variant="outline" size="sm" className="w-full">
+                        <a
+                          href={credential.ocaBundleUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2"
+                        >
+                          View OCA Bundle
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
+                    ) : (
+                      <p className="text-sm text-gray-500 py-2">
+                        N/A - No OCA bundle available
+                      </p>
+                    )}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}

@@ -613,6 +613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         walletRestricted: ecosystemMetadata.walletRestricted,
         // Governance
         governanceUrl: cryptographicMetadata.governanceFramework,
+        ocaBundleUrl: cryptographicMetadata.ocaBundleUrl,
         // Orbit integration
         orbitSchemaId: orbitIntegration?.orbitSchemaId,
         orbitCredDefId: orbitIntegration?.orbitCredDefId,

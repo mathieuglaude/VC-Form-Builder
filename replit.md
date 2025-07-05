@@ -439,6 +439,19 @@ Changelog:
   - Discovered LOB ID a03f92ac-5ce7-4037-b8b5-79ff821b0878 returns "lob not found!" (404) error
   - System correctly builds proof requests with proper Orbit numeric IDs and authentication format
   - Ready for production once correct LOB ID is provided from Northern Block approval email
+- July 5, 2025. Enhanced Governance & Trust section with comprehensive documentation links
+  - Added governance documentation field to credential detail pages with official BC Government documentation links
+  - Updated BC Digital Business Card governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/business/digital-business-card-v1.md
+  - Updated BC Person Credential governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/person/person-cred-doc.md
+  - Updated BC Lawyer Credential governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/justice/legal-professional/governance.md
+  - Set Unverified Person credential governance to "N/A" with appropriate messaging
+  - Added OCA Bundle links for all credentials pointing to official BC Government OCA bundle repositories
+  - BC Digital Business Card OCA Bundle: https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/business-card
+  - BC Person Credential OCA Bundle: https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/person
+  - BC Lawyer Credential OCA Bundle: https://github.com/bcgov/aries-oca-bundles/tree/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Prod
+  - Enhanced credential detail UI with proper button links that open in new tabs for both governance documentation and OCA bundles
+  - Fixed credential detail page crashes by updating API transformation to flatten OCA metadata structure
+  - All credentials now display comprehensive governance and technical documentation access
 ```
 
 ## User Preferences
