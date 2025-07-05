@@ -13,8 +13,8 @@ import { initFormProof } from "./routes/initFormProof";
 import { testImportCredential, getOrbitMapping } from "./routes/credentialImport";
 import { insertFormConfigSchema, insertFormSubmissionSchema, insertCredentialTemplateSchema, credentialTemplates, credentialAttributes } from "../../packages/shared/schema";
 import { z } from "zod";
-import { ensureLawyerCred } from "./ensureLawyerCred";
-import { downloadAsset, fetchOCABundle } from "./ocaAssets";
+
+
 import { eq } from "drizzle-orm";
 import { db } from "./db";
 

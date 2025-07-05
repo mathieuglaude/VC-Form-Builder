@@ -1,5 +1,4 @@
 import { buildApp, setupAppRoutes } from './app';
-import './boot/ensureLawyerCred';
 import { env } from './config';
 
 function log(message: string) {

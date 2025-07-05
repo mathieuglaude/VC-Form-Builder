@@ -1,4 +1,4 @@
-import { ocaBundleClient, type OCABranding, type OCABundle, type OCAAsset } from '@external/oca/OCABundleClient';
+import { ocaBundleClient, type OCABranding, type OCABundle, type OCAAsset } from '../../../packages/external/oca/OCABundleClient';
 import { db } from '../db';
 import { credentialTemplates } from '@shared/schema';
 import { eq } from 'drizzle-orm';
