@@ -1054,14 +1054,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Governance-document-driven credential import routes
   router.post('/governance/parse', async (req, res) => {
     try {
-      const { url } = req.body;
+      const { url, content } = req.body;
       
-      if (!url || typeof url !== 'string') {
-        return res.status(400).json({ error: 'Governance document URL is required' });
+      if (!url && !content) {
+        return res.status(400).json({ error: 'Either governance document URL or content is required' });
+      }
+      
+      if (url && content) {
+        return res.status(400).json({ error: 'Provide either URL or content, not both' });
       }
       
       const { governanceParserService } = await import('./services/GovernanceParserService');
-      const parsedMetadata = await governanceParserService.parseGovernanceDocument(url);
+      
+      let parsedMetadata;
+      if (url && typeof url === 'string') {
+        parsedMetadata = await governanceParserService.parseGovernanceDocument(url);
+      } else if (content && typeof content === 'string') {
+        parsedMetadata = await governanceParserService.parseGovernanceContent(content);
+      } else {
+        return res.status(400).json({ error: 'Invalid URL or content format' });
+      }
       
       res.json(parsedMetadata);
     } catch (error: unknown) {

@@ -188,6 +188,17 @@ Return structured JSON with the following format:
       
       console.log(`[GovernanceParser] Document fetched, length: ${markdown.length} chars`);
       
+      return this.parseGovernanceContent(markdown);
+    } catch (error) {
+      console.error('[GovernanceParser] Error parsing governance document:', error);
+      throw new Error(`Failed to parse governance document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async parseGovernanceContent(markdown: string): Promise<ParsedMetadata> {
+    try {
+      console.log(`[GovernanceParser] Parsing governance content, length: ${markdown.length} chars`);
+      
       // Parse the markdown content using AI
       const metadata = await this.extractMetadataWithAI(markdown);
       
@@ -195,13 +206,14 @@ Return structured JSON with the following format:
         credentialName: metadata.credentialName,
         issuerOrganization: metadata.issuerOrganization,
         schemasFound: metadata.schemas.length,
-        credDefsFound: metadata.credentialDefinitions.length
+        credDefsFound: metadata.credentialDefinitions.length,
+        ocaBundlesFound: metadata.ocaBundleUrls.length
       });
       
       return metadata;
     } catch (error) {
-      console.error('[GovernanceParser] Error parsing governance document:', error);
-      throw new Error(`Failed to parse governance document: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('[GovernanceParser] Error parsing governance content:', error);
+      throw new Error(`Failed to parse governance content: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
   

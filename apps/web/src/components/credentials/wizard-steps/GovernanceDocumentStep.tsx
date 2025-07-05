@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle, FileText, Loader2 } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileText, Loader2, Upload, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ParsedGovernanceData } from '../GovernanceImportWizard';
 
@@ -21,9 +20,10 @@ export default function GovernanceDocumentStep({
   isLoading,
   setIsLoading,
 }: GovernanceDocumentStepProps) {
-  const [url, setUrl] = useState('');
+  const [file, setFile] = useState<File | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [parsedData, setParsedData] = useState<ParsedGovernanceData | null>(data);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     if (data) {
@@ -31,17 +31,36 @@ export default function GovernanceDocumentStep({
     }
   }, [data]);
 
-  const handleParseDocument = async () => {
-    if (!url.trim()) {
-      setError('Please enter a governance document URL');
+  const handleFileChange = (selectedFile: File | null) => {
+    if (!selectedFile) return;
+
+    if (!selectedFile.name.endsWith('.md')) {
+      setError('Please select a markdown (.md) file');
       return;
     }
 
-    // Basic URL validation
-    try {
-      new URL(url);
-    } catch {
-      setError('Please enter a valid URL');
+    if (selectedFile.size > 5 * 1024 * 1024) { // 5MB limit
+      setError('File size must be less than 5MB');
+      return;
+    }
+
+    setFile(selectedFile);
+    setError(null);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile) {
+      handleFileChange(droppedFile);
+    }
+  };
+
+  const handleParseDocument = async () => {
+    if (!file) {
+      setError('Please select a governance document file');
       return;
     }
 
@@ -49,12 +68,17 @@ export default function GovernanceDocumentStep({
     setError(null);
 
     try {
+      const content = await file.text();
+      if (!content.trim()) {
+        throw new Error('File appears to be empty');
+      }
+
       const response = await fetch('/api/governance/parse', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ content }),
       });
 
       if (!response.ok) {
@@ -73,9 +97,9 @@ export default function GovernanceDocumentStep({
     }
   };
 
-  const handleUseExample = () => {
-    const exampleUrl = 'https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/justice/legal-professional/governance.md';
-    setUrl(exampleUrl);
+  const removeFile = () => {
+    setFile(null);
+    setError(null);
   };
 
   const handleContinue = () => {
@@ -90,39 +114,80 @@ export default function GovernanceDocumentStep({
         <CardHeader className="pb-4">
           <CardTitle className="flex items-center gap-3 text-lg">
             <FileText className="w-5 h-5 text-blue-600" />
-            Parse Governance Document
+            Upload Governance Document
           </CardTitle>
           <CardDescription className="text-base leading-relaxed">
-            Enter the URL of a governance document to automatically extract credential metadata, 
-            schema references, and OCA bundle information.
+            Upload a markdown (.md) file containing credential governance documentation to automatically extract 
+            metadata, schema references, and OCA bundle information.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="space-y-3">
-            <label htmlFor="governance-url" className="block text-sm font-medium text-gray-900">
-              Governance Document URL
+            <label htmlFor="governance-file" className="block text-sm font-medium text-gray-900">
+              Governance Document File
             </label>
-            <div className="flex gap-3">
-              <Input
-                id="governance-url"
-                placeholder="https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/..."
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                disabled={isLoading}
-                className="flex-1"
-              />
-              <Button
-                variant="outline"
-                onClick={handleUseExample}
-                disabled={isLoading}
-                className="whitespace-nowrap"
+            
+            {!file ? (
+              <div
+                className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+                  dragOver 
+                    ? 'border-blue-400 bg-blue-50' 
+                    : 'border-gray-300 hover:border-gray-400'
+                }`}
+                onDrop={handleDrop}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
               >
-                Use Example
-              </Button>
-            </div>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Supported: BC Government governance documents, City of Vancouver documents
-            </p>
+                <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <p className="text-lg font-medium text-gray-700 mb-2">
+                  Drop your .md file here, or click to browse
+                </p>
+                <p className="text-sm text-gray-500 mb-4">
+                  Supports markdown files up to 5MB
+                </p>
+                <input
+                  id="governance-file"
+                  type="file"
+                  accept=".md"
+                  className="hidden"
+                  onChange={(e) => handleFileChange(e.target.files?.[0] || null)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById('governance-file')?.click()}
+                  disabled={isLoading}
+                >
+                  Choose File
+                </Button>
+              </div>
+            ) : (
+              <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <FileText className="w-8 h-8 text-blue-600" />
+                    <div>
+                      <p className="font-medium text-gray-900">{file.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {(file.size / 1024).toFixed(1)} KB
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={removeFile}
+                    disabled={isLoading}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -132,9 +197,19 @@ export default function GovernanceDocumentStep({
             </Alert>
           )}
 
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-blue-900 mb-2">Supported Documents</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• BC Government credential governance documents</li>
+              <li>• Municipal governance documents (Vancouver, etc.)</li>
+              <li>• Any markdown governance document with technical specifications</li>
+              <li>• Documents containing schema IDs, credential definition IDs, and OCA bundle URLs</li>
+            </ul>
+          </div>
+
           <Button
             onClick={handleParseDocument}
-            disabled={!url.trim() || isLoading}
+            disabled={!file || isLoading}
             className="w-full py-6 text-base"
           >
             {isLoading ? (
