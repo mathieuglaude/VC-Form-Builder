@@ -1223,19 +1223,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'OCA bundle URLs array is required' });
       }
       
-      // Mock OCA asset download for now
-      // In a real implementation, this would download and process OCA bundles
-      const mockBrandingAssets = {
-        logo: 'https://example.com/logo.png',
-        backgroundImage: 'https://example.com/background.png',
-        colors: {
-          primary: '#4F46E5',
-          secondary: '#6B7280'
-        },
-        layout: 'banner-bottom'
-      };
+      console.log(`[OCA-DOWNLOAD] Processing ${ocaBundleUrls.length} OCA bundle URLs:`, ocaBundleUrls);
       
-      res.json(mockBrandingAssets);
+      // Use GitHubOCAService to fetch authentic branding assets
+      const { githubOCAService } = await import('./services/GitHubOCAService');
+      
+      const brandingAssets = await githubOCAService.fetchMultipleBundles(ocaBundleUrls);
+      
+      console.log(`[OCA-DOWNLOAD] Successfully processed OCA bundles:`, brandingAssets);
+      
+      res.json(brandingAssets);
     } catch (error: unknown) {
       console.error('OCA asset download error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
