@@ -3,10 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Eye, Loader2, AlertCircle, Palette } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ParsedGovernanceData, BrandingAssets } from '../GovernanceImportWizard';
+import { ParsedGovernanceData, BrandingAssets, CredDefData } from '../GovernanceImportWizard';
 
 interface OCAPreviewStepProps {
   governanceData: ParsedGovernanceData;
+  selectedCredDef: CredDefData | null;
   data: BrandingAssets | null;
   onComplete: (data: BrandingAssets) => void;
   onNext: () => void;
@@ -16,6 +17,7 @@ interface OCAPreviewStepProps {
 
 export default function OCAPreviewStep({
   governanceData,
+  selectedCredDef,
   data,
   onComplete,
   onNext,
@@ -24,6 +26,63 @@ export default function OCAPreviewStep({
 }: OCAPreviewStepProps) {
   const [brandingAssets, setBrandingAssets] = useState<BrandingAssets | null>(data);
   const [error, setError] = useState<string | null>(null);
+
+  // Smart filtering logic for OCA bundles based on selected credential definition environment
+  const getFilteredOCABundles = () => {
+    if (!selectedCredDef || !governanceData.ocaBundleUrls?.length) {
+      return governanceData.ocaBundleUrls || [];
+    }
+
+    // Determine environment from selected credential definition
+    const credDefEnvironment = detectEnvironmentFromCredDef(selectedCredDef.credDefId);
+    
+    // Filter OCA bundles to match the credential definition environment
+    const filteredBundles = governanceData.ocaBundleUrls.filter(url => {
+      const urlLower = url.toLowerCase();
+      if (credDefEnvironment === 'test') {
+        return urlLower.includes('/test') || urlLower.includes('-test');
+      } else if (credDefEnvironment === 'prod') {
+        return urlLower.includes('/prod') || (!urlLower.includes('/test') && !urlLower.includes('-test'));
+      }
+      return true; // If we can't determine, include all
+    });
+
+    return filteredBundles.length > 0 ? filteredBundles : governanceData.ocaBundleUrls;
+  };
+
+  // Helper function to detect environment from credential definition ID
+  const detectEnvironmentFromCredDef = (credDefId: string): 'test' | 'prod' => {
+    // Common test environment DID patterns
+    const testPatterns = [
+      'MLvtJW6pFuYu4NnMB14d29', // CANdy test DID prefix
+      'test',
+      'dev',
+      'staging'
+    ];
+    
+    // Common production environment DID patterns  
+    const prodPatterns = [
+      'QzLYGuAebsy3MXQ6b1sFiT', // CANdy prod DID prefix (BC Government)
+      'prod',
+      'production',
+      'main'
+    ];
+
+    const credDefLower = credDefId.toLowerCase();
+    
+    // Check for test patterns first
+    if (testPatterns.some(pattern => credDefLower.includes(pattern.toLowerCase()))) {
+      return 'test';
+    }
+    
+    // Check for production patterns
+    if (prodPatterns.some(pattern => credDefLower.includes(pattern.toLowerCase()))) {
+      return 'prod';
+    }
+    
+    // Default to production if uncertain
+    return 'prod';
+  };
 
   useEffect(() => {
     if (data) {
@@ -35,6 +94,9 @@ export default function OCAPreviewStep({
     setIsLoading(true);
     setError(null);
 
+    // Use filtered OCA bundles based on selected credential definition environment
+    const filteredBundles = getFilteredOCABundles();
+
     try {
       const response = await fetch('/api/oca/download-assets', {
         method: 'POST',
@@ -42,7 +104,7 @@ export default function OCAPreviewStep({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ocaBundleUrls: governanceData.ocaBundleUrls,
+          ocaBundleUrls: filteredBundles,
         }),
       });
 
@@ -134,10 +196,37 @@ export default function OCAPreviewStep({
         <CardContent className="space-y-4">
           {governanceData.ocaBundleUrls.length > 0 ? (
             <>
+              {/* Environment Detection and Filtering Info */}
+              {selectedCredDef && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-medium text-sm text-blue-900 mb-1">Smart Environment Filtering</h4>
+                      <p className="text-xs text-blue-700">
+                        Detected <span className="font-medium">{detectEnvironmentFromCredDef(selectedCredDef.credDefId)}</span> environment from credential definition
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-blue-900">
+                        {getFilteredOCABundles().length} / {governanceData.ocaBundleUrls.length}
+                      </div>
+                      <div className="text-xs text-blue-700">OCA bundles</div>
+                    </div>
+                  </div>
+                  {getFilteredOCABundles().length !== governanceData.ocaBundleUrls.length && (
+                    <div className="mt-2 text-xs text-blue-600">
+                      ✓ Filtered to match {detectEnvironmentFromCredDef(selectedCredDef.credDefId)} environment
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <div>
-                <h4 className="font-medium text-sm text-gray-700 mb-2">OCA Bundle URLs</h4>
+                <h4 className="font-medium text-sm text-gray-700 mb-2">
+                  {selectedCredDef ? 'Filtered OCA Bundle URLs' : 'OCA Bundle URLs'}
+                </h4>
                 <div className="space-y-2">
-                  {governanceData.ocaBundleUrls.map((bundleUrl, index) => (
+                  {getFilteredOCABundles().map((bundleUrl, index) => (
                     <div key={index} className="text-xs bg-gray-100 rounded p-2 font-mono">
                       {bundleUrl}
                     </div>

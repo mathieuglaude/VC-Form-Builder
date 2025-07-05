@@ -479,6 +479,15 @@ Changelog:
   - System now works with any blockchain explorer webpage format, not just specific API endpoints
   - Enhanced error handling and fallback mechanisms for robust schema attribute extraction
   - Both schema fetching and credential definition validation now use consistent OpenAI web scraping methodology
+- July 5, 2025. Implemented smart OCA assets filtering based on credential definition environment
+  - Added environment detection logic that analyzes credential definition DID patterns to determine test vs production
+  - Created intelligent filtering system that matches OCA bundles to credential definition environment
+  - Added visual indicator in OCA Preview Step showing detected environment and filtered bundle count
+  - Test environment patterns include CANdy test DID (MLvtJW6pFuYu4NnMB14d29) and keywords like 'test', 'dev', 'staging'
+  - Production environment patterns include CANdy prod DID (QzLYGuAebsy3MXQ6b1sFiT) and keywords like 'prod', 'production', 'main'
+  - Enhanced user experience with blue info panel showing "Smart Environment Filtering" with count (e.g., "2 / 4 OCA bundles")
+  - System automatically filters OCA bundles containing '/test', '-test' for test environments and '/prod' or non-test paths for production
+  - Prevents credential template mismatches by ensuring OCA branding assets match the selected credential definition's blockchain environment
 ```
 
 ## User Preferences

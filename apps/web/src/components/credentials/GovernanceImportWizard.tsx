@@ -211,6 +211,7 @@ export default function GovernanceImportWizard({ isOpen, onClose, onComplete }: 
           <OCAPreviewStep
             {...stepProps}
             governanceData={editedMetadata || governanceData!}
+            selectedCredDef={selectedCredDef}
             data={brandingAssets}
           />
         );
