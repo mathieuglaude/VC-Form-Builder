@@ -10,6 +10,60 @@ export interface AttributeDef {
   description: string;
 }
 
+// Unified credential metadata interfaces following OCA principles
+export interface SchemaMetadata {
+  schemaId: string;
+  schemaName: string;
+  schemaVersion: string;
+  attributes: AttributeDef[];
+  constraints?: Record<string, any>;
+}
+
+export interface CryptographicMetadata {
+  issuerDid: string;
+  credDefId: string;
+  revocationRegistryId?: string;
+  governanceFramework?: string;
+  trustRegistry?: string;
+}
+
+export interface BrandingMetadata {
+  displayName: string;
+  description: string;
+  issuerName: string;
+  issuerWebsite?: string;
+  logo: {
+    url: string;
+    altText: string;
+    dimensions?: { width: number; height: number; };
+  };
+  colors: {
+    primary: string;
+    secondary?: string;
+    accent?: string;
+  };
+  backgroundImage?: {
+    url: string;
+    position: string;
+  };
+  layout: 'standard' | 'banner-top' | 'banner-bottom' | 'minimal';
+  cardStyle?: Record<string, any>;
+}
+
+export interface EcosystemMetadata {
+  ecosystem: string;
+  interopProfile: string;
+  compatibleWallets: string[];
+  walletRestricted: boolean;
+  ledgerNetwork: string;
+}
+
+export interface OrbitIntegration {
+  orbitSchemaId?: number;
+  orbitCredDefId?: number;
+  importedAt?: Date;
+}
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -63,10 +117,7 @@ export const credentialDefinitions = pgTable("credential_definitions", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export interface OCAOverlay {
-  type: string;
-  data: any;
-}
+// Legacy credential tables (to be migrated to unified structure)
 
 // Orbit imported schemas table - stores external schemas imported into Orbit LOB
 export const orbitSchemas = pgTable("orbit_schemas", {
@@ -92,31 +143,32 @@ export const orbitCredentialDefinitions = pgTable("orbit_credential_definitions"
   importedAt: timestamp("imported_at").defaultNow().notNull(),
 });
 
+// Unified credential metadata table following OCA principles
 export const credentialTemplates = pgTable("credential_templates", {
   id: serial("id").primaryKey(),
+  
+  // Core Identity
   label: text("label").notNull().unique(),
   version: text("version").notNull(),
-  schemaId: text("schema_id").notNull(),
-  credDefId: text("cred_def_id").notNull(),
-  issuerDid: text("issuer_did").notNull(),
-  overlays: jsonb("overlays").$type<OCAOverlay[]>().notNull().default([]),
-  governanceUrl: text("governance_url"),
-  schemaUrl: text("schema_url"),
-  attributes: jsonb("attributes").$type<AttributeDef[]>().notNull().default([]),
+  
+  // Schema Metadata (data structure)
+  schemaMetadata: jsonb("schema_metadata").$type<SchemaMetadata>().notNull(),
+  
+  // Cryptographic Metadata (verification)
+  cryptographicMetadata: jsonb("cryptographic_metadata").$type<CryptographicMetadata>().notNull(),
+  
+  // Branding/UX Metadata (presentation)
+  brandingMetadata: jsonb("branding_metadata").$type<BrandingMetadata>().notNull(),
+  
+  // Ecosystem Metadata (interoperability)
+  ecosystemMetadata: jsonb("ecosystem_metadata").$type<EcosystemMetadata>().notNull(),
+  
+  // Orbit Integration (external system mapping)
+  orbitIntegration: jsonb("orbit_integration").$type<OrbitIntegration>(),
+  
+  // Administrative
   isPredefined: boolean("is_predefined").notNull().default(false),
-  ecosystem: text("ecosystem"),
-  interopProfile: text("interop_profile"),
-  compatibleWallets: jsonb("compatible_wallets").$type<string[]>().default([]),
-  walletRestricted: boolean("wallet_restricted").notNull().default(false),
-  branding: jsonb("branding").$type<Record<string, any>>().default({}),
-  metaOverlay: jsonb("meta_overlay").$type<Record<string, any>>().default({}),
-  ledgerNetwork: text("ledger_network").notNull().default('BCOVRIN_TEST'),
-  primaryColor: text("primary_color").default('#4F46E5'),
-  brandBgUrl: text("brand_bg_url"),
-  brandLogoUrl: text("brand_logo_url"),
   visible: boolean("visible").notNull().default(true),
-  orbitSchemaId: integer("orbit_schema_id"), // Numeric ID returned from Orbit schema import
-  orbitCredDefId: integer("orbit_cred_def_id"), // Numeric ID returned from Orbit credential definition import
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -168,23 +220,13 @@ export const insertCredentialDefinitionSchema = createInsertSchema(credentialDef
 export const insertCredentialTemplateSchema = createInsertSchema(credentialTemplates).pick({
   label: true,
   version: true,
-  schemaId: true,
-  credDefId: true,
-  issuerDid: true,
-  schemaUrl: true,
-  attributes: true,
+  schemaMetadata: true,
+  cryptographicMetadata: true,
+  brandingMetadata: true,
+  ecosystemMetadata: true,
+  orbitIntegration: true,
   isPredefined: true,
-  ecosystem: true,
-  interopProfile: true,
-  compatibleWallets: true,
-  walletRestricted: true,
-  branding: true,
-  metaOverlay: true,
-  ledgerNetwork: true,
-  primaryColor: true,
-  brandBgUrl: true,
-  brandLogoUrl: true,
-  governanceUrl: true,
+  visible: true,
 });
 
 export const insertCredentialAttributeSchema = createInsertSchema(credentialAttributes).pick({

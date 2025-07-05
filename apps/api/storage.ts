@@ -807,107 +807,127 @@ export const storage = new DatabaseStorage();
     const hasLawyerCred = existingTemplates.some(t => t.label === "BC Lawyer Credential v1");
     
     if (existingTemplates.length === 0) {
-      // Seed BC Government credentials
+      // Seed BC Government credentials using unified OCA structure
       await storage.createCredentialTemplate({
         label: "BC Digital Business Card v1",
         version: "1.0",
-        schemaId: "L6ASjmDDbDH7yPL1t2yFj9:2:business_card:1.0",
-        credDefId: "L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card",
-        issuerDid: "did:indy:candy:L6ASjmDDbDH7yPL1t2yFj9",
-        schemaUrl: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-digital-business-card/1.0/governance.md",
-        attributes: [
-          { name: "business_name", description: "Legal business name" },
-          { name: "business_number", description: "CRA business number" },
-          { name: "business_type", description: "Type of business entity" },
-          { name: "registration_date", description: "Business registration date" },
-          { name: "business_address", description: "Registered business address" },
-          { name: "business_email", description: "Primary business email" },
-          { name: "business_phone", description: "Primary business phone" },
-          { name: "business_website", description: "Official business website" },
-          { name: "registration_jurisdiction", description: "Registration jurisdiction" },
-          { name: "permit_number", description: "Business permit number" },
-          { name: "permit_type", description: "Type of business permit" },
-          { name: "permit_issued_date", description: "Permit issue date" },
-          { name: "permit_expiry_date", description: "Permit expiry date" }
-        ] as AttributeDef[],
+        schemaMetadata: {
+          schemaId: "L6ASjmDDbDH7yPL1t2yFj9:2:business_card:1.0",
+          schemaName: "BC Digital Business Card",
+          schemaVersion: "1.0",
+          attributes: [
+            { name: "business_name", description: "Legal business name" },
+            { name: "business_number", description: "CRA business number" },
+            { name: "business_type", description: "Type of business entity" },
+            { name: "registration_date", description: "Business registration date" },
+            { name: "business_address", description: "Registered business address" },
+            { name: "business_email", description: "Primary business email" },
+            { name: "business_phone", description: "Primary business phone" },
+            { name: "business_website", description: "Official business website" },
+            { name: "registration_jurisdiction", description: "Registration jurisdiction" },
+            { name: "permit_number", description: "Business permit number" },
+            { name: "permit_type", description: "Type of business permit" },
+            { name: "permit_issued_date", description: "Permit issue date" },
+            { name: "permit_expiry_date", description: "Permit expiry date" }
+          ]
+        },
+        cryptographicMetadata: {
+          issuerDid: "did:indy:candy:L6ASjmDDbDH7yPL1t2yFj9",
+          credDefId: "L6ASjmDDbDH7yPL1t2yFj9:3:CL:728:business_card",
+          governanceFramework: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-digital-business-card/1.0/governance.md"
+        },
+        brandingMetadata: {
+          displayName: "BC Digital Business Card v1",
+          description: "Official digital business card credential from Government of British Columbia",
+          issuerName: "Government of British Columbia",
+          issuerWebsite: "https://gov.bc.ca",
+          logo: {
+            url: "/assets/bc-gov-logo.svg",
+            altText: "BC Government Logo"
+          },
+          colors: {
+            primary: "#003366",
+            secondary: "#FCBA19"
+          },
+          layout: "standard"
+        },
+        ecosystemMetadata: {
+          ecosystem: "BC Ecosystem",
+          interopProfile: "AIP 2.0",
+          compatibleWallets: ["BC Wallet"],
+          walletRestricted: true,
+          ledgerNetwork: "BCOVRIN_TEST"
+        },
+        orbitIntegration: {
+          orbitSchemaId: 1042,
+          orbitCredDefId: 1145
+        },
         isPredefined: true,
-        ecosystem: "BC Ecosystem",
-        interopProfile: "AIP 2.0",
-        compatibleWallets: ["BC Wallet"],
-        walletRestricted: true
+        visible: true
       });
 
       await storage.createCredentialTemplate({
         label: "BC Person Credential",
-        version: "1.0", 
-        schemaId: "RGjWbW1eycP7FrMf4QJvX8:2:Person:1.0",
-        credDefId: "RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person",
-        issuerDid: "did:indy:candy:RGjWbW1eycP7FrMf4QJvX8",
-        schemaUrl: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-person-credential/1.0/governance.md",
-        attributes: [
-          { name: "given_names", description: "Person's given name(s)" },
-          { name: "family_name", description: "Person's family name" },
-          { name: "birthdate", description: "Date of birth (YYYY-MM-DD)" },
-          { name: "street_address", description: "Street address" },
-          { name: "locality", description: "City or locality" },
-          { name: "region", description: "Province or region" },
-          { name: "postal_code", description: "Postal or ZIP code" },
-          { name: "country", description: "Country" },
-          { name: "issued_date", description: "Credential issue date" },
-          { name: "expiry_date", description: "Credential expiry date" }
-        ] as AttributeDef[],
+        version: "1.0",
+        schemaMetadata: {
+          schemaId: "RGjWbW1eycP7FrMf4QJvX8:2:Person:1.0",
+          schemaName: "BC Person Credential",
+          schemaVersion: "1.0",
+          attributes: [
+            { name: "given_names", description: "Person's given name(s)" },
+            { name: "family_name", description: "Person's family name" },
+            { name: "birthdate", description: "Date of birth (YYYY-MM-DD)" },
+            { name: "street_address", description: "Street address" },
+            { name: "locality", description: "City or locality" },
+            { name: "region", description: "Province or region" },
+            { name: "postal_code", description: "Postal or ZIP code" },
+            { name: "country", description: "Country" },
+            { name: "issued_date", description: "Credential issue date" },
+            { name: "expiry_date", description: "Credential expiry date" }
+          ]
+        },
+        cryptographicMetadata: {
+          issuerDid: "did:indy:candy:RGjWbW1eycP7FrMf4QJvX8",
+          credDefId: "RGjWbW1eycP7FrMf4QJvX8:3:CL:13:Person",
+          governanceFramework: "https://github.com/bcgov/bc-vcpedia/blob/main/credentials/bc-person-credential/1.0/governance.md"
+        },
+        brandingMetadata: {
+          displayName: "BC Person Credential",
+          description: "Official person identity credential from Government of British Columbia",
+          issuerName: "Government of British Columbia",
+          issuerWebsite: "https://gov.bc.ca",
+          logo: {
+            url: "/assets/bc-gov-logo.svg",
+            altText: "BC Government Logo"
+          },
+          colors: {
+            primary: "#003366",
+            secondary: "#FCBA19"
+          },
+          layout: "standard"
+        },
+        ecosystemMetadata: {
+          ecosystem: "BC Ecosystem",
+          interopProfile: "AIP 2.0",
+          compatibleWallets: ["BC Wallet"],
+          walletRestricted: true,
+          ledgerNetwork: "BCOVRIN_TEST"
+        },
+        orbitIntegration: {
+          orbitSchemaId: 1089,
+          orbitCredDefId: 1192
+        },
         isPredefined: true,
-        ecosystem: "BC Ecosystem", 
-        interopProfile: "AIP 2.0",
-        compatibleWallets: ["BC Wallet"],
-        walletRestricted: true
+        visible: true
       });
 
       await storage.createCredentialTemplate({
         label: "BC Lawyer Credential v1",
         version: "1.0",
-        schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
-        credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
-        issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
-        schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
-        attributes: [
-          { name: "given_name", description: "Legal given name(s)" },
-          { name: "surname", description: "Legal surname" },
-          { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
-          { name: "member_status", description: "Current membership status (e.g., PRAC)" },
-          { name: "member_status_code", description: "Code for membership status" },
-          { name: "credential_type", description: "Credential type (Lawyer)" }
-        ] as AttributeDef[],
-        isPredefined: true,
-        ecosystem: "BC Ecosystem",
-        interopProfile: "AIP 2.0", 
-        compatibleWallets: ["BC Wallet"],
-        walletRestricted: true
-      });
-    }
-    
-    // Add BC Lawyer Credential if it doesn't exist
-    if (!hasLawyerCred) {
-      console.log('Fetching OCA bundle for BC Lawyer Credential...');
-      
-      try {
-        // Fetch OCA bundle data
-        const ocaUrl = 'https://raw.githubusercontent.com/bcgov/aries-oca-bundles/main/OCABundles/schema/bcgov-digital-trust/LSBC/Lawyer/Test/OCABundle.json';
-        const response = await fetch(ocaUrl);
-        const ocaData = await response.json();
-        const bundle = Array.isArray(ocaData) ? ocaData[0] : ocaData;
-        
-        // Extract branding and meta overlays
-        const brandingOverlay = bundle.overlays?.find((o: any) => o.type === 'aries/overlays/branding/1.0');
-        const metaOverlay = bundle.overlays?.find((o: any) => o.type === 'spec/overlays/meta/1.0');
-        
-        await storage.createCredentialTemplate({
-          label: "BC Lawyer Credential v1",
-          version: "1.0",
+        schemaMetadata: {
           schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
-          credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
-          issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
-          schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+          schemaName: "BC Lawyer Credential",
+          schemaVersion: "1.0",
           attributes: [
             { name: "given_name", description: "Legal given name(s)" },
             { name: "surname", description: "Legal surname" },
@@ -915,51 +935,95 @@ export const storage = new DatabaseStorage();
             { name: "member_status", description: "Current membership status (e.g., PRAC)" },
             { name: "member_status_code", description: "Code for membership status" },
             { name: "credential_type", description: "Credential type (Lawyer)" }
-          ] as AttributeDef[],
-          isPredefined: true,
+          ]
+        },
+        cryptographicMetadata: {
+          issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
+          credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
+          governanceFramework: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance"
+        },
+        brandingMetadata: {
+          displayName: "BC Lawyer Credential v1",
+          description: "Official legal professional credential from Law Society of British Columbia",
+          issuerName: "Law Society of British Columbia (LSBC)",
+          issuerWebsite: "https://lawsociety.bc.ca",
+          logo: {
+            url: "/oca-assets/lsbc/logo.png",
+            altText: "LSBC Logo"
+          },
+          colors: {
+            primary: "#00698c",
+            secondary: "#1a2930"
+          },
+          backgroundImage: {
+            url: "/oca-assets/lsbc/background_image.png",
+            position: "center"
+          },
+          layout: "banner-bottom"
+        },
+        ecosystemMetadata: {
           ecosystem: "BC Ecosystem",
-          interopProfile: "AIP 2.0", 
+          interopProfile: "AIP 2.0",
           compatibleWallets: ["BC Wallet"],
           walletRestricted: true,
-          branding: brandingOverlay ? {
-            logoUrl: brandingOverlay.logo,
-            backgroundImage: brandingOverlay.background_image,
-            primaryColor: brandingOverlay.primary_background_color,
-            secondaryColor: brandingOverlay.secondary_background_color
-          } : null,
-          metaOverlay: metaOverlay ? {
-            issuer: metaOverlay.issuer,
-            issuerUrl: metaOverlay.issuer_url,
-            description: metaOverlay.description
-          } : null
-        });
-        console.log('BC Lawyer Credential v1 added with OCA branding');
-      } catch (error) {
-        console.error('Error fetching OCA bundle, adding credential without branding:', error);
-        // Fallback to credential without branding
-        await storage.createCredentialTemplate({
-          label: "BC Lawyer Credential v1",
-          version: "1.0",
-          schemaId: "QzLYGuAebsy3MXQ6b1sFiT:2:legal-professional:1.0",
-          credDefId: "QzLYGuAebsy3MXQ6b1sFiT:3:CL:2351:lawyer",
-          issuerDid: "did:indy:QzLYGuAebsy3MXQ6b1sFiT",
-          schemaUrl: "https://bcgov.github.io/digital-trust-toolkit/docs/governance/justice/legal-professional/governance",
+          ledgerNetwork: "BCOVRIN_TEST"
+        },
+        orbitIntegration: {
+          orbitSchemaId: 1065,
+          orbitCredDefId: 1168
+        },
+        isPredefined: true,
+        visible: true
+      });
+      
+      // Add the Unverified Person credential for testing
+      await storage.createCredentialTemplate({
+        label: "Unverified Person",
+        version: "1.0",
+        schemaMetadata: {
+          schemaId: "demo:unverified:person:1.0",
+          schemaName: "Unverified Person",
+          schemaVersion: "1.0",
           attributes: [
-            { name: "given_name", description: "Legal given name(s)" },
-            { name: "surname", description: "Legal surname" },
-            { name: "public_person_id", description: "Unique LSBC Public Person ID (PPID)" },
-            { name: "member_status", description: "Current membership status (e.g., PRAC)" },
-            { name: "member_status_code", description: "Code for membership status" },
-            { name: "credential_type", description: "Credential type (Lawyer)" }
-          ] as AttributeDef[],
-          isPredefined: true,
-          ecosystem: "BC Ecosystem",
-          interopProfile: "AIP 2.0", 
-          compatibleWallets: ["BC Wallet"],
-          walletRestricted: true
-        });
-        console.log('BC Lawyer Credential v1 added without branding');
-      }
+            { name: "given_names", description: "Person's given name(s)" },
+            { name: "family_name", description: "Person's family name" },
+            { name: "birthdate_dateint", description: "Birth date in YYYYMMDD format" },
+            { name: "email", description: "Email address" },
+            { name: "phone", description: "Phone number" }
+          ]
+        },
+        cryptographicMetadata: {
+          issuerDid: "did:demo:unverified",
+          credDefId: "demo:unverified:person:cred-def:1.0"
+        },
+        brandingMetadata: {
+          displayName: "Unverified Person",
+          description: "Demo credential for testing purposes - not government issued",
+          issuerName: "Demo Issuer",
+          logo: {
+            url: "/assets/demo-logo.svg",
+            altText: "Demo Logo"
+          },
+          colors: {
+            primary: "#6B7280",
+            secondary: "#9CA3AF"
+          },
+          layout: "standard"
+        },
+        ecosystemMetadata: {
+          ecosystem: "Demo Ecosystem",
+          interopProfile: "AIP 2.0",
+          compatibleWallets: ["BC Wallet", "General Purpose Wallets"],
+          walletRestricted: false,
+          ledgerNetwork: "DEMO_LEDGER"
+        },
+        orbitIntegration: {
+          orbitSchemaId: 1073,
+          orbitCredDefId: 1176
+        },
+        isPredefined: true,
+        visible: true
+      });
     }
     
   } catch (error) {

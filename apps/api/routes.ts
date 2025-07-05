@@ -506,30 +506,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const templates = await storage.listCredentialTemplates();
       
-      // Transform overlay structure to the format expected by frontend
+      // Transform unified OCA metadata structure to the format expected by frontend
       const withBranding = templates.map(tpl => {
-        const branding = tpl.overlays.find(o => o.type.includes('branding'))?.data ?? {};
-        const meta = tpl.overlays.find(o => o.type.includes('meta'))?.data ?? {};
+        const schemaMetadata = tpl.schemaMetadata;
+        const cryptographicMetadata = tpl.cryptographicMetadata;
+        const brandingMetadata = tpl.brandingMetadata;
+        const ecosystemMetadata = tpl.ecosystemMetadata;
+        const orbitIntegration = tpl.orbitIntegration;
         
         return {
-          ...tpl,
-          branding,
-          meta,
-          // Ensure issuer name is human readable
-          issuer: meta.issuer || meta.issuer_name || 'Unknown Issuer',
-          issuerUrl: meta.issuer_url || meta.issuerUrl,
-          description: meta.description || `${tpl.label} credential`,
-          // Extract attributes from capture_base overlay if available
-          attributes: (() => {
-            const captureBase = tpl.overlays.find(o => o.type.includes('capture_base'));
-            if (captureBase?.data?.attributes) {
-              return Object.entries(captureBase.data.attributes).map(([name, config]) => ({
-                name,
-                description: (config as Record<string, unknown>)?.description || name
-              }));
-            }
-            return [];
-          })()
+          id: tpl.id,
+          label: tpl.label,
+          version: tpl.version,
+          // Schema information
+          schemaId: schemaMetadata.schemaId,
+          credDefId: cryptographicMetadata.credDefId,
+          issuerDid: cryptographicMetadata.issuerDid,
+          attributes: schemaMetadata.attributes,
+          // Branding and display
+          branding: {
+            logoUrl: brandingMetadata.logo?.url,
+            backgroundImage: brandingMetadata.backgroundImage?.url,
+            primaryColor: brandingMetadata.colors?.primary,
+            layout: brandingMetadata.layout
+          },
+          meta: {
+            issuer: brandingMetadata.issuerName,
+            issuerUrl: brandingMetadata.issuerWebsite,
+            description: brandingMetadata.description
+          },
+          // Compatibility and ecosystem
+          ecosystem: ecosystemMetadata.ecosystem,
+          interopProfile: ecosystemMetadata.interopProfile,
+          compatibleWallets: ecosystemMetadata.compatibleWallets,
+          walletRestricted: ecosystemMetadata.walletRestricted,
+          // Governance
+          governanceUrl: cryptographicMetadata.governanceFramework,
+          // Orbit integration
+          orbitSchemaId: orbitIntegration?.orbitSchemaId,
+          orbitCredDefId: orbitIntegration?.orbitCredDefId,
+          // Administrative
+          isPredefined: tpl.isPredefined,
+          visible: tpl.visible,
+          createdAt: tpl.createdAt,
+          updatedAt: tpl.updatedAt,
+          description: brandingMetadata.description || `${tpl.label} credential`
         };
       });
       
