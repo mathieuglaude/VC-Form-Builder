@@ -14,6 +14,27 @@ router.get('/debug/plain/:formId', async (req, res) => {
       return res.status(404).send('<h1>Form not found</h1>');
     }
 
+    // Auto-append submit button if missing (for debug convenience)
+    const schema = { ...form.formSchema };
+    const hasSubmitButton = schema.components.some((comp: any) => 
+      comp.type === 'button' && (comp.action === 'submit' || comp.key === 'submit')
+    );
+    
+    if (!hasSubmitButton) {
+      schema.components.push({
+        key: 'submit',
+        type: 'button',
+        label: 'Submit',
+        input: true,
+        disableOnInvalid: true,
+        action: 'submit',
+        theme: 'primary'
+      });
+    }
+
+    const schemaJson = JSON.stringify(schema);
+    const componentsJson = JSON.stringify(schema.components, null, 2);
+
     const html = `
 <!DOCTYPE html>
 <html lang="en">
@@ -72,7 +93,7 @@ router.get('/debug/plain/:formId', async (req, res) => {
 
     <div class="schema-details">
         <strong>Form Schema Components:</strong><br>
-        ${JSON.stringify(form.formSchema.components, null, 2)}
+        ${componentsJson}
     </div>
 
     <div class="form-container">
@@ -88,10 +109,10 @@ router.get('/debug/plain/:formId', async (req, res) => {
 
     <script>
         console.log('🔧 Debug Form.io Test Starting...');
-        console.log('Form Schema:', ${JSON.stringify(form.formSchema)});
+        console.log('Form Schema:', ${schemaJson});
         
         // Create Form.io instance
-        Formio.createForm(document.getElementById('formio-container'), ${JSON.stringify(form.formSchema)})
+        Formio.createForm(document.getElementById('formio-container'), ${schemaJson})
             .then(function(form) {
                 console.log('✅ Form.io form created successfully');
                 

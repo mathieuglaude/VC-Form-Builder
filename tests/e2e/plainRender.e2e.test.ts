@@ -46,8 +46,8 @@ describe('Plain Form.io Render E2E Test', () => {
       });
     });
     
-    // Submit the form
-    const submitButton = await page.locator('button[type="submit"]');
+    // Submit the form - look for Form.io submit button
+    const submitButton = await page.locator('button:has-text("Submit"), button[type="submit"], .btn-primary');
     await submitButton.click();
     
     // Wait for submission log
@@ -73,7 +73,7 @@ describe('Plain Form.io Render E2E Test', () => {
     await page.waitForSelector('#formio-container form');
     
     // Try to submit without filling required fields
-    const submitButton = await page.locator('button[type="submit"]');
+    const submitButton = await page.locator('button:has-text("Submit"), button[type="submit"], .btn-primary');
     await submitButton.click();
     
     // Should show validation errors
