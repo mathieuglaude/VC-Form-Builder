@@ -183,10 +183,10 @@ export default function FormLaunchPage() {
       <div className="md:w-[520px] w-full">
         <FormPage
           form={form}
-          mode={isPreview ? "preview" : "launch"}
           onSubmit={!isPreview ? handleFormSubmit : undefined}
           isSubmitting={!isPreview ? submitFormMutation.isPending : false}
           showHeader={true}
+          enableVC={false}
         />
       </div>
 

@@ -6,56 +6,26 @@ import FormRenderer from '@/components/FormRenderer';
 
 interface FormPageProps {
   form: any;
-  mode: 'preview' | 'launch' | 'public' | 'debug';
   onSubmit?: (formData: Record<string, any>, verifiedFields: Record<string, any>) => void;
   isSubmitting?: boolean;
   showHeader?: boolean; // Controls whether to show header - false for embedded use
+  enableVC?: boolean; // Feature flag for VC functionality
 }
 
-export default function FormPage({ form, mode, onSubmit, isSubmitting = false, showHeader = true }: FormPageProps) {
+export default function FormPage({ form, onSubmit, isSubmitting = false, showHeader = true, enableVC = false }: FormPageProps) {
   const [location] = useLocation();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
   
-  // DEBUG MODE: Skip all VC logic and render pure form
-  if (mode === 'debug') {
-    console.log('[FormPage] DEBUG MODE: Rendering pure form without VC logic');
-    
-    const handleFieldChange = (fieldKey: string, value: any) => {
-      setFormData(prev => ({
-        ...prev,
-        [fieldKey]: value
-      }));
-    };
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      console.log('[FormPage] Debug form submission:', formData);
-      if (onSubmit) {
-        onSubmit(formData, {});
-      }
-    };
-    
-    return (
-      <FormRenderer
-        formSchema={form.formSchema}
-        formData={formData}
-        verifiedFields={{}}
-        onFieldChange={handleFieldChange}
-        onSubmit={handleSubmit}
-        mode="launch"
-        isSubmitting={isSubmitting}
-      />
-    );
-  }
-  
   // Check if this is preview mode
   const isPreview = new URLSearchParams(location.split('?')[1] || '').has('preview');
 
-  console.log('[FormPage]', mode, form.id, { needsVC: needsVerificationCredentials(form), isPreview });
+  console.log('[FormPage]', form.id, { needsVC: needsVerificationCredentials(form), isPreview, enableVC });
 
-  // Check if form needs verification credentials
+  // Check if form needs verification credentials (for future VC integration)
   function needsVerificationCredentials(form: any): boolean {
+    if (!enableVC) return false;
+    
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
     
@@ -78,6 +48,7 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false, s
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[FormPage] Form submission:', formData);
     if (onSubmit) {
       onSubmit(formData, verifiedFields);
     }
@@ -93,26 +64,17 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false, s
 
   const formSchema = form.formSchema || form.formDefinition;
 
-  // Form content component
+  // Unified form renderer - always use the proven pattern
   const formContent = (
-    <Card className="shadow-lg">
-      <CardHeader>
-        <CardTitle className="text-xl text-gray-800">
-          {mode === 'preview' ? 'Form Preview' : 'Complete the Form'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="p-6">
-        <FormRenderer
-          formSchema={formSchema}
-          formData={formData}
-          verifiedFields={verifiedFields}
-          onFieldChange={handleFieldChange}
-          onSubmit={mode !== 'preview' ? handleSubmit : undefined}
-          mode={mode}
-          isSubmitting={isSubmitting}
-        />
-      </CardContent>
-    </Card>
+    <FormRenderer
+      formSchema={formSchema}
+      formData={formData}
+      verifiedFields={verifiedFields}
+      onFieldChange={handleFieldChange}
+      onSubmit={isPreview ? undefined : handleSubmit}
+      mode="launch"
+      isSubmitting={isSubmitting}
+    />
   );
 
   // Return with or without header/layout based on showHeader prop
@@ -135,7 +97,16 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false, s
           )}
         </div>
 
-        {formContent}
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-xl text-gray-800">
+              {isPreview ? 'Form Preview' : 'Complete the Form'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            {formContent}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

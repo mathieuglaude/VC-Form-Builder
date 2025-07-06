@@ -178,9 +178,10 @@ export default function PublicFormPage() {
           <div className={hasVC ? 'flex-1' : 'max-w-4xl'}>
             <FormPage
               form={form}
-              mode="public"
               onSubmit={handleFormSubmit}
               isSubmitting={submitFormMutation.isPending}
+              showHeader={false}
+              enableVC={false}
             />
           </div>
 

@@ -20,10 +20,10 @@ function ReactFormDebug() {
       
       <FormPage
         form={formData}
-        mode="debug"
         onSubmit={submitHandler}
         isSubmitting={false}
         showHeader={false}
+        enableVC={false}
       />
     </div>
   );

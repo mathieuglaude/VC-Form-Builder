@@ -85,8 +85,8 @@ export default function PreviewPage() {
   return (
     <FormPage
       form={form}
-      mode="preview"
       // No onSubmit for preview mode
+      enableVC={false}
     />
   );
 }
