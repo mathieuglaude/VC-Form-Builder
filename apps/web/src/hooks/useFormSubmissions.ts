@@ -30,8 +30,10 @@ export function useFormSubmissions(formId: number, options?: {
   const queryString = params.toString();
   const url = `/api/forms/${formId}/submissions${queryString ? '?' + queryString : ''}`;
   
+  console.debug("[DEBUG-submissions-req]", url, { formId, cursor, pageSize });
+  
   return useQuery<PaginatedSubmissions | FormSubmission[]>({
-    queryKey: ['/api/forms', formId, 'submissions', { cursor, pageSize }],
+    queryKey: [url, 'submissions', { formId, cursor, pageSize }],
     enabled: enabled && !!formId,
     staleTime: 30000, // 30 seconds
   });

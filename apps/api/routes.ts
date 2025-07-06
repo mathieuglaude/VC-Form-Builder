@@ -428,6 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   router.get('/forms/:id/submissions', async (req, res) => {
     try {
+      console.log("[DEBUG-api-submissions]", req.params, req.query);
       const formConfigId = parseInt(req.params.id);
       const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : undefined;
       const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
