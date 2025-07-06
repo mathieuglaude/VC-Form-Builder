@@ -56,8 +56,14 @@ export class CredentialManagementService {
         }
       };
 
+      const requestUrl = `api/lob/${this.lobId}/schema/store`;
+      console.log(`[CRED-MGMT] API Request Details:`);
+      console.log(`  URL: ${this.baseURL}${requestUrl}`);
+      console.log(`  Headers: { api-key: ${this.apiKey.substring(0, 8)}..., Content-Type: application/json }`);
+      console.log(`  Payload:`, JSON.stringify(schemaPayload, null, 2));
+
       // Call Orbit Enterprise API to store external schema
-      const response = await ky.post(`api/lob/${this.lobId}/schema/store`, {
+      const response = await ky.post(requestUrl, {
         prefixUrl: this.baseURL,
         headers: {
           'api-key': this.apiKey,
@@ -67,14 +73,21 @@ export class CredentialManagementService {
         timeout: 30000
       }).json<{ schemaId: number; status: string }>();
 
-      console.log(`[CRED-MGMT] Schema import response:`, response);
+      console.log(`[CRED-MGMT] Schema import SUCCESS:`, response);
 
       return {
         orbitSchemaId: response.schemaId,
         status: response.status === 'created' ? 'imported' : 'existing'
       };
     } catch (error) {
-      console.error('[CRED-MGMT] Schema import failed:', error);
+      console.error('[CRED-MGMT] Schema import FAILED - Full error details:', error);
+      
+      // Enhanced error logging
+      if (error instanceof Error) {
+        console.error('[CRED-MGMT] Error message:', error.message);
+        console.error('[CRED-MGMT] Error stack:', error.stack);
+      }
+      
       throw new Error(`Failed to import schema into Orbit: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -95,8 +108,13 @@ export class CredentialManagementService {
         }
       };
 
+      const requestUrl = `api/lob/${this.lobId}/cred-def/store`;
+      console.log(`[CRED-MGMT] Cred Def API Request Details:`);
+      console.log(`  URL: ${this.baseURL}${requestUrl}`);
+      console.log(`  Payload:`, JSON.stringify(credDefPayload, null, 2));
+
       // Call Orbit Enterprise API to store external credential definition
-      const response = await ky.post(`api/lob/${this.lobId}/cred-def/store`, {
+      const response = await ky.post(requestUrl, {
         prefixUrl: this.baseURL,
         headers: {
           'api-key': this.apiKey,
@@ -106,14 +124,21 @@ export class CredentialManagementService {
         timeout: 30000
       }).json<{ credDefId: number; status: string }>();
 
-      console.log(`[CRED-MGMT] Credential definition import response:`, response);
+      console.log(`[CRED-MGMT] Credential definition import SUCCESS:`, response);
 
       return {
         orbitCredDefId: response.credDefId,
         status: response.status === 'created' ? 'imported' : 'existing'
       };
     } catch (error) {
-      console.error('[CRED-MGMT] Credential definition import failed:', error);
+      console.error('[CRED-MGMT] Credential definition import FAILED - Full error details:', error);
+      
+      // Enhanced error logging
+      if (error instanceof Error) {
+        console.error('[CRED-MGMT] Error message:', error.message);
+        console.error('[CRED-MGMT] Error stack:', error.stack);
+      }
+      
       throw new Error(`Failed to import credential definition into Orbit: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

@@ -423,15 +423,16 @@ Changelog:
   - Added orbit_schema_id and orbit_cred_def_id columns to credential_templates database table
   - Updated credential detail UI to display both blockchain identifiers and Orbit numeric IDs side by side
   - Distinguished Orbit fields with blue background styling for easy identification during testing
-  - Populated all four credential templates with demonstration Orbit IDs: BC Digital Business Card (1042/1145), BC Person Credential (1089/1192), BC Lawyer Credential (1065/1168), Unverified Person (1073/1176)
+  - All credential templates initialized with null Orbit IDs - no mock data policy enforced
   - Enhanced testing workflow by providing visibility into credential import status and mapping between external and internal identifiers
-- July 4, 2025. Completed Orbit Enterprise integration with real API credentials and database lookup
-  - Updated proof request system to fetch credential templates from database and map to Orbit numeric IDs
-  - Fixed initFormProof.ts to use storage.listCredentialTemplates() for dynamic Orbit mapping lookup
-  - Confirmed system correctly transforms proof requests using Orbit IDs (1073/1176) instead of external blockchain identifiers
-  - Successfully submitted LOB registration with real API key MY69uVmVdz3Ml6Egr8clG7x-AYrBy0Et to Orbit Enterprise development environment
-  - LOB registration pending approval - awaiting email confirmation with actual LOB ID to replace test placeholder
-  - Proof request pipeline fully functional: extracts mappings → fetches Orbit IDs from database → builds direct endpoint payload
+- July 6, 2025. Implemented authentic-data-only policy and enhanced Orbit API integration
+  - BREAKING: Removed all mock Orbit IDs from credential seeding (1042, 1065, 1073, 1089, 1145, 1168, 1176, 1192)
+  - Enforced "no mock data" principle: Orbit fields show 'N/A' until real API responses received
+  - Enhanced credential management service with comprehensive API request/response logging
+  - Updated UI transformation to display 'N/A' for null Orbit integration fields
+  - Fixed import route to only store Orbit data when APIs succeed, null otherwise
+  - Added importedAt timestamp for successful Orbit integrations
+  - Improved error handling with detailed request/response debugging for API troubleshooting
 - July 4, 2025. Identified LOB ID authentication issue and prepared for production readiness
   - Fixed authentication headers to use 'api-key' format as specified in GitHub documentation
   - Added connectionless=true parameter to proof request URL per API specification

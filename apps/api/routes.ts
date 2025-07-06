@@ -544,8 +544,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Governance
           governanceUrl: cryptographicMetadata.governanceFramework,
           // Orbit integration
-          orbitSchemaId: orbitIntegration?.orbitSchemaId,
-          orbitCredDefId: orbitIntegration?.orbitCredDefId,
+          orbitSchemaId: orbitIntegration?.orbitSchemaId || 'N/A',
+          orbitCredDefId: orbitIntegration?.orbitCredDefId || 'N/A',
           // Administrative
           isPredefined: tpl.isPredefined,
           visible: tpl.visible,
@@ -615,8 +615,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Governance
         governanceUrl: cryptographicMetadata.governanceFramework,
         // Orbit integration
-        orbitSchemaId: orbitIntegration?.orbitSchemaId,
-        orbitCredDefId: orbitIntegration?.orbitCredDefId,
+        orbitSchemaId: orbitIntegration?.orbitSchemaId || 'N/A',
+        orbitCredDefId: orbitIntegration?.orbitCredDefId || 'N/A',
         // Administrative
         isPredefined: template.isPredefined,
         visible: template.visible,
@@ -1320,10 +1320,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ecosystem: ecosystemTag,
           interopProfile: 'AIP 2.0'
         },
-        orbitIntegration: {
+        orbitIntegration: orbitSchemaId ? {
           orbitSchemaId: orbitSchemaId,
-          orbitCredDefId: orbitCredDefId
-        },
+          orbitCredDefId: orbitCredDefId,
+          importedAt: new Date()
+        } : null,
         isPredefined: false,
         visible: true
       };

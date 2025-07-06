@@ -859,8 +859,8 @@ export const storage = new DatabaseStorage();
           ledgerNetwork: "BCOVRIN_TEST"
         },
         orbitIntegration: {
-          orbitSchemaId: 1042,
-          orbitCredDefId: 1145
+          orbitSchemaId: null,
+          orbitCredDefId: null
         },
         isPredefined: true,
         visible: true
@@ -914,8 +914,8 @@ export const storage = new DatabaseStorage();
           ledgerNetwork: "BCOVRIN_TEST"
         },
         orbitIntegration: {
-          orbitSchemaId: 1089,
-          orbitCredDefId: 1192
+          orbitSchemaId: null,
+          orbitCredDefId: null
         },
         isPredefined: true,
         visible: true
@@ -969,8 +969,8 @@ export const storage = new DatabaseStorage();
           ledgerNetwork: "BCOVRIN_TEST"
         },
         orbitIntegration: {
-          orbitSchemaId: 1065,
-          orbitCredDefId: 1168
+          orbitSchemaId: null,
+          orbitCredDefId: null
         },
         isPredefined: true,
         visible: true
@@ -1019,8 +1019,8 @@ export const storage = new DatabaseStorage();
           ledgerNetwork: "DEMO_LEDGER"
         },
         orbitIntegration: {
-          orbitSchemaId: 1073,
-          orbitCredDefId: 1176
+          orbitSchemaId: null,
+          orbitCredDefId: null
         },
         isPredefined: true,
         visible: true
