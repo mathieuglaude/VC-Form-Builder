@@ -20,19 +20,25 @@ export default function FormPage({ form, onSubmit, isSubmitting = false, showHea
   // Check if this is preview mode
   const isPreview = new URLSearchParams(location.split('?')[1] || '').has('preview');
 
-  console.log('[FormPage]', form.id, { needsVC: needsVerificationCredentials(form), isPreview, enableVC });
-
-  // Check if form needs verification credentials (for future VC integration)
+  // Check if form needs verification credentials (VC integration)
   function needsVerificationCredentials(form: any): boolean {
-    if (!enableVC) return false;
+    // Only check for VC when feature flag is enabled
+    if (!enableVC || typeof window === 'undefined') return false;
+    
+    // Check environment variable for VC enablement
+    const vcEnabled = import.meta.env.VITE_ENABLE_VC === 'true';
+    if (!vcEnabled) return false;
     
     const formSchema = form?.formSchema || form?.formDefinition;
     if (!formSchema?.components) return false;
     
     return formSchema.components.some((component: any) => 
-      component.vcMapping?.credentialType && component.vcMapping?.attributeName
+      component.vcConfig?.credentialType && component.vcConfig?.attributeName
     );
   }
+
+  const needsVC = needsVerificationCredentials(form);
+  console.log('[FormPage]', form.id, { needsVC, isPreview, enableVC, vcFlag: import.meta.env.VITE_ENABLE_VC });
 
   const handleFieldChange = (fieldKey: string, value: any) => {
     setFormData(prev => ({

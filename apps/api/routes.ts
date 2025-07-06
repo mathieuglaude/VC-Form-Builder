@@ -1291,11 +1291,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Mount all API routes under /api prefix
   app.use('/api', router);
   
-  // Mount sub-routers
-  app.use('/api', proofsRouter);
-
-  app.use('/api', defineProofRouter);
-  app.use('/api/oca', ocaRouter);
+  // Mount sub-routers conditionally based on feature flag
+  if (process.env.ENABLE_VC === 'true') {
+    console.log('[ROUTES] VC functionality enabled - mounting proof and OCA routes');
+    app.use('/api', proofsRouter);
+    app.use('/api', defineProofRouter);
+    app.use('/api/oca', ocaRouter);
+  } else {
+    console.log('[ROUTES] VC functionality disabled - skipping proof and OCA routes');
+  }
 
   // Development-only debug routes
   if (process.env.NODE_ENV !== 'production') {

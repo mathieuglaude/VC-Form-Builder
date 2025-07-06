@@ -1,83 +1,136 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Shield, ExternalLink, X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle, QrCode, Smartphone, ExternalLink } from 'lucide-react';
 
 interface VerificationPanelProps {
-  svg: string;
-  url: string;
+  proofData: {
+    proofId: string;
+    qrCodeSvg: string;
+    invitationUrl: string;
+    status?: string;
+  };
+  onVerified: (verifiedData: Record<string, any>) => void;
   className?: string;
-  onCancel?: () => void;
 }
 
-export default function VerificationPanel({ svg, url, className = '', onCancel }: VerificationPanelProps) {
-  console.log('[panel] mounted with props', { svg: !!svg, url });
-  const [isVisible, setIsVisible] = useState(true);
+export default function VerificationPanel({ 
+  proofData, 
+  onVerified, 
+  className = '' 
+}: VerificationPanelProps) {
+  const [isVerified, setIsVerified] = useState(false);
+  const [verificationStatus, setVerificationStatus] = useState('pending');
 
-  if (!isVisible) {
-    return null;
-  }
+  useEffect(() => {
+    if (!proofData?.proofId) return;
 
-  const handleCancel = () => {
-    setIsVisible(false);
-    onCancel?.();
+    // Set up WebSocket connection for real-time verification updates
+    const ws = new WebSocket(`ws://localhost:5000/ws`);
+    
+    ws.onopen = () => {
+      console.log('[WS] Connected to verification WebSocket');
+      ws.send(JSON.stringify({ 
+        type: 'subscribe', 
+        proofId: proofData.proofId 
+      }));
+    };
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('[WS] Received verification update:', data);
+        
+        if (data.type === 'proof_verified' && data.proofId === proofData.proofId) {
+          setIsVerified(true);
+          setVerificationStatus('verified');
+          onVerified(data.verifiedFields || {});
+        }
+      } catch (error) {
+        console.error('[WS] Error parsing WebSocket message:', error);
+      }
+    };
+
+    ws.onerror = (error) => {
+      console.error('[WS] WebSocket error:', error);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, [proofData?.proofId, onVerified]);
+
+  const openInWallet = () => {
+    if (proofData?.invitationUrl) {
+      window.open(proofData.invitationUrl, '_blank');
+    }
   };
 
   return (
-    <aside className={`rounded-lg border bg-background p-6 shadow-lg ${className}`}>
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-center font-medium text-lg flex items-center">
-          <Shield className="w-5 h-5 mr-2 text-blue-600" />
+    <Card className={`w-full max-w-md ${className}`}>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <QrCode className="h-5 w-5" />
           Credential Verification
-        </h3>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleCancel}
-          className="h-6 w-6 p-0"
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      
-      <div className="text-center">
-        <p className="text-sm text-gray-600 mb-4">
-          Scan with your digital wallet to verify credentials
-        </p>
-        
-        {/* QR Code Display */}
-        <div 
-          className="mx-auto mb-4 w-[232px] h-[232px] bg-white rounded-lg border shadow-sm p-2 flex items-center justify-center"
-          dangerouslySetInnerHTML={{__html: svg}} 
-        />
-
-        {/* Direct wallet link */}
-        <Button asChild variant="outline" className="w-full mb-4">
-          <a href={url} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Open in Wallet
-          </a>
-        </Button>
-        
-        <Button
-          variant="ghost"
-          onClick={handleCancel}
-          className="w-full text-sm text-gray-500"
-        >
-          Cancel Verification
-        </Button>
-        
-        {/* Debug information - only in development */}
-        {import.meta.env.NODE_ENV !== 'production' && (
-          <details className="mt-4 text-left">
-            <summary className="text-xs text-gray-400 cursor-pointer">Debug Info</summary>
-            <div className="mt-2 p-2 bg-gray-50 rounded text-xs font-mono break-all">
-              <div className="mb-1"><strong>URL:</strong> {url}</div>
-              <div><strong>Protocol:</strong> {url.startsWith('didcomm://') ? 'DIDComm' : url.startsWith('https://') ? 'HTTPS' : 'Unknown'}</div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {isVerified ? (
+          <div className="text-center space-y-2">
+            <CheckCircle className="h-12 w-12 text-green-500 mx-auto" />
+            <Badge variant="secondary" className="bg-green-100 text-green-800">
+              Verified Successfully
+            </Badge>
+            <p className="text-sm text-gray-600">
+              Your credentials have been verified and form fields have been automatically populated.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="text-center">
+              <Badge variant="outline" className="mb-2">
+                {verificationStatus === 'pending' ? 'Waiting for Verification' : 'Processing...'}
+              </Badge>
+              <p className="text-sm text-gray-600 mb-4">
+                Scan the QR code with your digital wallet to verify your credentials.
+              </p>
             </div>
-          </details>
+            
+            {proofData?.qrCodeSvg && (
+              <div className="flex justify-center">
+                <div 
+                  className="w-64 h-64 border rounded-lg p-2 bg-white"
+                  dangerouslySetInnerHTML={{ __html: proofData.qrCodeSvg }}
+                />
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Button 
+                onClick={openInWallet}
+                className="w-full"
+                variant="outline"
+                disabled={!proofData?.invitationUrl}
+              >
+                <Smartphone className="h-4 w-4 mr-2" />
+                Open in Wallet
+              </Button>
+              
+              {process.env.NODE_ENV === 'development' && proofData?.invitationUrl && (
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
+                    Debug: View Invitation URL
+                  </summary>
+                  <div className="mt-2 p-2 bg-gray-50 rounded text-xs break-all">
+                    {proofData.invitationUrl}
+                  </div>
+                </details>
+              )}
+            </div>
+          </div>
         )}
-      </div>
-    </aside>
+      </CardContent>
+    </Card>
   );
 }

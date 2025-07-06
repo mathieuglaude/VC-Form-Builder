@@ -26,8 +26,9 @@ export function extractMappings(form: any): VCMapping[] {
   }
 
   for (const component of form.formSchema.components) {
-    const vcMapping = component?.properties?.vcMapping;
-    const credentialMode = component?.properties?.credentialMode;
+    // Support both legacy structure and new vcConfig namespace
+    const vcMapping = component?.vcConfig || component?.properties?.vcMapping;
+    const credentialMode = component?.vcConfig?.mode || component?.properties?.credentialMode;
     
     if (vcMapping?.credentialType && vcMapping?.attributeName) {
       mappings.push({
