@@ -1297,5 +1297,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', defineProofRouter);
   app.use('/api/oca', ocaRouter);
 
+  // Development-only debug routes
+  if (process.env.NODE_ENV !== 'production') {
+    const { default: debugPlainRouter } = await import('./routes/debugPlain');
+    app.use('/', debugPlainRouter);
+  }
+
   return httpServer;
 }
