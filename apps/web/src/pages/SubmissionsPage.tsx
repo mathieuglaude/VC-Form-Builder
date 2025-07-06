@@ -12,7 +12,9 @@ import { useQuery } from '@tanstack/react-query';
 import { isDevOwner } from '@/utils/isDevOwner';
 
 export default function SubmissionsPage() {
-  const { formId } = useParams<{ formId: string }>();
+  const { id } = useParams<{ id: string }>();
+  const formId = Number(id);
+  console.debug("[SubmissionsPage] params", { id, formId });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [currentCursor, setCurrentCursor] = useState<number | undefined>();
@@ -20,12 +22,9 @@ export default function SubmissionsPage() {
 
   // Get form details
   const { data: form, isLoading: formLoading } = useQuery({
-    queryKey: ['/api/forms', formId],
+    queryKey: [`/api/forms/${formId}`],
     enabled: !!formId,
   });
-
-  // Parse formId to number, default to 0 if invalid
-  const formIdNumber = parseInt(formId || '0');
   
   // Get submissions with pagination
   const { 
@@ -33,7 +32,7 @@ export default function SubmissionsPage() {
     isLoading: submissionsLoading, 
     error: submissionsError 
   } = useFormSubmissionsPaginated(
-    formIdNumber, 
+    formId, 
     currentCursor ?? 1,
     pageSize
   );
@@ -48,11 +47,7 @@ export default function SubmissionsPage() {
       const devBypass = isDevOwner(formData.authorId);
       
       if (!isOwner && !devBypass) {
-        console.warn("[SubmissionsGuard]", {
-          formAuthor: formData.authorId,
-          formId: formData.id,
-          devBypass: devBypass,
-        });
+        console.warn("[SubmissionsGuard]", { formId, formAuthor: formData.authorId, devBypass: devBypass });
 
         toast({
           title: 'Access Denied',

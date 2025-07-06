@@ -23,7 +23,7 @@ export default function SingleSubmissionPage() {
 
   // Get form details for ownership check
   const { data: form, isLoading: formLoading } = useQuery({
-    queryKey: ['/api/forms', submission?.formConfigId],
+    queryKey: [`/api/forms/${submission?.formConfigId}`],
     enabled: !!submission?.formConfigId,
   });
 
