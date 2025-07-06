@@ -27,8 +27,7 @@ export function CredFormDialog({ initial, onClose, onSaved }: CredFormDialogProp
     ecosystem: "",
     interopProfile: "",
     isPredefined: false,
-    walletRestricted: false,
-    compatibleWallets: [],
+
     metaOverlay: {
       issuer: "",
       description: "",
@@ -77,13 +76,7 @@ export function CredFormDialog({ initial, onClose, onSaved }: CredFormDialogProp
     setForm({ ...form, attributes });
   };
 
-  const handleCompatibleWalletsChange = (value: string) => {
-    const wallets = value
-      .split(",")
-      .map((wallet) => wallet.trim())
-      .filter((wallet) => wallet.length > 0);
-    setForm({ ...form, compatibleWallets: wallets });
-  };
+
 
   return (
     <Dialog open onOpenChange={onClose}>
@@ -224,29 +217,7 @@ export function CredFormDialog({ initial, onClose, onSaved }: CredFormDialogProp
             </div>
           </div>
 
-          {/* Wallet Compatibility */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="walletRestricted"
-                checked={form.walletRestricted || false}
-                onCheckedChange={(checked) => setForm({ ...form, walletRestricted: !!checked })}
-              />
-              <Label htmlFor="walletRestricted">Restrict to specific wallets</Label>
-            </div>
-            
-            {form.walletRestricted && (
-              <div className="space-y-2">
-                <Label htmlFor="compatibleWallets">Compatible Wallets (comma-separated)</Label>
-                <Input
-                  id="compatibleWallets"
-                  placeholder="BC Wallet, NB Orbit Edge Wallet"
-                  value={(form.compatibleWallets || []).join(", ")}
-                  onChange={(e) => handleCompatibleWalletsChange(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
+
 
           {/* System Template */}
           <div className="flex items-center space-x-2">

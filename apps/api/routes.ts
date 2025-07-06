@@ -541,8 +541,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Compatibility and ecosystem
           ecosystem: ecosystemMetadata.ecosystem,
           interopProfile: ecosystemMetadata.interopProfile,
-          compatibleWallets: ecosystemMetadata.compatibleWallets,
-          walletRestricted: ecosystemMetadata.walletRestricted,
+
           // Governance
           governanceUrl: cryptographicMetadata.governanceFramework,
           // Orbit integration
@@ -612,8 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Compatibility and ecosystem
         ecosystem: ecosystemMetadata.ecosystem,
         interopProfile: ecosystemMetadata.interopProfile,
-        compatibleWallets: ecosystemMetadata.compatibleWallets,
-        walletRestricted: ecosystemMetadata.walletRestricted,
+
         // Governance
         governanceUrl: cryptographicMetadata.governanceFramework,
         // Orbit integration
@@ -873,29 +871,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: `${name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} attribute`,
       }));
 
-      // Insert credential template
+      // Insert credential template using new unified schema
       const [template] = await db
         .insert(credentialTemplates)
         .values({
           label: validatedDto.label,
           version: validatedDto.version,
-          schemaId: validatedDto.schemaId,
-          credDefId: validatedDto.credDefId,
-          issuerDid: validatedDto.issuerDid,
-          overlays: [],
-          governanceUrl: validatedDto.governanceUrl || null,
-          attributes: attributeData,
+          schemaMetadata: {
+            schemaId: validatedDto.schemaId,
+            schemaName: validatedDto.label,
+            schemaVersion: validatedDto.version,
+            attributes: attributeData
+          },
+          cryptographicMetadata: {
+            issuerDid: validatedDto.issuerDid,
+            credDefId: validatedDto.credDefId,
+            governanceFramework: validatedDto.governanceUrl || undefined
+          },
+          brandingMetadata: {
+            displayName: validatedDto.label,
+            description: validatedDto.description || '',
+            issuerName: validatedDto.issuerName,
+            issuerWebsite: validatedDto.issuerWebsite,
+            logo: {
+              url: brandLogoUrl || '',
+              altText: `${validatedDto.label} logo`
+            },
+            colors: {
+              primary: validatedDto.primaryColor
+            },
+            backgroundImage: brandBgUrl ? {
+              url: brandBgUrl,
+              position: 'cover'
+            } : undefined,
+            layout: 'standard'
+          },
+          ecosystemMetadata: {
+            ecosystem: 'Custom Import',
+            interopProfile: 'AIP 2.0',
+            ledgerNetwork: validatedDto.ledgerNetwork
+          },
           isPredefined: false,
-          ecosystem: 'Custom Import',
-          interopProfile: 'AIP 2.0',
-          compatibleWallets: [],
-          walletRestricted: false,
-          branding,
-          metaOverlay,
-          ledgerNetwork: validatedDto.ledgerNetwork,
-          primaryColor: validatedDto.primaryColor,
-          brandBgUrl,
-          brandLogoUrl,
           visible: true,
         })
         .returning();

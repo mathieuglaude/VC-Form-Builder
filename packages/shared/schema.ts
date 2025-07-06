@@ -53,8 +53,6 @@ export interface BrandingMetadata {
 export interface EcosystemMetadata {
   ecosystem: string;
   interopProfile: string;
-  compatibleWallets: string[];
-  walletRestricted: boolean;
   ledgerNetwork: string;
 }
 

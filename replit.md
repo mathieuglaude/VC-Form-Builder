@@ -556,6 +556,13 @@ Changelog:
   - Enhanced user experience with blue info panel showing "Smart Environment Filtering" with count (e.g., "2 / 4 OCA bundles")
   - System automatically filters OCA bundles containing '/test', '-test' for test environments and '/prod' or non-test paths for production
   - Prevents credential template mismatches by ensuring OCA branding assets match the selected credential definition's blockchain environment
+- July 6, 2025. Completed wallet functionality cleanup and schema migration
+  - Removed compatibleWallets and walletRestricted fields from EcosystemMetadata interface in database schema
+  - Updated all API transformation functions to remove wallet-related field references
+  - Fixed ImportCredentialModal resetForm function to remove wallet fields
+  - Migrated legacy credential import routes to use new unified schema structure with metadata objects
+  - Updated database insertions to use schemaMetadata, cryptographicMetadata, brandingMetadata, and ecosystemMetadata
+  - Wallet Library feature removal is now 100% complete across all layers: frontend, backend, database, and type definitions
 ```
 
 ## User Preferences

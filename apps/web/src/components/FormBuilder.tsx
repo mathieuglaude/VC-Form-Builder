@@ -6,7 +6,7 @@ import { Switch } from "./ui/switch";
 import { Label } from "./ui/label";
 import { useToast } from "@/hooks/use-toast";
 import FieldConfigModal from "./FieldConfigModal";
-import WalletSelector from "./WalletSelector";
+
 
 import DeleteFormModal from "./DeleteFormModal";
 import PublishFormDialog from "./PublishFormDialog";
@@ -27,7 +27,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
   const [components, setComponents] = useState<any[]>(initialForm?.formSchema?.components || []);
   const [selectedComponent, setSelectedComponent] = useState<any>(null);
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
-  const [selectedWallets, setSelectedWallets] = useState<string[]>([]);
+
   const [revocationPolicies, setRevocationPolicies] = useState<Record<string, boolean>>(initialForm?.revocationPolicies || {});
   const [isPublic, setIsPublic] = useState<boolean>(initialForm?.isPublic || false);
 
@@ -537,20 +537,7 @@ export default function FormBuilder({ initialForm, onSave, onPreview, onPublish,
         </div>
       </div>
 
-      {/* Wallet Selector */}
-      {credentialRequirements.length > 0 && (
-        <div className="mt-6 p-4 border border-gray-200 rounded-lg">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">Wallet Selection</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            Select which wallets to recommend to users filling out this form:
-          </p>
-          <WalletSelector
-            credentialRequirements={credentialRequirements as any}
-            selectedWallets={selectedWallets}
-            onWalletChange={setSelectedWallets}
-          />
-        </div>
-      )}
+
 
       {/* Revocation Policies */}
       {usedCredentialTypes.length > 0 && (

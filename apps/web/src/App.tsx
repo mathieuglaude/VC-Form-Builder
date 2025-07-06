@@ -9,7 +9,6 @@ import PreviewPage from "@/pages/PreviewPage";
 import FormLaunchPage from "@/pages/FormLaunchPage";
 import CredentialsPage from "@/pages/CredentialsPage";
 import CredentialDetailPage from "@/pages/CredentialDetailPage";
-import WalletLibraryPage from "@/pages/WalletLibraryPage";
 import CommunityPage from "@/pages/CommunityPage";
 import AccountPage from "@/pages/AccountPage";
 
@@ -39,7 +38,6 @@ function Router() {
       <Route path="/community"><CommunityPage /></Route>
       <Route path="/credentials"><CredentialsPage /></Route>
       <Route path="/credentials/:id"><CredentialDetailPage /></Route>
-      <Route path="/wallets"><WalletLibraryPage /></Route>
       <Route path="/oca-demo"><OCADemo /></Route>
       <Route path="/account"><AccountPage /></Route>
       <Route path="/submissions"><GlobalSubmissionsPage /></Route>

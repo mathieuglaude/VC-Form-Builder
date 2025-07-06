@@ -30,8 +30,7 @@ export interface ImportCredentialData {
   primaryColor: string;
   ecosystem: string;
   interopProfile: string;
-  compatibleWallets: string[];
-  walletRestricted: boolean;
+
 }
 
 const LEDGER_NETWORKS = [
@@ -63,8 +62,7 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
     primaryColor: '#4F46E5',
     ecosystem: 'Custom Ecosystem',
     interopProfile: 'AIP 2.0',
-    compatibleWallets: [],
-    walletRestricted: false,
+
   });
 
   const [errors, setErrors] = useState<Partial<Record<keyof ImportCredentialData, string>>>({});
@@ -130,8 +128,6 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
           // Ensure all new fields are included
           ecosystem: data.ecosystem || '',
           interopProfile: data.interopProfile || '',
-          compatibleWallets: data.compatibleWallets || [],
-          walletRestricted: data.walletRestricted || false,
           issuerWebsite: data.issuerWebsite || '',
           description: data.description || '',
         }),
@@ -180,8 +176,7 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
       primaryColor: '#4F46E5',
       ecosystem: 'Custom Ecosystem',
       interopProfile: 'AIP 2.0',
-      compatibleWallets: [],
-      walletRestricted: false,
+
     });
     setErrors({});
     setBundleUrlError('');
@@ -192,14 +187,10 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
     importMutation.mutate(formData);
   };
 
-  const handleChange = (field: keyof ImportCredentialData, value: string | boolean | string[]) => {
+  const handleChange = (field: keyof ImportCredentialData, value: string | boolean) => {
     setFormData(prev => ({ 
       ...prev, 
-      [field]: field === 'walletRestricted' ? 
-        (value === 'true' || value === true) : 
-        field === 'compatibleWallets' ? 
-          (typeof value === 'string' ? value.split(',').map(w => w.trim()).filter(w => w.length > 0) : value) :
-          value 
+      [field]: value 
     }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -383,29 +374,7 @@ export default function ImportCredentialModal({ isOpen, onClose }: ImportCredent
               </div>
             </div>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="walletRestricted"
-                checked={formData.walletRestricted}
-                onChange={(e) => handleChange('walletRestricted', e.target.checked)}
-                className="rounded"
-              />
-              <Label htmlFor="walletRestricted">Restrict to specific wallets only</Label>
-            </div>
 
-            {formData.walletRestricted && (
-              <div>
-                <Label htmlFor="compatibleWallets">Compatible Wallets</Label>
-                <Input
-                  id="compatibleWallets"
-                  value={formData.compatibleWallets.join(', ')}
-                  onChange={(e) => handleChange('compatibleWallets', e.target.value)}
-                  placeholder="BC Wallet, Orbit Edge Wallet"
-                />
-                <p className="text-sm text-gray-500 mt-1">Comma-separated list of supported wallets</p>
-              </div>
-            )}
           </div>
 
           {/* Documentation & Assets */}
