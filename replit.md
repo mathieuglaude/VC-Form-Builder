@@ -447,6 +447,13 @@ Changelog:
   - Added governance URL parameter support from metadata.governanceFramework in import wizard
   - Confirmed payload structures are now OpenAPI-compliant - 404 errors are due to invalid LOB ID, not payload issues
   - System ready for authentic Orbit integration once valid LOB ID obtained from Northern Block provisioning
+- July 6, 2025. Removed credential issuance actions feature completely
+  - Deleted IssuanceActionModal.tsx component and removed all frontend issuance configuration UI
+  - Removed issuance action state variables and handlers from FormBuilder.tsx
+  - Cleaned up form submission route to remove processIssuanceAction calls and issuance processing
+  - Updated form metadata extraction to exclude issuance actions from saved form data
+  - System now focuses exclusively on credential verification workflow, removing unused issuance complexity
+  - Form builder interface simplified with removal of "Configure Issuance" section and related modals
 - July 5, 2025. Enhanced Governance & Trust section with comprehensive documentation links
   - Added governance documentation field to credential detail pages with official BC Government documentation links
   - Updated BC Digital Business Card governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/business/digital-business-card-v1.md

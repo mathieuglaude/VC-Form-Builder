@@ -414,17 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const submission = await storage.createFormSubmission(validatedData);
       
-      // Check if form has credential issuance action configured
-      const formConfig = await storage.getFormConfig(formConfigId);
-      const metadata = formConfig?.metadata as Record<string, unknown>;
-      const issuanceActions = Array.isArray(metadata?.issuanceActions) ? metadata.issuanceActions : [];
-      
-      if (issuanceActions && issuanceActions.length > 0) {
-        // Process each issuance action
-        for (const action of issuanceActions) {
-          await processIssuanceAction(action, submission, req.body.holderDid);
-        }
-      }
+
       
       res.json(submission);
     } catch (error: unknown) {
@@ -434,45 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Helper function to process credential issuance actions
-  async function processIssuanceAction(action: Record<string, unknown>, submission: Record<string, unknown>, holderDid?: string) {
-    try {
-      if (!holderDid) {
-        console.warn('No holder DID provided for credential issuance');
-        return;
-      }
 
-      const credDefId = action.credDefId as string;
-      const attributeMapping = action.attributeMapping as Record<string, string>;
-      
-      if (!credDefId || !attributeMapping) {
-        console.warn('Invalid issuance action configuration');
-        return;
-      }
-      
-      // Map form submission data to credential attributes
-      const attributes: Record<string, unknown> = {};
-      const submissionData = submission.submissionData as Record<string, unknown>;
-      
-      for (const [credAttr, formField] of Object.entries(attributeMapping)) {
-        const value = submissionData[formField];
-        if (value !== undefined && value !== null) {
-          attributes[credAttr] = value;
-        }
-      }
-
-      // TODO: Re-enable credential issuance after core proof flow works
-      // const result = await issueCredential(credDefId, holderDid, attributes);
-      
-      console.log(`Credential issuance initiated for submission ${submission.id}`);
-      
-      // Store operation ID for status tracking
-      // In production, you might want to store this in the database
-      
-    } catch (error) {
-      console.error('Credential issuance action failed:', error);
-    }
-  }
 
   router.get('/forms/:id/submissions', async (req, res) => {
     try {
