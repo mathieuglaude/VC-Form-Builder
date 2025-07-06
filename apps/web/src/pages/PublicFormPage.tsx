@@ -47,10 +47,8 @@ export default function PublicFormPage() {
   const submitFormMutation = useMutation({
     mutationFn: async (data: { formData: Record<string, any>; verifiedFields: Record<string, any> }) => {
       const submissionData = {
-        formConfigId: form!.id,
-        data: data.formData,
-        verifiedFields: data.verifiedFields,
-        metadata: form?.metadata
+        submissionData: data.formData,
+        verifiedFields: data.verifiedFields || {}
       };
 
       const response = await fetch(`/api/forms/${form!.id}/submit`, {
@@ -79,6 +77,30 @@ export default function PublicFormPage() {
         variant: 'destructive',
       });
     }
+  });
+
+  // Helper function for checking VC fields
+  function formHasVCFields(form: any): boolean {
+    // First try the hasVerifiableCredentials flag if available
+    if (form?.hasVerifiableCredentials !== undefined) {
+      return form.hasVerifiableCredentials;
+    }
+    
+    const formSchema = form?.formSchema || form?.formDefinition;
+    if (!formSchema?.components) return false;
+    
+    return formSchema.components.some((component: any) => 
+      component.vcMapping?.credentialType && component.vcMapping?.attributeName
+    );
+  }
+
+  // TEMPORARILY DISABLE VC LOGIC FOR TESTING
+  const hasVC = false; // form ? formHasVCFields(form) : false;
+
+  // Initialize proof request using the hook - MUST be called unconditionally at top level
+  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
+    publicSlug: slug,
+    enabled: false // !!form && hasVC
   });
 
   const handleFormSubmit = (formData: Record<string, any>, verifiedFields: Record<string, any>) => {
@@ -116,30 +138,6 @@ export default function PublicFormPage() {
       </div>
     );
   }
-
-  // Helper function for checking VC fields
-  function formHasVCFields(form: any): boolean {
-    // First try the hasVerifiableCredentials flag if available
-    if (form?.hasVerifiableCredentials !== undefined) {
-      return form.hasVerifiableCredentials;
-    }
-    
-    const formSchema = form?.formSchema || form?.formDefinition;
-    if (!formSchema?.components) return false;
-    
-    return formSchema.components.some((component: any) => 
-      component.vcMapping?.credentialType && component.vcMapping?.attributeName
-    );
-  }
-
-  // TEMPORARILY DISABLE VC LOGIC FOR TESTING
-  const hasVC = false; // form ? formHasVCFields(form) : false;
-
-  // Initialize proof request using the hook - MUST be called unconditionally at top level
-  const { data: proofResponse, isLoading: proofLoading } = useProofRequest({
-    publicSlug: slug,
-    enabled: false // !!form && hasVC
-  });
 
   // Now safe to do conditional returns after all hooks
   if (!form) {

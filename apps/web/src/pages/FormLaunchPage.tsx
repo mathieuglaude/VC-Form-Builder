@@ -66,12 +66,10 @@ export default function FormLaunchPage() {
 
   // Form submission mutation
   const submitFormMutation = useMutation({
-    mutationFn: async (data: { formData: Record<string, any>; verifiedFields: Record<string, any> }) => {
+    mutationFn: async (data: { submissionData: Record<string, any>; verifiedFields: Record<string, any> }) => {
       const submissionData = {
-        formConfigId: parseInt(id!),
-        data: data.formData,
-        verifiedFields: data.verifiedFields,
-        metadata: form?.metadata
+        submissionData: data.submissionData,
+        verifiedFields: data.verifiedFields || {}
       };
 
       const response = await fetch(`/api/forms/${id}/submit`, {
@@ -112,7 +110,11 @@ export default function FormLaunchPage() {
   });
 
   const handleFormSubmit = (formData: Record<string, any>, verifiedFields: Record<string, any>) => {
-    submitFormMutation.mutate({ formData, verifiedFields });
+    // Format data to match API expectation
+    submitFormMutation.mutate({ 
+      submissionData: formData, 
+      verifiedFields: verifiedFields || {} 
+    });
   };
 
   // Loading state
