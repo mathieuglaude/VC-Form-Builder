@@ -159,7 +159,7 @@ export default function HomePage() {
                                     data-cy="submissions-link"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      setLocation(`/forms/${form.id}/submissions`);
+                                      setLocation(`/submissions?formId=${form.id}`);
                                     }}
                                   >
                                     <BarChart className="h-4 w-4" />

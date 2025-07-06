@@ -43,6 +43,7 @@ function Router() {
       <Route path="/oca-demo"><OCADemo /></Route>
       <Route path="/account"><AccountPage /></Route>
       <Route path="/submissions"><GlobalSubmissionsPage /></Route>
+      <Route path="/submissions/:submissionId"><SingleSubmissionPage /></Route>
       <Route path="/forms/:formId/submissions"><SubmissionsPage /></Route>
       <Route path="/forms/:formId/submissions/:submissionId"><SingleSubmissionPage /></Route>
 

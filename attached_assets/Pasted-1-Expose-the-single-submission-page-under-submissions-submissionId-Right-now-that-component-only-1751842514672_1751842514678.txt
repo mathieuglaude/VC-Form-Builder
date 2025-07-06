@@ -1,0 +1,96 @@
+1 · Expose the single‐submission page under /submissions/:submissionId
+Right now that component only lives at
+/forms/:formId/submissions/:submissionId, so every link coming from the
+global list 404s.
+
+diff
+Copy
+Edit
+// apps/web/src/App.tsx
++ <Route path="/submissions/:submissionId" element={<SingleSubmissionPage />} />
+(keep the old per-form route too so nothing breaks).
+
+2 · Make the global list reuse the same component as the per-form list
+A clean way is:
+
+tsx
+Copy
+Edit
+// apps/web/src/pages/GlobalSubmissionsPage.tsx
+const [_location, setLocation] = useLocation();
+const [search] = useSearchParams();
+
+const page      = Number(search.get("page")   ?? 1);
+const pageSize  = Number(search.get("limit") ?? 20);
+const formId    = search.get("formId");          // ← the filter!
+
+const {
+  data, total, isLoading, error,
+} = formId
+      ? useFormSubmissionsPaginated(Number(formId), page, pageSize)
+      : useAllSubmissions(page, pageSize);
+Now it’s literally the same list whether formId exists or not.
+
+Small UI touch
+Show the active filter:
+
+tsx
+Copy
+Edit
+{formId && (
+  <div className="mb-4">
+    <Label>Filtered by form</Label>
+    <Tag
+      onClear={() => setLocation("/submissions")}  // clear filter
+    >
+      #{formId}
+    </Tag>
+  </div>
+)}
+3 · Clicking the 📊 icon on a form card
+Update that button:
+
+tsx
+Copy
+Edit
+// apps/web/src/components/FormCard.tsx
+<Link to={`/submissions?formId=${form.id}`}>
+  <BarChart2 className="text-sky-600 hover:text-sky-700" />
+</Link>
+No custom page – it’s the same global list, just opens pre-filtered.
+
+4 · Every “SubmissionCard” should deep-link to the new detail route
+tsx
+Copy
+Edit
+<Link to={`/submissions/${submission.id}`}>
+  <Eye size={16} /> View details
+</Link>
+…and remove the old /forms/:id/submissions/:sid link if you like.
+
+5 · (Optionally) redirect legacy paths
+If you still want old links to work:
+
+tsx
+Copy
+Edit
+<Route
+  path="/forms/:formId/submissions/:submissionId"
+  element={<Navigate to={({ params }) =>
+     `/submissions/${params.submissionId}`
+  } />}
+/>
+6 · Test matrix
+Path	Expected
+/submissions	All submissions (no filter)
+/submissions?formId=15	Only submissions for form 15
+From card → 📊	Same as /submissions?formId={id}
+/submissions/6	Detail page for submission #6
+Legacy /forms/15/submissions/6	Redirects to /submissions/6
+
+Commit message suggestion
+
+sql
+Copy
+Edit
+feat(submissions): unify global & per-form lists, add /submissions/:id route

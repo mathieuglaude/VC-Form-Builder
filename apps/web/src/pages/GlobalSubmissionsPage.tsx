@@ -1,11 +1,12 @@
 import { useAllSubmissions } from "@/hooks/useAllSubmissions";
-import { useLocation } from "wouter";
+import { useFormSubmissionsPaginated } from "@/hooks/useFormSubmissions";
+import { useLocation, Link } from "wouter";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, User, FileText, ChevronLeft, ChevronRight } from "lucide-react";
-import { Link } from "wouter";
+import { Label } from "@/components/ui/label";
+import { Calendar, User, FileText, ChevronLeft, ChevronRight, Eye, X } from "lucide-react";
 
 interface SubmissionCardProps {
   submission: any;
@@ -144,9 +145,15 @@ export default function GlobalSubmissionsPage() {
   const [location, setLocation] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const page = Number(searchParams.get("page") ?? 1);
-  const pageSize = 20;
+  const pageSize = Number(searchParams.get("limit") ?? 20);
+  const formId = searchParams.get("formId");
 
-  const { data, isLoading, error } = useAllSubmissions(page, pageSize);
+  // Use conditional hook based on whether we're filtering by form
+  const {
+    data, isLoading, error,
+  } = formId
+        ? useFormSubmissionsPaginated(Number(formId), page, pageSize)
+        : useAllSubmissions(page, pageSize);
 
   if (isLoading) return <Loader />;
   if (error) return <ErrorPanel title="Unable to load submissions" />;
@@ -157,14 +164,38 @@ export default function GlobalSubmissionsPage() {
     setLocation(`/submissions?${params.toString()}`);
   };
 
+  const clearFilter = () => {
+    setLocation("/submissions");
+  };
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">All Submissions</h1>
+        <h1 className="text-3xl font-bold">
+          {formId ? `Form #${formId} Submissions` : "All Submissions"}
+        </h1>
         <Badge variant="outline" className="text-lg px-3 py-1">
           {data?.total || 0} total
         </Badge>
       </div>
+
+      {/* Filter indicator */}
+      {formId && (
+        <div className="mb-4">
+          <Label className="text-sm text-muted-foreground">Filtered by form</Label>
+          <div className="flex items-center gap-2 mt-1">
+            <Badge variant="secondary" className="flex items-center gap-1">
+              #{formId}
+              <button
+                onClick={clearFilter}
+                className="ml-1 hover:bg-muted rounded-full p-0.5"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          </div>
+        </div>
+      )}
 
       {data && (
         <PaginatedList
@@ -177,7 +208,7 @@ export default function GlobalSubmissionsPage() {
             <SubmissionCard 
               key={submission.id} 
               submission={submission} 
-              showFormName 
+              showFormName={!formId} // Only show form name when not filtering by form
             />
           ))}
         </PaginatedList>
