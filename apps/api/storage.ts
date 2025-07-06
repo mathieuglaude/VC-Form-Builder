@@ -17,7 +17,7 @@ import {
   type AttributeDef
 } from "../../packages/shared/schema";
 import { db } from "./db";
-import { eq, and, desc, lt } from "drizzle-orm";
+import { eq, and, desc, lt, sql, count } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -43,6 +43,7 @@ export interface IStorage {
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   getFormSubmissions(formConfigId: number): Promise<FormSubmission[]>;
   getFormSubmissionsPaginated(formConfigId: number, cursor?: number, pageSize?: number): Promise<{ submissions: FormSubmission[], hasMore: boolean, nextCursor?: number }>;
+  getAllSubmissionsPaginated(page: number, pageSize: number): Promise<{ data: FormSubmission[], total: number, page: number, pageSize: number }>;
   getFormSubmission(submissionId: number): Promise<FormSubmission | undefined>;
 
   // Credential definition methods
@@ -351,6 +352,36 @@ export class MemStorage implements IStorage {
 
   async getFormSubmission(submissionId: number): Promise<FormSubmission | undefined> {
     return this.formSubmissions.get(submissionId);
+  }
+
+  async getAllSubmissionsPaginated(page: number, pageSize: number): Promise<{ data: FormSubmission[], total: number, page: number, pageSize: number }> {
+    const allSubmissions = Array.from(this.formSubmissions.values())
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort by most recent first
+    
+    const total = allSubmissions.length;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const submissions = allSubmissions.slice(startIndex, endIndex);
+    
+    // Add form info to each submission
+    const enrichedSubmissions = submissions.map(submission => {
+      const form = this.formConfigs.get(submission.formConfigId);
+      return {
+        ...submission,
+        form: form ? {
+          id: form.id,
+          name: form.name,
+          slug: form.slug
+        } : null
+      };
+    });
+    
+    return {
+      data: enrichedSubmissions,
+      total,
+      page,
+      pageSize
+    };
   }
 
   // Credential definition methods
@@ -806,6 +837,43 @@ export class DatabaseStorage implements IStorage {
   async getFormSubmission(submissionId: number): Promise<FormSubmission | undefined> {
     const [submission] = await db.select().from(formSubmissions).where(eq(formSubmissions.id, submissionId));
     return submission || undefined;
+  }
+
+  async getAllSubmissionsPaginated(page: number, pageSize: number): Promise<{ data: FormSubmission[], total: number, page: number, pageSize: number }> {
+    const offset = (page - 1) * pageSize;
+    
+    // Get total count
+    const countResult = await db
+      .select({ count: count() })
+      .from(formSubmissions);
+    const total = countResult[0]?.count || 0;
+    
+    // Get submissions with form info
+    const submissions = await db
+      .select({
+        id: formSubmissions.id,
+        formConfigId: formSubmissions.formConfigId,
+        submissionData: formSubmissions.submissionData,
+        verifiedFields: formSubmissions.verifiedFields,
+        createdAt: formSubmissions.createdAt,
+        form: {
+          id: formConfigs.id,
+          name: formConfigs.name,
+          slug: formConfigs.slug
+        }
+      })
+      .from(formSubmissions)
+      .leftJoin(formConfigs, eq(formSubmissions.formConfigId, formConfigs.id))
+      .orderBy(desc(formSubmissions.id))
+      .limit(pageSize)
+      .offset(offset);
+    
+    return {
+      data: submissions,
+      total,
+      page,
+      pageSize
+    };
   }
 
   async createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition> {

@@ -1,0 +1,76 @@
+1 ▪ Backend – new list endpoint
+Route GET /api/submissions
+
+Query params:
+
+page (default = 1)
+
+pageSize (default = 20)
+
+formId (optional – if present, behaves like old paginated route)
+
+Result shape (same as existing paginated list):
+
+ts
+Copy
+Edit
+type PaginatedSubmissions = {
+  data: FormSubmission[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+Only return submissions where form.authorId === currentUser.id
+(keep dev-owner bypass logic so it shows everything when VITE_DEV_OWNER_BYPASS=true).
+
+2 ▪ Shared hook
+apps/web/src/hooks/useAllSubmissions.ts
+
+ts
+Copy
+Edit
+export function useAllSubmissions(page = 1, pageSize = 20) {
+  const url = buildUrl("/api/submissions", { page, pageSize });
+  return useQuery([url], { staleTime: 5 * 60_000 });
+}
+3 ▪ Global page component
+apps/web/src/pages/AllSubmissionsPage.tsx
+
+Uses the hook above.
+
+Re-use existing <SubmissionCard/> list item (or same markup as SubmissionsPage) but add a Form column/label (form title + link to that form’s submissions).
+
+Pagination identical to form-scoped list.
+
+Guard: same owner / dev-bypass logic.
+
+Route: /submissions
+
+4 ▪ Navigation integration
+Add “Submissions” item to the top nav bar, right after Form Builder.
+
+Icon: <BarChart2 /> (lucide).
+
+Path: /submissions.
+
+Visible only when signed-in (or always in dev bypass).
+
+On Home page: keep the 📊 icons, but also add a subtle CTA:
+
+If user has > 0 submissions across all forms, show a small link “View all submissions →” under My Forms header (optional).
+
+5 ▪ Tests
+Unit: useAllSubmissions returns data and respects page params.
+
+E2E:
+
+Visit /submissions, verify list renders at least one submission.
+
+Click a “View Details” button → assert URL is /forms/{id}/submissions/{subId} and detail loads.
+
+Guard test: with VITE_DEV_OWNER_BYPASS=false, visiting /submissions when currentUser is undefined must redirect to / with toast “Please sign in”.
+
+6 ▪ Docs
+Update README.md usage table with new endpoint and link.
+
+That’s it—ship this as one commit named “Add global submissions page & nav”.

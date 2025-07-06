@@ -448,6 +448,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Global submissions endpoint
+  router.get('/submissions', async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+      const formId = req.query.formId ? parseInt(req.query.formId as string) : undefined;
+      
+      // If formId is provided, behave like the old paginated route
+      if (formId) {
+        const result = await storage.getFormSubmissionsPaginated(formId, undefined, pageSize);
+        return res.json(result);
+      }
+      
+      // Otherwise, get all submissions with pagination
+      const result = await storage.getAllSubmissionsPaginated(page, pageSize);
+      res.json(result);
+    } catch (error) {
+      console.error('Error retrieving global submissions:', error);
+      res.status(500).json({ error: 'Failed to retrieve submissions' });
+    }
+  });
+
   router.get('/submissions/:sid', async (req, res) => {
     try {
       const submissionId = parseInt(req.params.sid);
