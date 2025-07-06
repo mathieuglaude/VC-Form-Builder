@@ -17,7 +17,7 @@ import {
   type AttributeDef
 } from "../../packages/shared/schema";
 import { db } from "./db";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, lt } from "drizzle-orm";
 
 export interface IStorage {
   // User methods
@@ -42,6 +42,8 @@ export interface IStorage {
   // Form submission methods
   createFormSubmission(submission: InsertFormSubmission): Promise<FormSubmission>;
   getFormSubmissions(formConfigId: number): Promise<FormSubmission[]>;
+  getFormSubmissionsPaginated(formConfigId: number, cursor?: number, pageSize?: number): Promise<{ submissions: FormSubmission[], hasMore: boolean, nextCursor?: number }>;
+  getFormSubmission(submissionId: number): Promise<FormSubmission | undefined>;
 
   // Credential definition methods
   createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition>;
@@ -324,6 +326,31 @@ export class MemStorage implements IStorage {
     return Array.from(this.formSubmissions.values()).filter(
       sub => sub.formConfigId === formConfigId
     );
+  }
+
+  async getFormSubmissionsPaginated(formConfigId: number, cursor?: number, pageSize: number = 20): Promise<{ submissions: FormSubmission[], hasMore: boolean, nextCursor?: number }> {
+    const allSubmissions = Array.from(this.formSubmissions.values())
+      .filter(sub => sub.formConfigId === formConfigId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()); // Sort by most recent first
+
+    let startIndex = 0;
+    if (cursor) {
+      startIndex = allSubmissions.findIndex(sub => sub.id === cursor) + 1;
+    }
+
+    const submissions = allSubmissions.slice(startIndex, startIndex + pageSize);
+    const hasMore = startIndex + pageSize < allSubmissions.length;
+    const nextCursor = hasMore ? submissions[submissions.length - 1].id : undefined;
+
+    return {
+      submissions,
+      hasMore,
+      nextCursor
+    };
+  }
+
+  async getFormSubmission(submissionId: number): Promise<FormSubmission | undefined> {
+    return this.formSubmissions.get(submissionId);
   }
 
   // Credential definition methods
@@ -745,6 +772,40 @@ export class DatabaseStorage implements IStorage {
 
   async getFormSubmissions(formConfigId: number): Promise<FormSubmission[]> {
     return await db.select().from(formSubmissions).where(eq(formSubmissions.formConfigId, formConfigId));
+  }
+
+  async getFormSubmissionsPaginated(formConfigId: number, cursor?: number, pageSize: number = 20): Promise<{ submissions: FormSubmission[], hasMore: boolean, nextCursor?: number }> {
+    const limit = pageSize + 1; // Get one extra to check if there are more records
+    
+    let whereConditions = eq(formSubmissions.formConfigId, formConfigId);
+    
+    if (cursor) {
+      whereConditions = and(
+        eq(formSubmissions.formConfigId, formConfigId),
+        lt(formSubmissions.id, cursor)
+      );
+    }
+
+    const results = await db.select()
+      .from(formSubmissions)
+      .where(whereConditions)
+      .orderBy(desc(formSubmissions.id))
+      .limit(limit);
+
+    const hasMore = results.length > pageSize;
+    const submissions = hasMore ? results.slice(0, pageSize) : results;
+    const nextCursor = hasMore ? submissions[submissions.length - 1].id : undefined;
+
+    return {
+      submissions,
+      hasMore,
+      nextCursor
+    };
+  }
+
+  async getFormSubmission(submissionId: number): Promise<FormSubmission | undefined> {
+    const [submission] = await db.select().from(formSubmissions).where(eq(formSubmissions.id, submissionId));
+    return submission || undefined;
   }
 
   async createCredentialDefinition(credDef: InsertCredentialDefinition): Promise<CredentialDefinition> {

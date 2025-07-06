@@ -429,10 +429,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   router.get('/forms/:id/submissions', async (req, res) => {
     try {
       const formConfigId = parseInt(req.params.id);
-      const submissions = await storage.getFormSubmissions(formConfigId);
-      res.json(submissions);
+      const cursor = req.query.cursor ? parseInt(req.query.cursor as string) : undefined;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
+      
+      if (req.query.cursor || req.query.pageSize) {
+        // Use paginated version if pagination parameters are provided
+        const result = await storage.getFormSubmissionsPaginated(formConfigId, cursor, pageSize);
+        res.json(result);
+      } else {
+        // Use simple version for backward compatibility
+        const submissions = await storage.getFormSubmissions(formConfigId);
+        res.json(submissions);
+      }
     } catch (error) {
+      console.error('Error retrieving submissions:', error);
       res.status(500).json({ error: 'Failed to retrieve submissions' });
+    }
+  });
+
+  router.get('/submissions/:sid', async (req, res) => {
+    try {
+      const submissionId = parseInt(req.params.sid);
+      const submission = await storage.getFormSubmission(submissionId);
+      
+      if (!submission) {
+        return res.status(404).json({ error: 'Submission not found' });
+      }
+      
+      res.json(submission);
+    } catch (error) {
+      console.error('Error retrieving submission:', error);
+      res.status(500).json({ error: 'Failed to retrieve submission' });
     }
   });
 
