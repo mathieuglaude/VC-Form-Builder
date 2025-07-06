@@ -146,14 +146,15 @@ export default function GlobalSubmissionsPage() {
   const searchParams = new URLSearchParams(window.location.search);
   const page = Number(searchParams.get("page") ?? 1);
   const pageSize = Number(searchParams.get("limit") ?? 20);
-  const formId = searchParams.get("formId");
+  const raw = searchParams.get("formId");
+  const formId = raw && !Number.isNaN(Number(raw)) ? Number(raw) : undefined;
 
   // Use conditional hook based on whether we're filtering by form
-  const {
-    data, isLoading, error,
-  } = formId
-        ? useFormSubmissionsPaginated(Number(formId), page, pageSize)
-        : useAllSubmissions(page, pageSize);
+  const globalQuery = useAllSubmissions(page, pageSize);
+  const formQuery = useFormSubmissionsPaginated(formId!, page, pageSize);
+  
+  const query = formId ? formQuery : globalQuery;
+  const { data, isLoading, error } = query;
 
   if (isLoading) return <Loader />;
   if (error) return <ErrorPanel title="Unable to load submissions" />;
@@ -168,6 +169,19 @@ export default function GlobalSubmissionsPage() {
     setLocation("/submissions");
   };
 
+  // Handle different data structures from the two different APIs
+  const submissions = formId 
+    ? (data as any)?.submissions || []
+    : (data as any)?.data || [];
+  
+  const total = formId 
+    ? (data as any)?.submissions?.length || 0
+    : (data as any)?.total || 0;
+    
+  const currentPage = formId 
+    ? page
+    : (data as any)?.page || page;
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -175,7 +189,7 @@ export default function GlobalSubmissionsPage() {
           {formId ? `Form #${formId} Submissions` : "All Submissions"}
         </h1>
         <Badge variant="outline" className="text-lg px-3 py-1">
-          {data?.total || 0} total
+          {total} total
         </Badge>
       </div>
 
@@ -197,14 +211,14 @@ export default function GlobalSubmissionsPage() {
         </div>
       )}
 
-      {data && (
+      {submissions.length > 0 && (
         <PaginatedList
-          page={data.page}
-          total={data.total}
-          pageSize={data.pageSize}
+          page={currentPage}
+          total={total}
+          pageSize={pageSize}
           onPageChange={handlePageChange}
         >
-          {data.data.map((submission) => (
+          {submissions.map((submission) => (
             <SubmissionCard 
               key={submission.id} 
               submission={submission} 
@@ -212,6 +226,12 @@ export default function GlobalSubmissionsPage() {
             />
           ))}
         </PaginatedList>
+      )}
+
+      {submissions.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">No submissions found.</p>
+        </div>
       )}
     </div>
   );

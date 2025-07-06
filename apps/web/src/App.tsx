@@ -44,7 +44,12 @@ function Router() {
       <Route path="/account"><AccountPage /></Route>
       <Route path="/submissions"><GlobalSubmissionsPage /></Route>
       <Route path="/submissions/:submissionId"><SingleSubmissionPage /></Route>
-      <Route path="/forms/:formId/submissions"><SubmissionsPage /></Route>
+      <Route path="/forms/:formId/submissions">
+        {(params) => {
+          window.location.href = `/submissions?formId=${params.formId}`;
+          return null;
+        }}
+      </Route>
       <Route path="/forms/:formId/submissions/:submissionId"><SingleSubmissionPage /></Route>
 
       <Route><NotFound /></Route>
