@@ -17,6 +17,7 @@ import PublicFormPage from "@/pages/PublicFormPage";
 import OCADemo from "@/pages/OCADemo";
 import SubmissionsPage from "@/pages/SubmissionsPage";
 import SingleSubmissionPage from "@/pages/SingleSubmissionPage";
+import GlobalSubmissionsPage from "@/pages/GlobalSubmissionsPage";
 
 function Router() {
   // Fix URL encoding issues by redirecting malformed paths to root
@@ -41,6 +42,7 @@ function Router() {
       <Route path="/wallets"><WalletLibraryPage /></Route>
       <Route path="/oca-demo"><OCADemo /></Route>
       <Route path="/account"><AccountPage /></Route>
+      <Route path="/submissions"><GlobalSubmissionsPage /></Route>
       <Route path="/forms/:formId/submissions"><SubmissionsPage /></Route>
       <Route path="/forms/:formId/submissions/:submissionId"><SingleSubmissionPage /></Route>
 

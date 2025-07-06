@@ -1,0 +1,91 @@
+Finish global submissions UI (React routing + page component)
+Create page component
+
+swift
+Copy
+Edit
+apps/web/src/pages/GlobalSubmissionsPage.tsx
+tsx
+Copy
+Edit
+import { useAllSubmissions } from "@/hooks/useAllSubmissions";
+import { useSearchParams } from "react-router-dom";
+import { PaginatedList } from "@/components/PaginatedList";
+import { SubmissionCard } from "@/components/SubmissionCard";
+
+export default function GlobalSubmissionsPage() {
+  const [search] = useSearchParams();
+  const page      = Number(search.get("page") ?? 1);
+  const pageSize  = 20;
+
+  const { data, isLoading, error } = useAllSubmissions(page, pageSize);
+
+  if (isLoading) return <Loader />;
+  if (error)     return <ErrorPanel title="Unable to load submissions" />;
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-semibold">All Submissions</h1>
+
+      <PaginatedList
+        page={data.page}
+        total={data.total}
+        pageSize={data.pageSize}
+        onPageChange={p => window.history.pushState({}, "", `/submissions?page=${p}`)}
+      >
+        {data.data.map(s => (
+          <SubmissionCard key={s.id} submission={s} showFormName />
+        ))}
+      </PaginatedList>
+    </div>
+  );
+}
+Add route
+
+File: apps/web/src/App.tsx
+
+diff
+Copy
+Edit
++import GlobalSubmissionsPage from "@/pages/GlobalSubmissionsPage";
+
+<Route path="/submissions" element={<GlobalSubmissionsPage />} />
+Add nav link
+
+File: apps/web/src/layouts/MainNavbar.tsx (or wherever the top nav lives)
+
+tsx
+Copy
+Edit
+<NavLink to="/submissions" className="flex items-center gap-1">
+  <BarChart2 size={16} />
+  Submissions
+</NavLink>
+(Style to match your design system.)
+
+Hook fix (if needed)
+useAllSubmissions(page, pageSize) should return { data, total, page, pageSize } from /api/submissions?page=X&pageSize=Y.
+If you still have the getAllSubmissionsPaginated signature returning rows, total, just wrap it inside:
+
+ts
+Copy
+Edit
+return { data: rows, total, page, pageSize };
+Dev owner bypass
+Global view is owner-agnostic, so no guard is required.
+
+Quick manual test
+
+bash
+Copy
+Edit
+# Should return JSON
+curl http://localhost:5000/api/submissions?page=1&pageSize=5
+Then visit http://localhost:5173/submissions in the browser; you should see a paginated list with every submission from every form.
+
+Commit message suggestion
+
+bash
+Copy
+Edit
+feat(ui): global submissions page (+ /submissions route & nav link)
