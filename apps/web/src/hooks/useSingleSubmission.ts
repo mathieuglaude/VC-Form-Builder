@@ -9,7 +9,7 @@ export function useSingleSubmission(submissionId: number, options?: {
   const url = `/api/submissions/${submissionId}`;
   
   return useQuery<FormSubmission>({
-    queryKey: [url, 'submission', submissionId],
+    queryKey: [url],
     enabled: enabled && !!submissionId,
     staleTime: 60000, // 1 minute - single submissions change less frequently
   });

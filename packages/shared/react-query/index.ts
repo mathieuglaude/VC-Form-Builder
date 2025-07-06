@@ -3,8 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 // 1️⃣ Credential library
 export function useCredentialLibrary() {
   return useQuery({
-    queryKey: ['cred-lib'],
-    queryFn: () => fetch('/api/cred-lib').then(r => r.json()),
+    queryKey: ['/api/cred-lib'],
     staleTime: 60 * 60_000
   });
 }
@@ -12,8 +11,7 @@ export function useCredentialLibrary() {
 // 2️⃣ Forms list  
 export function useForms() {
   return useQuery({
-    queryKey: ['forms'],
-    queryFn: () => fetch('/api/forms').then(r => r.json()),
+    queryKey: ['/api/forms'],
     refetchInterval: 60_000 // Re-validate every minute so "Updated last" moves cards
   });
 }

@@ -49,17 +49,7 @@ export default function FormLaunchPage() {
   // ALL HOOKS MUST BE CALLED AT TOP LEVEL
   // Fetch form configuration
   const { data: form, isLoading: formLoading, error: formError } = useQuery<FormConfig>({
-    queryKey: ['/api/forms', id],
-    queryFn: async () => {
-      const response = await fetch(`/api/forms/${id}`);
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Form not found');
-        }
-        throw new Error('Failed to load form');
-      }
-      return response.json();
-    },
+    queryKey: [`/api/forms/${id}`],
     enabled: !!id,
     retry: false
   });

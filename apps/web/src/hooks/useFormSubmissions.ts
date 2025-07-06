@@ -33,7 +33,7 @@ export function useFormSubmissions(formId: number, options?: {
   console.debug("[DEBUG-submissions-req]", url, { formId, cursor, pageSize });
   
   return useQuery<PaginatedSubmissions | FormSubmission[]>({
-    queryKey: [url, 'submissions', { formId, cursor, pageSize }],
+    queryKey: [url],
     enabled: enabled && !!formId,
     staleTime: 30000, // 30 seconds
   });
@@ -46,6 +46,6 @@ export function useFormSubmissionsPaginated(formId: number, cursor?: number, pag
 // Invalidate submissions cache when new submissions are created
 export function invalidateFormSubmissions(formId: number) {
   queryClient.invalidateQueries({
-    queryKey: ['/api/forms', formId, 'submissions']
+    queryKey: [`/api/forms/${formId}/submissions`]
   });
 }

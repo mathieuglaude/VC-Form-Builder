@@ -1,0 +1,60 @@
+What the console is telling us
+No network call is made at all – the React-Query layer throws before it ever tries to fetch.
+
+The error appears four times and always looks like
+
+lua
+Copy
+Edit
+[["/api/forms","15"]] : No queryFn was passed …
+That means React-Query couldn’t find a queryFn.
+
+We are relying on a default queryFn set in queryClient, which expects the first element of the queryKey to be the URL string.
+
+Instead we’re passing an array of mixed types (['/api/forms', 15]), so the default fetcher receives "/api/forms" as the URL and tries to append [object Object] – which crashes and React-Query bails with “No queryFn”.
+
+What to repair
+File	Fix
+apps/web/src/hooks/useFormSubmissions.ts	Build the queryKey as a single URL string, e.g.
+const url = \/api/forms/${formId}/submissions?pageSize=${pageSize}&page=${page}`; <br>useQuery([url], …)`
+apps/web/src/hooks/useSingleSubmission.ts	Same pattern:
+const url = \/api/forms/${formId}/submissions/${submissionId}`; <br>useQuery([url], …)`
+apps/web/src/hooks/useForm.ts (and any other hook that relies on default fetcher)	Ensure first element of key is the full URL string.
+Optional – safer default in queryClient.ts	If you prefer keeping tuple keys, change the default fetcher to: ```ts
+const defaultQueryFn = async ({ queryKey }) => {	
+const [url, params] = queryKey;	
+const q = typeof url === 'string' ? url :	
+
+pgsql
+Copy
+Edit
+        Array.isArray(queryKey) ? queryKey.join('/') : '';
+const res = await fetch(q);
+if (!res.ok) throw new Error(await res.text());
+return res.json();
+};
+
+|
+Copy
+Edit
+
+### Minimal step-by-step for Replit
+
+```shell
+# 1. Fix submissions list hook
+apps/web/src/hooks/useFormSubmissions.ts
+-------------------------------------------------
+export const useFormSubmissions = (formId: number, page=1, pageSize=20) => {
+  const url = `/api/forms/${formId}/submissions?page=${page}&pageSize=${pageSize}`;
+  return useQuery([url], { /* ...options if any */ });
+}
+
+# 2. Fix single submission hook
+apps/web/src/hooks/useSingleSubmission.ts
+-------------------------------------------------
+export const useSingleSubmission = (formId: number, submissionId: number) => {
+  const url = `/api/forms/${formId}/submissions/${submissionId}`;
+  return useQuery([url], { /* ...options */ });
+}
+
+# 3. Run `pnpm dev` and click 📊 again – network tab should now show the GET call.
