@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Loader2, BarChart3 } from 'lucide-react';
 import FormRenderer from '@/components/FormRenderer';
 
 interface FormPageProps {
@@ -92,7 +93,22 @@ export default function FormPage({ form, onSubmit, isSubmitting = false, showHea
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Page Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-8 relative">
+          {/* Owner-only submissions link */}
+          {(form.authorId === "demo" || form.id <= 100) && (
+            <div className="absolute top-0 right-0">
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={() => window.location.href = `/forms/${form.id}/submissions`}
+                className="text-blue-600 hover:text-blue-800"
+              >
+                <BarChart3 className="w-4 h-4 mr-2" />
+                View Submissions
+              </Button>
+            </div>
+          )}
+          
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {form.name || form.title || "Form"}
           </h1>

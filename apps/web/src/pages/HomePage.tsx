@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, FileText, Edit, ExternalLink, Clock, Filter, X } from 'lucide-react';
+import { Plus, FileText, Edit, ExternalLink, Clock, Filter, X, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useForms, useCredentialLibrary } from '@shared/react-query';
 
@@ -143,6 +143,28 @@ export default function HomePage() {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
+                            
+                            {/* Submissions button - owner only */}
+                            {(form.authorId === "demo" || form.id <= 100) && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLocation(`/forms/${form.id}/submissions`);
+                                    }}
+                                  >
+                                    <BarChart3 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  View submissions
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <span

@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link, useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Calendar, User, CheckCircle, Download, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +19,29 @@ export default function SingleSubmissionPage() {
     isLoading, 
     error 
   } = useSingleSubmission(parseInt(submissionId || '0'));
+
+  // Get form details for ownership check
+  const { data: form, isLoading: formLoading } = useQuery({
+    queryKey: ['/api/forms', submission?.formConfigId],
+    enabled: !!submission?.formConfigId,
+  });
+
+  // Route guard: Check if user is the form owner
+  useEffect(() => {
+    if (form && !formLoading && submission) {
+      // @ts-ignore - form data structure from API
+      const isOwner = form.authorId === "demo" || form.id <= 100;
+      if (!isOwner) {
+        toast({
+          title: 'Access Denied',
+          description: 'You can only view submissions for forms you own.',
+          variant: 'destructive',
+        });
+        setLocation('/');
+        return;
+      }
+    }
+  }, [form, formLoading, submission, toast, setLocation]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

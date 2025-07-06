@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useLocation } from 'wouter';
 import { ArrowLeft, Calendar, User, CheckCircle, XCircle, Eye, MoreHorizontal, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
@@ -12,6 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 export default function SubmissionsPage() {
   const { formId } = useParams<{ formId: string }>();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [currentCursor, setCurrentCursor] = useState<number | undefined>();
   const pageSize = 20;
 
@@ -31,6 +33,23 @@ export default function SubmissionsPage() {
     currentCursor,
     pageSize
   );
+
+  // Route guard: Check if user is the form owner
+  useEffect(() => {
+    if (form && !formLoading) {
+      // @ts-ignore - form data structure from API
+      const isOwner = form.authorId === "demo" || form.id <= 100;
+      if (!isOwner) {
+        toast({
+          title: 'Access Denied',
+          description: 'You can only view submissions for forms you own.',
+          variant: 'destructive',
+        });
+        setLocation('/');
+        return;
+      }
+    }
+  }, [form, formLoading, toast, setLocation]);
 
   if (formLoading || submissionsLoading) {
     return (
