@@ -1,0 +1,154 @@
+0 — Why things break right now
+Three render paths (preview, public, launch) call different React pages and different APIs.
+
+Custom metadata (dataSource, vcMapping, etc.) is stored inside the component JSON, so pure Form.io tries to treat it as native config → runtime exceptions.
+
+Extra props (e.g. mode="public") aren’t handled consistently inside your FormPage wrapper.
+
+Tests cover credential flows but not the “plain” form journey.
+
+So let’s freeze VC code and get a green baseline for “plain forms” (text, checkbox, select).
+
+1 — Isolate a “golden” minimal form
+Prompt to Replit # 1
+
+vbnet
+Copy
+Edit
+Create a new form called “plain-text-demo” with only:
+  • one Text Field (key: fullName)  
+  • one Checkbox (key: agreeTerms)
+Do NOT add any vcMapping or custom props.
+Save to DB as formId = 999.
+Verify in DB: /api/forms/999 should show components with no extra custom keys.
+
+2 — Bypass custom React wrappers
+Prompt to Replit # 2
+
+php-template
+Copy
+Edit
+In a temporary route /debug/plain/999 mount raw Form.io renderer:
+  res.send(`<div id="builder"></div><script>
+    Formio.createForm(document.getElementById('builder'),
+      ${JSON.stringify(schemaFromDb)}
+    );
+  </script>`);
+Goal: Browser renders without crashing → proves schema itself is OK.
+
+If this fails → the problem is in the schema (unlikely for plain fields).
+If it passes → the problem sits in your React wrappers/routes.
+
+3 — Unit-test React wrapper with the same schema
+Prompt to Replit # 3
+
+javascript
+Copy
+Edit
+Write a Vitest + React Testing Library test:
+  render(<FormPage form={schemaFromDb} mode="public" />)
+  expect(screen.getByLabelText('Full Name')).toBeInTheDocument()
+Green test = wrapper can cope with plain schema.
+Red test = debug FormPage prop expectations (likely where hasVC or mode gates rendering).
+
+4 — Unify API contract
+Right now:
+
+Endpoint	Used by	Returns
+/api/forms/{id}	builder / preview	full metadata
+/api/pub-forms/{slug}	public URL	sanitized
+
+Stability rule: one DTO for both. Extra owner-only keys can be nested e.g. privateMeta.
+
+Prompt to Replit # 4
+
+css
+Copy
+Edit
+Refactor storage.getFormById / getFormBySlug to return:
+{
+  formSchema,
+  uiConfig: { title, description, slug },
+  vcMeta?: {...}   // only if authenticated as owner
+}
+Update both routes to use this DTO and fix type defs.
+Add unit test: expect(pub).not.toHaveProperty('vcMeta')
+This guarantees both pages receive the same core shape.
+
+5 — Remove “mode-specific” branching in UI
+Inside FormPage:
+
+ts
+Copy
+Edit
+const { formSchema } = props;
+<FormioForm src={...} {...formSchema} /*same for all modes*/ />
+Credential panel can subscribe separately (it already checks hasVC).
+So public/basic forms never execute credential code.
+
+Prompt to Replit # 5
+
+csharp
+Copy
+Edit
+Strip FormPage of any VC/preview checks – just render schema.
+Move QR/VC logic into VerificationPanel that mounts only if hasVC === true.
+Ensure hasVC is calculated AFTER schema load: 
+  const hasVC = schema.components.some(c => c.properties?.dataSource==='verified')
+Unit test again with plain form → panel should not mount.
+
+6 — End-to-end smoke test in CI
+Prompt to Replit # 6
+
+pgsql
+Copy
+Edit
+Playwright test: navigate to /f/plain-text-demo
+  1. Type "Alice" in Full Name
+  2. Tick checkbox
+  3. Click Submit
+  4. Expect success toast / 200 XHR
+Failing test → pipeline blocks merge.
+
+7 — Only after green baseline, re-enable VC path
+Re-introduce custom props but wrap them in a namespaced key to keep Form.io happy, e.g.:
+
+json
+Copy
+Edit
+{
+  "key": "age",
+  "type": "textfield",
+  "vcConfig": {           // <— custom namespace
+    "dataSource": "verified",
+    "mapping": {...}
+  }
+}
+Form.io ignores unknown top-level keys inside component, but you avoid collisions.
+
+hasVC detection now uses component.vcConfig?.dataSource === 'verified'.
+
+VC code only runs if such components exist, so plain forms remain stable.
+
+8 — Regression matrix
+Add a matrix.yaml to vitest / Playwright:
+
+css
+Copy
+Edit
+- plain form submit
+- plain form publish URL loads
+- vc form preview shows QR
+- vc form publish loads, QR optional
+Pipeline must stay green before any new merge.
+
+Where this leaves you
+Predictable single data contract
+
+React components decoupled from VC logic
+
+Plain forms publish & submit reliably
+
+VC features toggle strictly by vcConfig presence
+
+Test suite guards against regressions
