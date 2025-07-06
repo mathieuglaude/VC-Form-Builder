@@ -6,7 +6,7 @@ import FormRenderer from '@/components/FormRenderer';
 
 interface FormPageProps {
   form: any;
-  mode: 'preview' | 'launch' | 'public';
+  mode: 'preview' | 'launch' | 'public' | 'debug';
   onSubmit?: (formData: Record<string, any>, verifiedFields: Record<string, any>) => void;
   isSubmitting?: boolean;
   showHeader?: boolean; // Controls whether to show header - false for embedded use
@@ -16,6 +16,24 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false, s
   const [location] = useLocation();
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [verifiedFields, setVerifiedFields] = useState<Record<string, any>>({});
+  
+  // DEBUG MODE: Skip all VC logic and render pure form
+  if (mode === 'debug') {
+    console.log('[FormPage] DEBUG MODE: Rendering pure form without VC logic');
+    
+    return (
+      <FormRenderer
+        form={form}
+        onSubmit={(data) => {
+          console.log('[FormPage] Debug form submission:', data);
+          if (onSubmit) {
+            onSubmit(data, {});
+          }
+        }}
+        isSubmitting={isSubmitting}
+      />
+    );
+  }
   
   // Check if this is preview mode
   const isPreview = new URLSearchParams(location.split('?')[1] || '').has('preview');

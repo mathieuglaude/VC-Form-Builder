@@ -3,6 +3,28 @@ import { storage } from '../storage';
 
 const router = Router();
 
+// Helper function to auto-append submit button if missing
+function ensureSubmitButton(formSchema: any) {
+  const schema = { ...formSchema };
+  const hasSubmitButton = schema.components.some((comp: any) => 
+    comp.type === 'button' && (comp.action === 'submit' || comp.key === 'submit')
+  );
+  
+  if (!hasSubmitButton) {
+    schema.components.push({
+      key: 'submit',
+      type: 'button',
+      label: 'Submit',
+      input: true,
+      disableOnInvalid: true,
+      action: 'submit',
+      theme: 'primary'
+    });
+  }
+  
+  return schema;
+}
+
 // Development-only route for testing pure Form.io rendering
 router.get('/debug/plain/:formId', async (req, res) => {
   const formId = parseInt(req.params.formId);
@@ -15,22 +37,7 @@ router.get('/debug/plain/:formId', async (req, res) => {
     }
 
     // Auto-append submit button if missing (for debug convenience)
-    const schema = { ...form.formSchema };
-    const hasSubmitButton = schema.components.some((comp: any) => 
-      comp.type === 'button' && (comp.action === 'submit' || comp.key === 'submit')
-    );
-    
-    if (!hasSubmitButton) {
-      schema.components.push({
-        key: 'submit',
-        type: 'button',
-        label: 'Submit',
-        input: true,
-        disableOnInvalid: true,
-        action: 'submit',
-        theme: 'primary'
-      });
-    }
+    const schema = ensureSubmitButton(form.formSchema);
 
     const schemaJson = JSON.stringify(schema);
     const componentsJson = JSON.stringify(schema.components, null, 2);
@@ -157,6 +164,102 @@ router.get('/debug/plain/:formId', async (req, res) => {
     res.send(html);
   } catch (error) {
     console.error('Debug route error:', error);
+    res.status(500).send('<h1>Internal Server Error</h1><p>' + (error as Error).message + '</p>');
+  }
+});
+
+// React wrapper test route
+router.get('/debug/react/:formId', async (req, res) => {
+  const formId = parseInt(req.params.formId);
+  
+  try {
+    const form = await storage.getFormConfig(formId);
+    
+    if (!form) {
+      return res.status(404).send('<h1>Form not found</h1>');
+    }
+
+    // Auto-append submit button if missing
+    const schema = ensureSubmitButton(form.formSchema);
+    const formWithSchema = { ...form, formSchema: schema };
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug React FormPage - ${form.name}</title>
+    <script type="module" src="http://localhost:5173/@vite/client"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .debug-header {
+            background: #e8f5e8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #4caf50;
+        }
+        .submission-log {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            border: 1px solid #4caf50;
+            display: none;
+        }
+        #root {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-header">
+        <h1>🔧 Debug: React FormPage Component Test</h1>
+        <p><strong>Form:</strong> ${form.name} (ID: ${formId})</p>
+        <p><strong>Purpose:</strong> Test FormPage component without VC logic</p>
+        <p><strong>Mode:</strong> debug (no credential detection)</p>
+    </div>
+
+    <div id="root"></div>
+
+    <div id="submission-log" class="submission-log">
+        <h3>✅ React Form Submission Successful</h3>
+        <pre id="submission-data"></pre>
+    </div>
+
+    <script type="module">
+        // Set up form data for React component
+        window.__DEBUG_FORM_DATA__ = ${JSON.stringify(formWithSchema)};
+        
+        // Create submission handler
+        window.__DEBUG_SUBMIT_HANDLER__ = function(formData, verifiedFields) {
+            console.log('📤 React Form Submission:', { formData, verifiedFields });
+            
+            const logDiv = document.getElementById('submission-log');
+            const dataDiv = document.getElementById('submission-data');
+            dataDiv.textContent = JSON.stringify({ formData, verifiedFields }, null, 2);
+            logDiv.style.display = 'block';
+        };
+        
+        // Import and render React component
+        import('/src/debug/ReactFormDebug.tsx');
+    </script>
+</body>
+</html>`;
+
+    res.send(html);
+  } catch (error) {
+    console.error('Debug React route error:', error);
     res.status(500).send('<h1>Internal Server Error</h1><p>' + (error as Error).message + '</p>');
   }
 });
