@@ -39,8 +39,7 @@ export default function Navigation() {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
-  // Check if user is super admin
-  const isSuperAdmin = !isLoading && (user?.role === 'super_admin' || currentUser.email === 'john.doe@example.com');
+
 
   const navItems = [
     { path: "/", label: "Form Builder", icon: FileText },
@@ -132,19 +131,6 @@ export default function Navigation() {
                   <Settings className="mr-2 h-4 w-4" />
                   Account Settings
                 </button>
-                
-                {isSuperAdmin && (
-                  <button
-                    className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                    onClick={() => {
-                      setLocation('/admin/credentials');
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Database className="mr-2 h-4 w-4" />
-                    Credential Templates
-                  </button>
-                )}
                 
                 <div className="border-t my-1"></div>
                 

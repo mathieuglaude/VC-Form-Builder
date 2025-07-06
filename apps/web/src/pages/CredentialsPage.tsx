@@ -28,17 +28,7 @@ export default function CredentialsPage() {
     }
   });
 
-  // Get current user for admin check
-  const { data: user } = useQuery({
-    queryKey: ['/api/auth/user'],
-    queryFn: async () => {
-      const response = await fetch('/api/auth/user');
-      if (!response.ok) throw new Error('Failed to fetch user');
-      return response.json();
-    }
-  });
 
-  const isAdmin = user?.role === 'super_admin';
 
   // Extract unique ecosystems and interop profiles for filter dropdowns
   const uniqueEcosystems = useMemo((): string[] => {
@@ -100,19 +90,17 @@ export default function CredentialsPage() {
         <div>
           <h1 className="text-3xl font-bold">Credential Library</h1>
           <p className="text-gray-600 mt-2">
-            Manage reusable credential templates for form verification
+            Browse and import credential definitions for form verification
           </p>
         </div>
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <Button 
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Import Credential
-            </Button>
-          )}
+          <Button 
+            onClick={() => setShowImportModal(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Import Credential
+          </Button>
           <Button 
             variant="outline" 
             onClick={() => setShowFilters(!showFilters)}
@@ -218,7 +206,7 @@ export default function CredentialsPage() {
         {filteredTemplates.length === 0 && (
           <div className="col-span-full text-center py-12">
             <div className="text-gray-500">
-              <p className="text-lg mb-2">No credential templates found</p>
+              <p className="text-lg mb-2">No credentials found</p>
               <p className="text-sm">
                 {templates.length === 0 ? 
                   "The credential library is currently empty" : 

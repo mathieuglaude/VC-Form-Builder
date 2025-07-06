@@ -6,7 +6,7 @@ import './types/express'; // Load Express type extensions
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
-import adminCredentialsRouter from "./routes/adminCredentials";
+
 import defineProofRouter from "./routes/defineProof";
 import ocaRouter from "./routes/oca";
 import { initFormProof } from "./routes/initFormProof";
@@ -658,22 +658,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Health check endpoint to restore missing credentials
-  router.post('/admin/credentials/health', async (req, res) => {
-    try {
-      await ensureLawyerCred();
-      res.status(204).send();
-    } catch (error) {
-      console.error('Health check failed:', error);
-      res.status(500).json({ error: 'Health check failed' });
-    }
-  });
+
 
   // Register proofs router
   app.use('/api/proofs', proofsRouter);
   
-  // Register admin credential management routes
-  app.use('/api/admin/credentials', adminCredentialsRouter);
+
 
   // Orbit webhook endpoint
   app.post('/webhook/orbit', async (req, res) => {
@@ -1303,7 +1293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Mount sub-routers
   app.use('/api', proofsRouter);
-  app.use('/api', adminCredentialsRouter);
+
   app.use('/api', defineProofRouter);
   app.use('/api/oca', ocaRouter);
 

@@ -454,6 +454,14 @@ Changelog:
   - Updated form metadata extraction to exclude issuance actions from saved form data
   - System now focuses exclusively on credential verification workflow, removing unused issuance complexity
   - Form builder interface simplified with removal of "Configure Issuance" section and related modals
+- July 6, 2025. Removed "Credential Templates" admin management interface completely
+  - Deleted CredentialsAdminPage.tsx component and removed admin credentials routes
+  - Removed "Credential Templates" menu item from user dropdown navigation
+  - Eliminated admin authorization checks and super admin credential management permissions
+  - Updated credential library to show "Import Credential" button for all users (no admin restriction)
+  - Simplified architecture: import wizard now adds credentials directly to public library
+  - Credential library remains fully functional for browsing and importing without admin layer
+  - System focuses on public credential library with import wizard, removing administrative complexity
 - July 5, 2025. Enhanced Governance & Trust section with comprehensive documentation links
   - Added governance documentation field to credential detail pages with official BC Government documentation links
   - Updated BC Digital Business Card governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/business/digital-business-card-v1.md

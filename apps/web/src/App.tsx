@@ -12,7 +12,7 @@ import CredentialDetailPage from "@/pages/CredentialDetailPage";
 import WalletLibraryPage from "@/pages/WalletLibraryPage";
 import CommunityPage from "@/pages/CommunityPage";
 import AccountPage from "@/pages/AccountPage";
-import CredentialsAdminPage from "@/pages/CredentialsAdminPage";
+
 import PublicFormPage from "@/pages/PublicFormPage";
 import OCADemo from "@/pages/OCADemo";
 
@@ -39,7 +39,7 @@ function Router() {
       <Route path="/wallets"><WalletLibraryPage /></Route>
       <Route path="/oca-demo"><OCADemo /></Route>
       <Route path="/account"><AccountPage /></Route>
-      <Route path="/admin/credentials"><CredentialsAdminPage /></Route>
+
       <Route><NotFound /></Route>
     </Switch>
   );
