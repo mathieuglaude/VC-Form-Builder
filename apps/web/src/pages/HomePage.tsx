@@ -153,29 +153,22 @@ export default function HomePage() {
                             })() && (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  {form.isPublished ? (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      data-cy="submissions-link"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setLocation(`/submissions?formId=${form.id}`);
-                                      }}
-                                    >
-                                      <BarChart className="h-4 w-4" />
-                                    </Button>
-                                  ) : (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      disabled
-                                      className="cursor-not-allowed"
-                                      title="Publish the form to see submissions"
-                                    >
-                                      <BarChart className="h-4 w-4 text-gray-400 opacity-50" />
-                                    </Button>
-                                  )}
+                                  <span
+                                    className={cn(
+                                      "p-2 rounded-md",
+                                      form.isPublished
+                                        ? "hover:bg-slate-100 cursor-pointer text-blue-600"
+                                        : "opacity-40 cursor-not-allowed"
+                                    )}
+                                    onClick={e => {
+                                      if (!form.isPublished) return;
+                                      e.stopPropagation();
+                                      setLocation(`/submissions?formId=${form.id}`);
+                                    }}
+                                    data-cy="submissions-link"
+                                  >
+                                    <BarChart className="h-4 w-4" />
+                                  </span>
                                 </TooltipTrigger>
                                 <TooltipContent side="top">
                                   {form.isPublished ? "View submissions" : "Publish the form to see submissions"}
