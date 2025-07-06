@@ -1269,7 +1269,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           externalSchemaId: schemaData.schemaId,
           name: schemaData.name,
           version: schemaData.version,
-          attributes: schemaData.attributes.map(attr => attr.name)
+          attributes: schemaData.attributes.map(attr => attr.name),
+          governanceUrl: metadata.governanceFramework
         });
         
         orbitSchemaId = schemaImportResult.orbitSchemaId;

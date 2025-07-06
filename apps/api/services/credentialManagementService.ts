@@ -6,6 +6,7 @@ export interface ExternalSchemaImport {
   name: string;
   version: string;
   attributes: string[];
+  governanceUrl?: string;
 }
 
 export interface ExternalCredentialDefinitionImport {
@@ -46,15 +47,12 @@ export class CredentialManagementService {
     try {
       console.log(`[CRED-MGMT] Importing external schema: ${schemaData.externalSchemaId}`);
       
-      // Prepare schema payload for Orbit API
+      // Build payload according to OpenAPI specification
       const schemaPayload = {
-        name: schemaData.name,
-        version: schemaData.version,
-        attributes: schemaData.attributes,
-        externalReference: {
-          schemaId: schemaData.externalSchemaId,
-          source: 'CANdy',
-          imported: true
+        schemaInfo: {
+          schemaLedgerId: schemaData.externalSchemaId,
+          governanceUrl: schemaData.governanceUrl || 'https://github.com/bcgov/digital-trust-toolkit',
+          credentialFormat: 'ANONCRED' as const
         }
       };
 
@@ -73,13 +71,13 @@ export class CredentialManagementService {
         },
         json: schemaPayload,
         timeout: 30000
-      }).json<{ schemaId: number; status: string }>();
+      }).json<{ success: boolean; message: string; data: { schemaId: number } }>();
 
       console.log(`[CRED-MGMT] Schema import SUCCESS:`, response);
 
       return {
-        orbitSchemaId: response.schemaId,
-        status: response.status === 'created' ? 'imported' : 'existing'
+        orbitSchemaId: response.data.schemaId,
+        status: 'imported'
       };
     } catch (error) {
       console.error('[CRED-MGMT] Schema import FAILED - Full error details:', error);
@@ -98,16 +96,12 @@ export class CredentialManagementService {
     try {
       console.log(`[CRED-MGMT] Importing external credential definition: ${credDefData.externalCredDefId}`);
       
-      // Prepare credential definition payload for Orbit API
+      // Build payload according to OpenAPI specification
       const credDefPayload = {
         schemaId: credDefData.orbitSchemaId,
-        tag: credDefData.tag,
-        issuerDid: credDefData.issuerDid,
-        externalReference: {
-          credDefId: credDefData.externalCredDefId,
-          source: 'CANdy',
-          imported: true
-        }
+        credentialDefinitionId: credDefData.externalCredDefId,
+        description: `${credDefData.tag} credential issued by ${credDefData.issuerDid}`,
+        addCredDef: false
       };
 
       const requestUrl = `api/lob/${this.lobId}/cred-def/store`;
@@ -124,13 +118,13 @@ export class CredentialManagementService {
         },
         json: credDefPayload,
         timeout: 30000
-      }).json<{ credDefId: number; status: string }>();
+      }).json<{ success: boolean; message: string; data: { credentialId: number } }>();
 
       console.log(`[CRED-MGMT] Credential definition import SUCCESS:`, response);
 
       return {
-        orbitCredDefId: response.credDefId,
-        status: response.status === 'created' ? 'imported' : 'existing'
+        orbitCredDefId: response.data.credentialId,
+        status: 'imported'
       };
     } catch (error) {
       console.error('[CRED-MGMT] Credential definition import FAILED - Full error details:', error);

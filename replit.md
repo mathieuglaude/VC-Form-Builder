@@ -440,6 +440,13 @@ Changelog:
   - Discovered LOB ID a03f92ac-5ce7-4037-b8b5-79ff821b0878 returns "lob not found!" (404) error
   - System correctly builds proof requests with proper Orbit numeric IDs and authentication format
   - Ready for production once correct LOB ID is provided from Northern Block approval email
+- July 6, 2025. Fixed Orbit API payload structures to match OpenAPI specification exactly
+  - Updated schema import payload to use correct {schemaInfo: {schemaLedgerId, governanceUrl, credentialFormat}} structure
+  - Updated credential definition import payload to use correct {schemaId, credentialDefinitionId, description, addCredDef} structure
+  - Fixed response parsing to extract data from proper API response format: {success, message, data}
+  - Added governance URL parameter support from metadata.governanceFramework in import wizard
+  - Confirmed payload structures are now OpenAPI-compliant - 404 errors are due to invalid LOB ID, not payload issues
+  - System ready for authentic Orbit integration once valid LOB ID obtained from Northern Block provisioning
 - July 5, 2025. Enhanced Governance & Trust section with comprehensive documentation links
   - Added governance documentation field to credential detail pages with official BC Government documentation links
   - Updated BC Digital Business Card governance URL to https://github.com/bcgov/digital-trust-toolkit/blob/main/docs/governance/business/digital-business-card-v1.md
