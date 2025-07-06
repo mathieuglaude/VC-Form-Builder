@@ -12,9 +12,9 @@ import { useQuery } from '@tanstack/react-query';
 import { isDevOwner } from '@/utils/isDevOwner';
 
 export default function SubmissionsPage() {
-  const { id } = useParams<{ id: string }>();
-  const formId = Number(id);
-  console.debug("[SubmissionsPage] params", { id, formId });
+  const { formId } = useParams<{ formId: string }>();
+  const formIdNumber = parseInt(formId || '0', 10);
+  console.debug("[SubmissionsPage] params", { formId, formIdNumber });
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [currentCursor, setCurrentCursor] = useState<number | undefined>();
@@ -22,8 +22,8 @@ export default function SubmissionsPage() {
 
   // Get form details
   const { data: form, isLoading: formLoading } = useQuery({
-    queryKey: [`/api/forms/${formId}`],
-    enabled: !!formId,
+    queryKey: [`/api/forms/${formIdNumber}`],
+    enabled: !!formIdNumber,
   });
   
   // Get submissions with pagination
@@ -32,7 +32,7 @@ export default function SubmissionsPage() {
     isLoading: submissionsLoading, 
     error: submissionsError 
   } = useFormSubmissionsPaginated(
-    formId, 
+    formIdNumber, 
     currentCursor ?? 1,
     pageSize
   );
@@ -138,7 +138,7 @@ export default function SubmissionsPage() {
   };
 
   const handleViewSubmission = (submissionId: number) => {
-    setLocation(`/submissions/${submissionId}`);
+    setLocation(`/forms/${formId}/submissions/${submissionId}`);
   };
 
   const handleExportSubmissions = () => {

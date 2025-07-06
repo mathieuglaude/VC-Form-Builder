@@ -41,8 +41,8 @@ function Router() {
       <Route path="/wallets"><WalletLibraryPage /></Route>
       <Route path="/oca-demo"><OCADemo /></Route>
       <Route path="/account"><AccountPage /></Route>
-      <Route path="/forms/:id/submissions"><SubmissionsPage /></Route>
-      <Route path="/forms/:id/submissions/:submissionId"><SingleSubmissionPage /></Route>
+      <Route path="/forms/:formId/submissions"><SubmissionsPage /></Route>
+      <Route path="/forms/:formId/submissions/:submissionId"><SingleSubmissionPage /></Route>
 
       <Route><NotFound /></Route>
     </Switch>
