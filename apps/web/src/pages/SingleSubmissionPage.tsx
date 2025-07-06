@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useSingleSubmission } from '@/hooks/useSingleSubmission';
 import { useToast } from '@/hooks/use-toast';
+import { isDevOwner } from '@/utils/isDevOwner';
 
 export default function SingleSubmissionPage() {
   const { submissionId } = useParams<{ submissionId: string }>();
@@ -29,9 +30,20 @@ export default function SingleSubmissionPage() {
   // Route guard: Check if user is the form owner
   useEffect(() => {
     if (form && !formLoading && submission) {
-      // @ts-ignore - form data structure from API
-      const isOwner = form.authorId === "demo" || form.id <= 100;
-      if (!isOwner) {
+      // Type assertion for form data structure from API
+      const formData = form as any;
+      // For now, use demo access logic with dev bypass capability
+      const isOwner = formData.authorId === "demo" || formData.id <= 100;
+      const devBypass = isDevOwner(formData.authorId);
+      
+      if (!isOwner && !devBypass) {
+        console.warn("[SingleSubmissionGuard]", {
+          formAuthor: formData.authorId,
+          formId: formData.id,
+          submissionId: submission.id,
+          devBypass: devBypass,
+        });
+
         toast({
           title: 'Access Denied',
           description: 'You can only view submissions for forms you own.',
