@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, BarChart3 } from 'lucide-react';
+import { Loader2, BarChart } from 'lucide-react';
 import FormRenderer from '@/components/FormRenderer';
 
 interface FormPageProps {
@@ -95,15 +95,21 @@ export default function FormPage({ form, onSubmit, isSubmitting = false, showHea
         {/* Page Header */}
         <div className="text-center mb-8 relative">
           {/* Owner-only submissions link */}
-          {(form.authorId === "demo" || form.id <= 100) && (
+          {(() => {
+            // In development, show for demo forms; in production, check actual ownership
+            const session = null; // TODO: Replace with actual session when auth is implemented
+            const isOwner = session ? form.authorId === (session as any)?.user?.id : (form.authorId === "demo" || form.id <= 100);
+            return isOwner;
+          })() && (
             <div className="absolute top-0 right-0">
               <Button
                 variant="outline" 
                 size="sm"
+                data-cy="submissions-header-link"
                 onClick={() => window.location.href = `/forms/${form.id}/submissions`}
                 className="text-blue-600 hover:text-blue-800"
               >
-                <BarChart3 className="w-4 h-4 mr-2" />
+                <BarChart className="h-4 w-4 mr-2" />
                 View Submissions
               </Button>
             </div>
