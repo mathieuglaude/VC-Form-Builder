@@ -31,10 +31,12 @@ export class CredentialManagementService {
   private lobId: string;
 
   constructor() {
-    this.baseURL = process.env.ORBIT_LOB_BASE_URL || 'https://testapi-credential.nborbit.ca/';
+    this.baseURL = 'https://testapi-credential.nborbit.ca/';
     this.apiKey = process.env.ORBIT_API_KEY;
     this.lobId = process.env.ORBIT_LOB_ID;
 
+    console.log(`[CRED-MGMT] Initialized with Credential Management API: ${this.baseURL}`);
+    
     if (!this.apiKey || !this.lobId) {
       throw new Error('ORBIT_API_KEY and ORBIT_LOB_ID must be set for credential management');
     }
