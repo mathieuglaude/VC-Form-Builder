@@ -23,14 +23,17 @@ export default function SubmissionsPage() {
     enabled: !!formId,
   });
 
+  // Parse formId to number, default to 0 if invalid
+  const formIdNumber = parseInt(formId || '0');
+  
   // Get submissions with pagination
   const { 
     data: submissionsResult, 
     isLoading: submissionsLoading, 
     error: submissionsError 
   } = useFormSubmissionsPaginated(
-    parseInt(formId || '0'), 
-    currentCursor,
+    formIdNumber, 
+    currentCursor ?? 1,
     pageSize
   );
 

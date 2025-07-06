@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
+import { buildUrl } from '../utils/buildUrl';
 
 export interface FormSubmission {
   id: number;
@@ -39,8 +40,12 @@ export function useFormSubmissions(formId: number, options?: {
   });
 }
 
-export function useFormSubmissionsPaginated(formId: number, cursor?: number, pageSize: number = 20) {
-  return useFormSubmissions(formId, { cursor, pageSize });
+export function useFormSubmissionsPaginated(formId: number, page: number, pageSize = 20) {
+  const url = buildUrl(`/api/forms/${formId}/submissions`, { page, pageSize });
+  return useQuery<PaginatedSubmissions>({
+    queryKey: [url],
+    staleTime: 300_000
+  });
 }
 
 // Invalidate submissions cache when new submissions are created
