@@ -21,15 +21,29 @@ export default function FormPage({ form, mode, onSubmit, isSubmitting = false, s
   if (mode === 'debug') {
     console.log('[FormPage] DEBUG MODE: Rendering pure form without VC logic');
     
+    const handleFieldChange = (fieldKey: string, value: any) => {
+      setFormData(prev => ({
+        ...prev,
+        [fieldKey]: value
+      }));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      console.log('[FormPage] Debug form submission:', formData);
+      if (onSubmit) {
+        onSubmit(formData, {});
+      }
+    };
+    
     return (
       <FormRenderer
-        form={form}
-        onSubmit={(data) => {
-          console.log('[FormPage] Debug form submission:', data);
-          if (onSubmit) {
-            onSubmit(data, {});
-          }
-        }}
+        formSchema={form.formSchema}
+        formData={formData}
+        verifiedFields={{}}
+        onFieldChange={handleFieldChange}
+        onSubmit={handleSubmit}
+        mode="launch"
         isSubmitting={isSubmitting}
       />
     );
