@@ -5,6 +5,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { endpoints } from '../../api-spec/endpoints.js';
+import { typedFetch } from '../typedFetch.js';
 
 // Get response schema from endpoints
 const responseSchema = endpoints.getCredentialLibrary.responseSchema;
@@ -15,14 +16,7 @@ export function useCredentialLibrary(): UseQueryResult<ResponseType> {
 
   return useQuery({
     queryKey: ['cred-lib'],
-    queryFn: async () => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return responseSchema.parse(data);
-    },
+    queryFn: () => typedFetch(url, responseSchema),
     
   });
 }

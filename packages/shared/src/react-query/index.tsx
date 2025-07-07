@@ -25,6 +25,34 @@ const queryClient = new QueryClient({
   },
 });
 
+// Dev-mode runtime guards for React Query
+if (import.meta.env.DEV) {
+  queryClient.getQueryCache().subscribe(event => {
+    if (event?.type === 'unhandledError') {
+      console.warn('[RQ-Guard] Unhandled query error detected:', {
+        queryKey: event.query?.queryKey,
+        error: event.error,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Additional validation error logging
+      if (event.error?.name === 'TypedFetchError') {
+        console.error('[RQ-Guard] Schema validation failure - check API response format');
+      }
+    }
+  });
+  
+  queryClient.getMutationCache().subscribe(event => {
+    if (event?.type === 'unhandledError') {
+      console.warn('[RQ-Guard] Unhandled mutation error detected:', {
+        mutationKey: event.mutation?.options?.mutationKey,
+        error: event.error,
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+}
+
 // Provider component that wraps the app
 export function QueryProvider({ children }: { children: ReactNode }) {
   return (

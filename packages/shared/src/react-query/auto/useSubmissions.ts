@@ -5,6 +5,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { endpoints } from '../../api-spec/endpoints.js';
+import { typedFetch } from '../typedFetch.js';
 
 // Get response schema from endpoints
 const responseSchema = endpoints.getSubmissions.responseSchema;
@@ -20,14 +21,7 @@ export function useSubmissions(options?: { page?: string | number, pageSize?: st
 
   return useQuery({
     queryKey: ['submissions', options],
-    queryFn: async () => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return responseSchema.parse(data);
-    },
+    queryFn: () => typedFetch(url, responseSchema),
     
   });
 }

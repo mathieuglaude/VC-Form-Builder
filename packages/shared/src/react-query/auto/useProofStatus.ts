@@ -5,6 +5,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { endpoints } from '../../api-spec/endpoints.js';
+import { typedFetch } from '../typedFetch.js';
 
 // Get response schema from endpoints
 const responseSchema = endpoints.getProofStatus.responseSchema;
@@ -15,14 +16,7 @@ export function useProofStatus(txId: string | number): UseQueryResult<ResponseTy
 
   return useQuery({
     queryKey: [`proofs/${txId}`],
-    queryFn: async () => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return responseSchema.parse(data);
-    },
+    queryFn: () => typedFetch(url, responseSchema),
     enabled: Boolean(txId),
   });
 }

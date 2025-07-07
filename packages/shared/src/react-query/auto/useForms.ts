@@ -5,6 +5,7 @@
 
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { endpoints } from '../../api-spec/endpoints.js';
+import { typedFetch } from '../typedFetch.js';
 
 // Get response schema from endpoints
 const responseSchema = endpoints.getForms.responseSchema;
@@ -15,14 +16,7 @@ export function useForms(): UseQueryResult<ResponseType> {
 
   return useQuery({
     queryKey: ['forms'],
-    queryFn: async () => {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return responseSchema.parse(data);
-    },
+    queryFn: () => typedFetch(url, responseSchema),
     
   });
 }
