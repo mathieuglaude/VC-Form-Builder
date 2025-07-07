@@ -2,8 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ReactNode } from 'react';
 
-// Re-export hooks from the dedicated hooks file
-export * from '../../react-query/hooks.js';
+// Re-export auto-generated hooks (preferred - these take precedence)
+export * from './auto/index.js';
 
 // Centralized QueryClient instance
 const queryClient = new QueryClient({

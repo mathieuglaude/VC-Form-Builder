@@ -1,21 +1,23 @@
 import { useQuery } from '@tanstack/react-query';
 
-// Generic hooks for common API endpoints
-export function useForms() {
+// Legacy manual hooks - DEPRECATED: Use auto-generated hooks instead
+// These are kept for compatibility but should be replaced with auto-generated versions
+
+export function useFormsLegacy() {
   return useQuery({
     queryKey: ['forms'],
     queryFn: () => fetch('/api/forms').then(r => r.json())
   });
 }
 
-export function useCredentialLibrary() {
+export function useCredentialLibraryLegacy() {
   return useQuery({
     queryKey: ['cred-lib'],
     queryFn: () => fetch('/api/cred-lib').then(r => r.json())
   });
 }
 
-export function useAuth() {
+export function useAuthLegacy() {
   return useQuery({
     queryKey: ['auth', 'user'],
     queryFn: () => fetch('/api/auth/user').then(r => r.json())
