@@ -21,8 +21,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "src"),
-      "@shared": path.resolve(import.meta.dirname, "..", "..", "packages", "shared"),
-      "@external": path.resolve(import.meta.dirname, "..", "..", "packages", "external"),
+      "@shared": path.resolve(import.meta.dirname, "..", "..", "packages", "shared", "src"),
+      "@ui": path.resolve(import.meta.dirname, "..", "..", "packages", "ui", "src"),
+      "@external": path.resolve(import.meta.dirname, "..", "..", "packages", "external", "src"),
       "@assets": path.resolve(import.meta.dirname, "..", "..", "attached_assets"),
     },
   },
