@@ -1,0 +1,69 @@
+Phase 2 – TypeScript unification & path-alias cleanup
+Goal: every package extends the same tsconfig.base.json; all path aliases resolve during runtime (tsx / ts-node), unit tests, and tsc -b.
+
+1. Finalise tsconfig.base.json
+jsonc
+Copy
+Edit
+// tsconfig.base.json
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "ESNext",
+    "moduleResolution": "NodeNext",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["packages/shared/src/*"],
+      "@ui/*": ["packages/ui/src/*"]
+    },
+    "types": ["node"]
+  }
+}
+2. Package-level tsconfig files
+Each apps/*/tsconfig.json and packages/*/tsconfig.json should now be no more than:
+
+json
+Copy
+Edit
+{
+  "extends": "../../tsconfig.base.json",   // adjust depth per folder
+  "compilerOptions": { "outDir": "dist" },
+  "include": ["src"]
+}
+3. Runtime alias support
+Node (api) → add "ts-node": { "compilerOptions": { "module": "commonjs" } } if you still use ts-node for scripts.
+
+tsx dev runner → add --tsconfig tsconfig.json in the npm script to ensure it uses the updated paths.
+
+Vitest → point resolve.alias in vite.config.ts to the same @shared / @ui paths.
+
+4. Migration commands
+pnpm tsc -b apps/* packages/* – should compile clean.
+
+pnpm exec vitest run – green tests.
+
+pnpm dev – manual smoke test in browser + Postman.
+
+5. Replit prompt
+text
+Copy
+Edit
+Phase 2 – TypeScript unification
+
+1. Move tsconfig.base.json (shown above) to repo root.
+2. Replace every sub-package tsconfig with an “extends” file as described.
+3. Update vite.config.ts and any tsx / ts-node scripts so that Node and Vite both resolve @shared/* and @ui/* correctly.
+4. Run `pnpm tsc -b apps/* packages/*` and fix any compiler errors.
+5. Run `pnpm exec vitest run` – all tests must pass.
+6. Do **not** modify runtime code unless a path-alias import needs updating.
+7. Commit as “chore: unify TypeScript config (phase 2)”.
+Tell the Replit agent to execute exactly that list; it can work file-by-file and keep you posted.
+
+Tip: keep Husky disabled in CI until Phase 2 compiles; re-enable after everything is green.
+
+Once Phase 2 passes locally and on GitHub Actions, we can move to Phase 3 (query-client lint rule & design-system extraction).
