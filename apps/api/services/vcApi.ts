@@ -1,4 +1,4 @@
-import { ProofRequest, VerificationResult } from "@shared/schema";
+import { ProofRequest, VerificationResult } from "../../../packages/shared/schema.js";
 
 // Mock VC API service - replace with actual Digital Credential API integration
 export class VCApiService {

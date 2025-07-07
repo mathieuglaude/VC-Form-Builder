@@ -1,6 +1,6 @@
 import { ocaBundleClient, type OCABranding, type OCABundle, type OCAAsset } from '../../../packages/external/oca/OCABundleClient';
 import { db } from '../db';
-import { credentialTemplates } from '@shared/schema';
+import { credentialTemplates } from '../../../packages/shared/schema.js';
 import { eq } from 'drizzle-orm';
 
 /**

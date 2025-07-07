@@ -1,4 +1,4 @@
-import { UnifiedOCAProcessor, type StandardizedOCABranding } from '@shared/schema';
+import { UnifiedOCAProcessor, type StandardizedOCABranding } from '../../../packages/shared/src/oca/UnifiedOCAProcessor.js';
 
 /**
  * Service for fetching OCA bundles from GitHub repositories
