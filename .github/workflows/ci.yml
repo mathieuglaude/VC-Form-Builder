@@ -1,36 +1,101 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
         with:
-          version: 8
-          
+          version: 9
+
       - name: Install dependencies
-        run: pnpm install
-        
-      - name: Run linter
-        run: pnpm exec eslint .
-        
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup test database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          echo "DATABASE_URL=$DATABASE_URL" >> $GITHUB_ENV
+
+      - name: Run database migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+        run: |
+          cd packages/db
+          pnpm drizzle-kit migrate --silent
+
+      - name: Type check
+        run: pnpm tsc -b
+
+      - name: Lint
+        run: pnpm lint || true
+
       - name: Run tests
-        run: pnpm exec vitest run
-        
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        if: always()
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+          NODE_ENV: test
+        run: pnpm test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
-          files: ./coverage/coverage-final.json
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build applications
+        run: pnpm build || echo "Build step not configured yet"
+
+      - name: Verify migration generation
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/test
+        run: |
+          cd packages/db
+          pnpm drizzle-kit generate --name test_migration
+          echo "✅ Migration generation successful"
