@@ -117,7 +117,7 @@ export default function VerificationPanel({
                 Open in Wallet
               </Button>
               
-              {process.env.NODE_ENV === 'development' && proofData?.invitationUrl && (
+              {import.meta.env.DEV && proofData?.invitationUrl && (
                 <details className="text-xs">
                   <summary className="cursor-pointer text-gray-500 hover:text-gray-700">
                     Debug: View Invitation URL

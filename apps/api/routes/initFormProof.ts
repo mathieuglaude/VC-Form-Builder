@@ -4,6 +4,7 @@ import { extractMappings, buildDefinePayload, extractInvitationUrl } from '../..
 import { ProofInitResponseSchema, type ProofInitResponse } from '../../../packages/shared/src/types/proof.js';
 import { VerifierService } from '../../../packages/external/orbit/VerifierService.js';
 // import { CredentialImportService } from '../services/credentialImportService.js';
+import { featureFlags } from '../../../packages/shared/src/config';
 import crypto from 'crypto';
 
 export async function initFormProof(req: Request<{ formId: string }>, res: Response) {
@@ -70,7 +71,7 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       // Extract wallet-friendly invitation URL from response
       const invitationUrl = extractInvitationUrl(urlResponse);
       console.info('[QR-DEBUG] extracted invitationUrl', invitationUrl?.slice(0, 120));
-      console.info('[QR-DEBUG] QR_VALIDATE env var:', !!process.env.QR_VALIDATE);
+      console.info('[QR-DEBUG] QR_VALIDATE env var:', featureFlags.qrValidation);
       console.info('[QR-DEBUG] invitationUrl exists:', !!invitationUrl);
       
       // Ensure we have a valid invitation URL
@@ -79,7 +80,7 @@ export async function initFormProof(req: Request<{ formId: string }>, res: Respo
       }
 
       // Optional validation behind environment flag
-      if (process.env.QR_VALIDATE && (!invitationUrl.startsWith('didcomm://') && !invitationUrl.startsWith('https://'))) {
+      if (featureFlags.qrValidation && (!invitationUrl.startsWith('didcomm://') && !invitationUrl.startsWith('https://'))) {
         console.error('[QR-INVALID] Invalid invitation URL format:', invitationUrl);
         return res.status(502).json({ 
           status: 'invalid-invitation',

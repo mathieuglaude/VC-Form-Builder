@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, BarChart } from 'lucide-react';
 import FormRenderer from '@/components/FormRenderer';
+// Temporarily disable VC feature flag import until build system is fixed
+// import { featureFlags } from '../../../packages/shared/src/config';
 
 interface FormPageProps {
   form: any;
@@ -26,7 +28,7 @@ export default function FormPage({ form, onSubmit, isSubmitting = false, showHea
     // Only check for VC when feature flag is enabled
     if (!enableVC || typeof window === 'undefined') return false;
     
-    // Check environment variable for VC enablement
+    // Check environment variable for VC enablement  
     const vcEnabled = import.meta.env.VITE_ENABLE_VC === 'true';
     if (!vcEnabled) return false;
     

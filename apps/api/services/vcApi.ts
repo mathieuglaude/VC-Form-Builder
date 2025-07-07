@@ -1,4 +1,5 @@
 import { ProofRequest, VerificationResult } from "../../../packages/shared/schema.js";
+import { config } from '../../../packages/shared/src/config';
 
 // Mock VC API service - replace with actual Digital Credential API integration
 export class VCApiService {
@@ -6,8 +7,8 @@ export class VCApiService {
   private readonly baseUrl: string;
 
   constructor() {
-    this.apiKey = process.env.VC_API_KEY || process.env.DIGITAL_CREDENTIAL_API_KEY || "mock_api_key";
-    this.baseUrl = process.env.VC_API_BASE_URL || "https://api.digitalcredentials.example.com";
+    this.apiKey = config.VC_API_KEY || "mock_api_key";
+    this.baseUrl = config.VC_API_BASE_URL || "https://api.digitalcredentials.example.com";
   }
 
   async listCredentialDefinitions() {

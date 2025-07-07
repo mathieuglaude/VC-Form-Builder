@@ -24,8 +24,10 @@ export class LobClient {
   private base: string;
 
   constructor(baseUrl?: string, apiKey?: string) {
-    this.base = baseUrl ?? process.env.ORBIT_LOB_BASE_URL ?? 'https://devapi-lob.nborbit.ca';
-    this.apiKey = apiKey ?? process.env.ORBIT_API_KEY ?? '';
+    // Import config locally to avoid circular dependencies
+    const { config } = require('../../shared/src/config');
+    this.base = baseUrl ?? config.ORBIT_BASE ?? 'https://devapi-lob.nborbit.ca';
+    this.apiKey = apiKey ?? config.ORBIT_API_KEY ?? '';
   }
 
   async register(body: RegisterLobDto) {

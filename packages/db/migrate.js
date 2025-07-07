@@ -11,13 +11,16 @@ import ws from 'ws';
 // Configure WebSocket for serverless environment
 neonConfig.webSocketConstructor = ws;
 
-if (!process.env.DATABASE_URL) {
+// Import config using CommonJS require for Node.js script
+const { dbConfig } = require('../shared/dist/config.js');
+
+if (!dbConfig.url) {
   console.error('❌ DATABASE_URL environment variable is required');
   process.exit(1);
 }
 
 async function runMigrations() {
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  const pool = new Pool({ connectionString: dbConfig.url });
   const db = drizzle({ client: pool });
 
   try {

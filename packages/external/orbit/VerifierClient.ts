@@ -53,10 +53,15 @@ export class VerifierClient {
   private api: typeof ky;
 
   constructor(
-    private base = process.env.ORBIT_VERIFIER_BASE_URL!,
-    private lob = process.env.ORBIT_LOB_ID!,
-    private key = process.env.ORBIT_API_KEY!
+    private base?: string,
+    private lob?: string,
+    private key?: string
   ) {
+    // Import config locally to avoid circular dependencies  
+    const { orbitConfig } = require('../../shared/src/config');
+    this.base = base || orbitConfig.baseUrl || 'https://testapi-verifier.nborbit.ca';
+    this.lob = lob || orbitConfig.lobId || '';
+    this.key = key || orbitConfig.apiKey || '';
     console.log('VerifierClient config:', { base: this.base, lob: this.lob, hasKey: !!this.key });
     
     this.api = ky.create({

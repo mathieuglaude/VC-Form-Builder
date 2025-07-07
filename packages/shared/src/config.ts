@@ -37,6 +37,9 @@ const envSchema = z.object({
   AUTH_BASE: z.string().url().optional(),
   AUTH_API_KEY: z.string().optional(),
   
+  // AI Services Configuration
+  OPENAI_API_KEY: z.string().optional(),
+  
   // Development/Testing Configuration
   QR_VALIDATE: z.string().optional(),
   VITE_DEV_OWNER_BYPASS: z.string().default('false'),

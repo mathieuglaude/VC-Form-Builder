@@ -1,11 +1,12 @@
 import { Router } from 'express';
+import { orbitConfig } from '../../../packages/shared/src/config';
 
 function getOrbitConfig() {
   return {
-    baseUrl: process.env.ORBIT_VERIFIER_BASE_URL || 'https://devapi-verifier.nborbit.ca',
-    apiKey: process.env.ORBIT_API_KEY || 'dummy-api-key',
-    lobId: process.env.ORBIT_LOB_ID || 'a03f92ac-5ce7-4037-b8b5-79ff821b0878',
-    useRealOrbit: process.env.ORBIT_USE_REAL === 'true'
+    baseUrl: orbitConfig.baseUrl,
+    apiKey: orbitConfig.apiKey || 'dummy-api-key',
+    lobId: orbitConfig.lobId || 'a03f92ac-5ce7-4037-b8b5-79ff821b0878',
+    useRealOrbit: orbitConfig.useReal
   };
 }
 

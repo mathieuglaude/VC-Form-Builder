@@ -32,9 +32,10 @@ export class CredentialManagementService {
   private lobId: string;
 
   constructor() {
+    const { orbitConfig } = require('../../../packages/shared/src/config');
     this.baseURL = 'https://testapi-credential.nborbit.ca/';
-    this.apiKey = process.env.ORBIT_API_KEY;
-    this.lobId = process.env.ORBIT_LOB_ID;
+    this.apiKey = orbitConfig.apiKey;
+    this.lobId = orbitConfig.lobId;
 
     console.log(`[CRED-MGMT] Initialized with Credential Management API: ${this.baseURL}`);
     

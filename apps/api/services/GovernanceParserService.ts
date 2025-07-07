@@ -51,11 +51,12 @@ export class GovernanceParserService {
   private openai: OpenAI;
 
   constructor() {
-    if (!process.env.OPENAI_API_KEY) {
+    const { config } = require('../../../packages/shared/src/config');
+    if (!config.OPENAI_API_KEY) {
       throw new Error('OPENAI_API_KEY environment variable is required for AI-powered governance parsing');
     }
     this.openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
+      apiKey: config.OPENAI_API_KEY,
     });
   }
 

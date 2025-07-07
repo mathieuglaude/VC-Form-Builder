@@ -6,6 +6,7 @@ import './types/express'; // Load Express type extensions
 import { storage } from "./storage";
 import { vcApiService } from "./services/vcApi";
 import proofsRouter from "./routes/proofs";
+import { featureFlags, serverConfig } from '../../packages/shared/src/config';
 
 import defineProofRouter from "./routes/defineProof";
 import ocaRouter from "./routes/oca";
@@ -1358,7 +1359,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api', router);
   
   // Mount sub-routers conditionally based on feature flag
-  if (process.env.ENABLE_VC === 'true') {
+  if (featureFlags.vc) {
     console.log('[ROUTES] VC functionality enabled - mounting proof and OCA routes');
     app.use('/api', proofsRouter);
     app.use('/api', defineProofRouter);
@@ -1368,7 +1369,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Development-only debug routes
-  if (process.env.NODE_ENV !== 'production') {
+  if (serverConfig.nodeEnv !== 'production') {
     const { default: debugPlainRouter } = await import('./routes/debugPlain');
     app.use('/', debugPlainRouter);
   }
