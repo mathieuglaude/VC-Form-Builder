@@ -7,7 +7,8 @@
   ],
   "scripts": {
     "dev": "pnpm --filter api dev & pnpm --filter web dev",
-    "prepare": "husky"
+    "lint": "pnpm exec eslint .",
+    "test": "pnpm exec vitest run"
   },
   "packageManager": "pnpm@9.15.0",
   "devDependencies": {
